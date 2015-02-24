@@ -1,0 +1,7 @@
+[run]
+branch = True
+source = ooi
+omit = ooi/tests/*,ooi/openstack/*
+
+[report]
+ignore-errors = True
