@@ -76,6 +76,10 @@ class Invalid(OCCIException):
     code = 400
 
 
+class InvalidContentType(Invalid):
+    msg_fmt = "Invalid content type %(content_type)s."
+
+
 class NotImplemented(OCCIException):
     msg_fmt = "Action not implemented."
     code = 501

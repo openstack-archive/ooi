@@ -14,17 +14,29 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
-test_ooi
-----------------------------------
-
-Tests for `ooi` module.
-"""
-
-from ooi.tests import base
+_MEDIA_TYPE_MAP = {
+    'text/plain': 'text',
+    'text/occi': 'text',
+}
 
 
-class TestOoi(base.TestCase):
+class TextSerializer(object):
+    def serialize(self, data):
+        return str(data)
 
-    def test_something(self):
-        pass
+
+_SERIALIZERS_MAP = {
+    "text": TextSerializer
+}
+
+
+def get_media_map():
+    return _MEDIA_TYPE_MAP
+
+
+def get_default_serializers():
+    return _SERIALIZERS_MAP
+
+
+def get_supported_content_types():
+    return _MEDIA_TYPE_MAP.keys()
