@@ -27,7 +27,7 @@ class Mixin(category.Category):
     run-time.
     """
 
-    def __init__(self, scheme, term, title, attributes=[], location=None,
+    def __init__(self, scheme, term, title, attributes=None, location=None,
                  related=[], actions=[]):
         super(Mixin, self).__init__(scheme, term, title, attributes=attributes,
                                     location=location)

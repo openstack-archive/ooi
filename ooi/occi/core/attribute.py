@@ -15,6 +15,8 @@
 # under the License.
 
 import abc
+import collections
+import copy
 
 import six
 
@@ -45,4 +47,46 @@ class InmutableAttribute(Attribute):
 
 
 class AttributeCollection(object):
-    pass
+    def __init__(self, attributes=None):
+        if attributes is not None:
+            if isinstance(attributes, collections.Mapping):
+                if not all([isinstance(a, Attribute)
+                            for a in attributes.values()]):
+                    raise TypeError('mapping keys must be of class Attribute')
+                self.attributes = dict(attributes)
+            elif isinstance(attributes, collections.Sequence):
+                self.attributes = dict.fromkeys(attributes)
+            else:
+                raise TypeError('attributes must be a sequence or mapping.')
+        else:
+            self.attributes = {}
+
+    def __getitem__(self, key):
+        ret = self.attributes[self.__keytransform__(key)]
+        if ret is None:
+            raise AttributeError("attribute %s is not set" % key)
+        return ret
+
+    def __setitem__(self, key, value):
+        self.attributes[self.__keytransform__(key)] = value
+
+    def __delitem__(self, key):
+        del self.attributes[self.__keytransform__(key)]
+
+    def __iter__(self):
+        return iter(self.attributes)
+
+    def __len__(self):
+        return len(self.attributes)
+
+    def __keytransform__(self, key):
+        return key
+
+    def update(self, col):
+        if not isinstance(col, AttributeCollection):
+            raise TypeError('cannot update AttributeCollection with %s' %
+                            type(col))
+        return self.attributes.update(col.attributes)
+
+    def copy(self):
+        return copy.deepcopy(self)

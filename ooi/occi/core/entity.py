@@ -14,17 +14,42 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import abc
+import uuid
 
 import six
 
-from ooi.occi import helpers
 from ooi.occi.core import attribute
 from ooi.occi.core import kind
 from ooi.occi.core import mixin
+from ooi.occi import helpers
 
 
-@six.add_metaclass(abc.ABCMeta)
+class EntityMeta(type):
+    """Meta class for Entity classes.
+
+    Following OCCI Core model, all the Entity subclasses will have its own
+    attributes, as long as they parent's ones.
+
+    For example the Entity class defines "occi.core.id" and "occi.core.title"
+    attributes, and the resource Resource class (that is a subclass of Entity)
+    defines "occi.core.summary" as attributes. Therefore, the Resource class
+    and all the objects should have all three attributes.
+
+    This metaclass does this, by updating the attributes to those of the base
+    class.
+    """
+    def __new__(cls, name, bases, dct):
+        for kls in bases:
+            if "attributes" in vars(kls):
+                dct["attributes"].update(kls.attributes)
+
+        return super(EntityMeta, cls).__new__(cls, name, bases, dct)
+
+    def __init__(self, *args):
+        super(EntityMeta, self).__init__(*args)
+
+
+@six.add_metaclass(EntityMeta)
 class Entity(object):
     """OCCI Entity.
 
@@ -32,34 +57,32 @@ class Entity(object):
     sub-type of Entity is identified by a unique Kind instance
     """
 
-    def __init__(self, id, title, mixins):
+    attributes = attribute.AttributeCollection(["occi.core.id",
+                                                "occi.core.title"])
+
+    kind = kind.Kind(helpers.build_schema('core'), 'entity',
+                     'entity', attributes, '/entity/')
+
+    def __init__(self, title, mixins):
         helpers.check_type(mixins, mixin.Mixin)
         self.mixins = mixins
 
-        self._attributes = {
-            "occi.core.id": attribute.InmutableAttribute("occi.core.id", id),
-            "occi.core.title": attribute.MutableAttribute("occi.core.title", title)
-        }
-
-        self._kind = kind.Kind(helpers.build_schema('core'), 'entity', 'entity',
-                               self._attributes.values(), '/entity/')
-
-    @property
-    def kind(self):
-        return self._kind
-
-    @property
-    def attributes(self):
-        return self._attributes
+        # NOTE(aloga): we need a copy of the attributes, otherwise we will be
+        # using the class ones instead of the object ones.
+        self.attributes = self.attributes.copy()
+        self.attributes["occi.core.id"] = attribute.InmutableAttribute(
+            "occi.core.id", uuid.uuid4().hex)
+        self.attributes["occi.core.title"] = attribute.MutableAttribute(
+            "occi.core.title", title)
 
     @property
     def id(self):
-        return self._attributes["occi.core.id"].value
+        return self.attributes["occi.core.id"].value
 
     @property
     def title(self):
-        return self._attributes["occi.core.title"].value
+        return self.attributes["occi.core.title"].value
 
     @title.setter
     def title(self, value):
-        self._attributes["occi.core.title"].value = value
+        self.attributes["occi.core.title"].value = value

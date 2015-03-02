@@ -14,11 +14,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-
-from ooi.occi import helpers
 from ooi.occi.core import attribute
 from ooi.occi.core import entity
 from ooi.occi.core import kind
+from ooi.occi import helpers
 
 
 class Link(entity.Entity):
@@ -28,29 +27,31 @@ class Link(entity.Entity):
     Resource instance with another.
     """
 
+    attributes = attribute.AttributeCollection(["occi.core.source",
+                                                "occi.core.target"])
 
-    def __init__(self, id, title, mixins, source, target):
-        super(Link, self).__init__(id, title, mixins)
+    kind = kind.Kind(helpers.build_schema("core"), 'link', 'link',
+                     attributes, '/link/')
 
-        cls_attrs = {
-            "occi.core.source": attribute.MutableAttribute("occi.core.source", source),
-            "occi.core.target": attribute.MutableAttribute("occi.core.target", target),
-        }
-        self._attributes.update(cls_attrs)
-        self._kind = kind.Kind(helpers.build_schema("core"), 'link', 'link', self._attributes.values(), '/link/')
+    def __init__(self, title, mixins, source, target):
+        super(Link, self).__init__(title, mixins)
+        self.attributes["occi.core.source"] = attribute.MutableAttribute(
+            "occi.core.source", source)
+        self.attributes["occi.core.target"] = attribute.MutableAttribute(
+            "occi.core.target", target)
 
     @property
     def source(self):
-        return self._attributes["occi.core.source"].value
+        return self.attributes["occi.core.source"].value
 
     @source.setter
     def source(self, value):
-        self._attributes["occi.core.source"].value = value
+        self.attributes["occi.core.source"].value = value
 
     @property
     def target(self):
-        return self._attributes["occi.core.target"].value
+        return self.attributes["occi.core.target"].value
 
     @target.setter
     def target(self, value):
-        self._attributes["occi.core.target"].value = value
+        self.attributes["occi.core.target"].value = value

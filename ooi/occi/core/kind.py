@@ -27,7 +27,7 @@ class Kind(category.Category):
     additional resource capabilities in terms of Actions.
     """
 
-    def __init__(self, scheme, term, title, attributes=[], location=None,
+    def __init__(self, scheme, term, title, attributes=None, location=None,
                  related=[], actions=[]):
         super(Kind, self).__init__(scheme, term, title, attributes=attributes,
                                    location=location)

@@ -14,39 +14,21 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from ooi.occi.core import attribute
-from ooi.occi import helpers
+import attribute
 
 
 class Category(object):
     """OCCI Category."""
 
-    def __init__(self, scheme, term, title, attributes=[], location=None):
-        self._scheme = scheme
-        self._term = term
-        self._title = title
+    def __init__(self, scheme, term, title, attributes=None, location=None):
+        self.scheme = scheme
+        self.term = term
+        self.title = title
 
-        helpers.check_type(attributes, attribute.Attribute)
+        if attributes is None:
+            self.attributes = attribute.AttributeCollection()
+        elif not isinstance(attributes, attribute.AttributeCollection):
+            raise TypeError("attributes must be an AttributeCollection")
 
-        self._attributes = dict([(a.name, a) for a in attributes])
-        self._location = location
-
-    @property
-    def scheme(self):
-        return self._scheme
-
-    @property
-    def term(self):
-        return self._term
-
-    @property
-    def title(self):
-        return self._title
-
-    @property
-    def attributes(self):
-        return self._attributes
-
-    @property
-    def location(self):
-        return self._location
+        self.attributes = attributes
+        self.location = location

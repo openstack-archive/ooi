@@ -27,21 +27,74 @@ from ooi.tests import base
 
 class TestAttributes(base.TestCase):
     def test_base(self):
-        attr = attribute.Attribute("occi.foo.bar", "crap")
-        self.assertEqual("crap", attr.value)
+        attr = attribute.Attribute("occi.foo.bar", "bar")
+        self.assertEqual("bar", attr.value)
+        self.assertEqual("occi.foo.bar", attr.name)
 
     def test_mutable(self):
-        attr = attribute.MutableAttribute("occi.foo.bar", "crap")
+        attr = attribute.MutableAttribute("occi.foo.bar", "bar")
         attr.value = "bazonk"
         self.assertEqual("bazonk", attr.value)
 
     def test_inmutable(self):
-        attr = attribute.InmutableAttribute("occi.foo.bar", "crap")
+        attr = attribute.InmutableAttribute("occi.foo.bar", "bar")
 
         def set_val():
             attr.value = "bazonk"
 
         self.assertRaises(AttributeError, set_val)
+
+
+class TestAttributeCollection(base.TestCase):
+    def test_collection(self):
+        col = attribute.AttributeCollection()
+        self.assertEqual({}, col.attributes)
+
+    def test_collection_raises_if_not_set(self):
+        col = attribute.AttributeCollection(["foo"])
+        self.assertRaises(AttributeError,
+                          col.__getitem__,
+                          "foo")
+
+    def test_collection_from_seq(self):
+        seq = ["foo", "bar"]
+        col = attribute.AttributeCollection(seq)
+        self.assertEqual(seq, col.attributes.keys())
+
+    def test_collection_from_map(self):
+        mapping = {"foo": attribute.Attribute("occi.foo.bar", "crap")}
+        col = attribute.AttributeCollection(mapping)
+        self.assertEqual(mapping, col.attributes)
+
+    def test_update(self):
+        mapping1 = {"occi.foo.1": attribute.Attribute("occi.foo.1", "bar")}
+        mapping2 = {"occi.foo.2": attribute.Attribute("occi.foo.2", "baz")}
+        col1 = attribute.AttributeCollection(mapping1)
+        col2 = attribute.AttributeCollection(mapping2)
+        self.assertEqual(mapping1, col1.attributes)
+        self.assertEqual(mapping2, col2.attributes)
+        col1.update(col2)
+        mapping1.update(mapping2)
+        self.assertEqual(mapping1, col1.attributes)
+
+    def test_update_invalid(self):
+        mapping = {"occi.foo.1": attribute.Attribute("occi.foo.1", "bar")}
+        col = attribute.AttributeCollection(mapping)
+        self.assertRaises(TypeError,
+                          col.update,
+                          {"foo": "bar"})
+
+    def test_collection_from_invalid_map(self):
+        mapping = {"foo": "bar"}
+        self.assertRaises(TypeError,
+                          attribute.AttributeCollection,
+                          mapping)
+
+    def test_collection_from_invalid(self):
+        mapping = 1
+        self.assertRaises(TypeError,
+                          attribute.AttributeCollection,
+                          mapping)
 
 
 class TestCoreOCCICategory(base.TestCase):
@@ -53,27 +106,6 @@ class TestCoreOCCICategory(base.TestCase):
 
         for i in self.args:
             self.assertEqual(i, getattr(cat, i))
-
-    def test_attributes(self):
-        attr = attribute.MutableAttribute("occi.foo.bar", "crap")
-        cat = self.obj(*self.args, attributes=[attr])
-        self.assertEqual({"occi.foo.bar": attr}, cat.attributes)
-
-    def test_attributes_empty(self):
-        cat = self.obj(*self.args, attributes=[])
-        self.assertEqual({}, cat.attributes)
-
-    def test_attributes_invalid(self):
-        self.assertRaises(TypeError,
-                          self.obj,
-                          *self.args,
-                          attributes=None)
-
-    def test_attributes_invalid_list(self):
-        self.assertRaises(TypeError,
-                          self.obj,
-                          *self.args,
-                          attributes=[None])
 
 
 class TestCoreOCCIKind(TestCoreOCCICategory):
@@ -157,14 +189,20 @@ class TestCoreOCCIAction(TestCoreOCCICategory):
 
 
 class TestCoreOCCIEntity(base.TestCase):
+    def test_resource_class(self):
+        e = entity.Entity
+        self.assertIn("occi.core.id", e.attributes)
+        self.assertIn("occi.core.title", e.attributes)
+        self.assertEqual([], e.kind.related)
+        # TODO(aloga): We need to check that the attributes are actually set
+        # after we get an object
+
     def test_entity(self):
-        e = entity.Entity("foo", "bar", [])
+        e = entity.Entity("bar", [])
         self.assertIsInstance(e.kind, kind.Kind)
         self.assertIn("occi.core.id", e.attributes)
         self.assertIn("occi.core.title", e.attributes)
 
-        self.assertEqual("foo", e.attributes["occi.core.id"].value)
-        self.assertEqual("foo", e.id)
         self.assertIs(e.id, e.attributes["occi.core.id"].value)
 
         def set_attr():
@@ -185,21 +223,34 @@ class TestCoreOCCIEntity(base.TestCase):
         self.assertEqual("bar", e.title)
         self.assertIs(e.title, e.attributes["occi.core.title"].value)
 
+    def test_entities(self):
+        e1 = entity.Entity("foo", [])
+        e2 = entity.Entity("bar", [])
+        self.assertNotEqual(e1.id, e2.id)
+
 
 class TestCoreOCCIResource(base.TestCase):
+    def test_resource_class(self):
+        r = resource.Resource
+        self.assertIn("occi.core.id", r.attributes)
+        self.assertIn("occi.core.summary", r.attributes)
+        self.assertIn("occi.core.title", r.attributes)
+        self.assertIn(entity.Entity.kind, r.kind.related)
+        # TODO(aloga): We need to check that the attributes are actually set
+        # after we get an object
+
     def test_resource(self):
-        r = resource.Resource("foo", "bar", [], "baz")
+        r = resource.Resource("bar", [], "baz")
         self.assertIsInstance(r.kind, kind.Kind)
         self.assertEqual("resource", r.kind.term)
-        self.assertEqual("foo", r.id)
         self.assertEqual("bar", r.title)
         self.assertEqual("baz", r.summary)
         r.summary = "bazonk"
         self.assertEqual("bazonk", r.summary)
 
     def test_valid_link(self):
-        r1 = resource.Resource(None, None, [], None)
-        r2 = resource.Resource(None, None, [], None)
+        r1 = resource.Resource(None, [], None)
+        r2 = resource.Resource(None, [], None)
         r1.link(r2)
         self.assertIsInstance(r1.links[0], link.Link)
         self.assertIs(r1, r1.links[0].source)
@@ -207,22 +258,22 @@ class TestCoreOCCIResource(base.TestCase):
 
     def test_mixins(self):
         m = mixin.Mixin(None, None, None)
-        r = resource.Resource(None, None, [m], [])
+        r = resource.Resource(None, [m], [])
         self.assertIsInstance(r.kind, kind.Kind)
         self.assertEqual([m], r.mixins)
 
     def test_invalid_mixins(self):
         self.assertRaises(TypeError,
                           resource.Resource,
-                          None, None, ["foo"], None)
+                          None, ["foo"], None)
 
 
 class TestCoreOCCILink(base.TestCase):
     def test_correct_link(self):
-        resource_1 = resource.Resource(None, None, [], None)
-        resource_2 = resource.Resource(None, None, [], None)
-        resource_3 = resource.Resource(None, None, [], None)
-        l = link.Link(None, None, [], resource_1, resource_2)
+        resource_1 = resource.Resource(None, [], None)
+        resource_2 = resource.Resource(None, [], None)
+        resource_3 = resource.Resource(None, [], None)
+        l = link.Link(None, [], resource_1, resource_2)
         self.assertIsInstance(l.kind, kind.Kind)
         self.assertEqual("link", l.kind.term)
         self.assertIs(resource_1, l.source)
@@ -243,5 +294,4 @@ class TestCoreOCCILink(base.TestCase):
 
         l.target = resource_1
         self.assertIs(resource_1, l.target)
-        self.assertIs(resource_1, l.attributes["occi.core.target"].value)
         self.assertIs(resource_1, l.attributes["occi.core.target"].value)

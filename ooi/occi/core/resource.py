@@ -14,13 +14,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import uuid
-
-from ooi.occi import helpers
 from ooi.occi.core import attribute
 from ooi.occi.core import entity
 from ooi.occi.core import kind
 from ooi.occi.core import link
+from ooi.occi import helpers
+
 
 class Resource(entity.Entity):
     """OCCI Resource.
@@ -32,20 +31,18 @@ class Resource(entity.Entity):
     The Resource type is complemented by the Link type which associates one
     Resource instance with another. The Link type contains a number of common
     attributes that Link sub-types inherit.
-   """
+    """
 
+    attributes = attribute.AttributeCollection(["occi.core.summary"])
 
-    def __init__(self, id, title, mixins, summary):
-        super(Resource, self).__init__(id, title, mixins)
+    kind = kind.Kind(helpers.build_schema('core'), 'resource',
+                     'resource', attributes, '/resource/')
 
-        cls_attrs = {
-            "occi.core.summary": attribute.MutableAttribute("occi.core.summary", summary),
-        }
-        self._attributes.update(cls_attrs)
-
-        self._kind = kind.Kind(helpers.build_schema('core'), 'resource', 'resource',
-                          self._attributes.values(), '/resource/')
-
+    def __init__(self, title, mixins, summary):
+        super(Resource, self).__init__(title, mixins)
+        self.attributes["occi.core.summary"] = attribute.MutableAttribute(
+            "occi.core.summary", None)
+        self.summary = summary
         self._links = []
 
     @property
@@ -53,13 +50,13 @@ class Resource(entity.Entity):
         return self._links
 
     def link(self, target, mixins=[]):
-        l = link.Link(uuid.uuid4().hex, "", mixins, self, target)
+        l = link.Link("", mixins, self, target)
         self._links.append(l)
 
     @property
     def summary(self):
-        return self._attributes["occi.core.summary"].value
+        return self.attributes["occi.core.summary"].value
 
     @summary.setter
     def summary(self, value):
-        self._attributes["occi.core.summary"].value = value
+        self.attributes["occi.core.summary"].value = value
