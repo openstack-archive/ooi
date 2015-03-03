@@ -16,8 +16,10 @@
 
 import uuid
 
+from ooi.occi.core import mixin
 from ooi.occi.core import resource
 from ooi.occi.infrastructure import compute
+from ooi.occi.infrastructure import templates
 from ooi.tests import base
 
 
@@ -55,3 +57,17 @@ class TestOCCICompute(base.TestCase):
         self.assertIsNone(c.hostname)
         self.assertIsNone(c.memory)
         self.assertIsNone(c.speed)
+
+
+class TestTemplates(base.TestCase):
+    def test_os_tpl(self):
+        self.assertIsInstance(templates.os_tpl,
+                              mixin.Mixin)
+        self.assertEqual("os_tpl",
+                         templates.os_tpl.term)
+
+    def test_resource_tpl(self):
+        self.assertIsInstance(templates.resource_tpl,
+                              mixin.Mixin)
+        self.assertEqual("resource_tpl",
+                         templates.resource_tpl.term)
