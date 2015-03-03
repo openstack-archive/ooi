@@ -249,6 +249,7 @@ class TestCoreOCCIResource(base.TestCase):
         self.assertEqual("bar", r.title)
         self.assertEqual("baz", r.summary)
         self.assertEqual(id, r.id)
+        self.assertIn(entity.Entity.kind, r.kind.related)
         r.summary = "bazonk"
         self.assertEqual("bazonk", r.summary)
 

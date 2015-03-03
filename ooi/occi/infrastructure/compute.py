@@ -43,7 +43,8 @@ class ComputeResource(resource.Resource):
     actions = (start, stop, restart, suspend)
     kind = kind.Kind(helpers.build_schema('infrastructure'), 'compute',
                      'compute resource', attributes, '/compute/',
-                     actions=actions)
+                     actions=actions,
+                     related=[resource.Resource.kind])
 
     def __init__(self, title, summary=None, id=None, architecture=None,
                  cores=None, hostname=None, speed=None, memory=None,

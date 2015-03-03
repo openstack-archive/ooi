@@ -36,7 +36,8 @@ class Resource(entity.Entity):
     attributes = attribute.AttributeCollection(["occi.core.summary"])
 
     kind = kind.Kind(helpers.build_schema('core'), 'resource',
-                     'resource', attributes, '/resource/')
+                     'resource', attributes, '/resource/',
+                     related=[entity.Entity.kind])
 
     def __init__(self, title, mixins, id=None, summary=None):
         super(Resource, self).__init__(title, mixins, id=id)

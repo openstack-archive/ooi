@@ -16,6 +16,7 @@
 
 import uuid
 
+from ooi.occi.core import resource
 from ooi.occi.infrastructure import compute
 from ooi.tests import base
 
@@ -36,6 +37,7 @@ class TestOCCICompute(base.TestCase):
         self.assertIn("occi.compute.memory", c.attributes)
         self.assertIn("occi.compute.speed", c.attributes)
         self.assertIn("occi.compute.state", c.attributes)
+        self.assertIn(resource.Resource.kind, c.kind.related)
         # TODO(aloga): We need to check that the attributes are actually set
         # after we get an object (we have to check this for this but also for
         # the other resources)
