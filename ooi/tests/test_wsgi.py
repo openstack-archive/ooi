@@ -63,13 +63,13 @@ class TestMiddleware(base.TestCase):
         result = webob.Request.blank("/foos",
                                      method="GET").get_response(self.app)
         self.assertEqual(200, result.status_code)
-        self.assertEqual("Hi", result.body)
+        self.assertEqual("Hi", result.text)
 
     def test_show(self):
         result = webob.Request.blank("/foos/stop",
                                      method="GET").get_response(self.app)
         self.assertEqual(200, result.status_code)
-        self.assertEqual("Show and stop", result.body)
+        self.assertEqual("Show and stop", result.text)
 
     def test_post(self):
         result = webob.Request.blank("/foos",

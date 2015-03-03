@@ -21,6 +21,7 @@ import webob.dec
 
 from ooi import exception
 from ooi.wsgi import serializers
+from ooi.wsgi import utils
 
 LOG = logging.getLogger(__name__)
 
@@ -43,6 +44,13 @@ class Request(webob.Request):
         if content_type not in serializers.get_supported_content_types():
             raise exception.InvalidContentType(content_type=content_type)
 
+        return content_type
+
+    def get_best_match_content_type(self):
+        content_type = self.get_content_type()
+        if content_type is None:
+            content_types = serializers.get_supported_content_types()
+            content_type = self.accept.best_match(content_types)
         return content_type
 
 
@@ -156,7 +164,7 @@ class Resource(object):
         action_args = self.get_action_args(args)
         action = action_args.pop('action', None)
         try:
-            accept = request.get_content_type()
+            accept = request.get_best_match_content_type()
         except exception.InvalidContentType:
             msg = "Unsupported Content-Type"
             return Fault(webob.exc.HTTPBadRequest(explanation=msg))
@@ -266,9 +274,10 @@ class ResponseObject(object):
         response = webob.Response()
         response.status_int = self.code
         for hdr, value in self._headers.items():
-            response.headers[hdr] = str(value)
+            response.headers[hdr] = utils.utf8(value)
         response.headers['Content-Type'] = content_type
         if self.obj is not None:
+            response.charset = 'utf8'
             response.body = serializer.serialize(self.obj)
 
         return response

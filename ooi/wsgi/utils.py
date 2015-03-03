@@ -14,32 +14,17 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from ooi.wsgi import utils
+import six
 
 
-_MEDIA_TYPE_MAP = {
-    'text/plain': 'text',
-    'text/occi': 'text',
-}
+def utf8(value):
+    """Try to turn a string into utf-8 if possible.
 
+    Code is modified from the utf8 function in
+    http://github.com/facebook/tornado/blob/master/tornado/escape.py
 
-class TextSerializer(object):
-    def serialize(self, data):
-        return utils.utf8(str(data))
-
-
-_SERIALIZERS_MAP = {
-    "text": TextSerializer
-}
-
-
-def get_media_map():
-    return _MEDIA_TYPE_MAP
-
-
-def get_default_serializers():
-    return _SERIALIZERS_MAP
-
-
-def get_supported_content_types():
-    return _MEDIA_TYPE_MAP.keys()
+    """
+    if isinstance(value, six.text_type):
+        return value.encode('utf-8')
+    assert isinstance(value, str)
+    return value
