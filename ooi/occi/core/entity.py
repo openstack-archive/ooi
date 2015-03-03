@@ -63,15 +63,20 @@ class Entity(object):
     kind = kind.Kind(helpers.build_schema('core'), 'entity',
                      'entity', attributes, '/entity/')
 
-    def __init__(self, title, mixins):
+    def __init__(self, title, mixins, id=None):
         helpers.check_type(mixins, mixin.Mixin)
         self.mixins = mixins
 
         # NOTE(aloga): we need a copy of the attributes, otherwise we will be
         # using the class ones instead of the object ones.
         self.attributes = self.attributes.copy()
+
+        # damn, we're shading a builtin
+        if id is None:
+            id = uuid.uuid4().hex
+
         self.attributes["occi.core.id"] = attribute.InmutableAttribute(
-            "occi.core.id", uuid.uuid4().hex)
+            "occi.core.id", id)
         self.attributes["occi.core.title"] = attribute.MutableAttribute(
             "occi.core.title", title)
 

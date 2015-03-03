@@ -38,11 +38,10 @@ class Resource(entity.Entity):
     kind = kind.Kind(helpers.build_schema('core'), 'resource',
                      'resource', attributes, '/resource/')
 
-    def __init__(self, title, mixins, summary):
-        super(Resource, self).__init__(title, mixins)
+    def __init__(self, title, mixins, id=None, summary=None):
+        super(Resource, self).__init__(title, mixins, id=id)
         self.attributes["occi.core.summary"] = attribute.MutableAttribute(
-            "occi.core.summary", None)
-        self.summary = summary
+            "occi.core.summary", summary)
         self._links = []
 
     @property

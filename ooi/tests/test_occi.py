@@ -14,6 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import uuid
+
 from ooi.occi.core import action
 from ooi.occi.core import attribute
 from ooi.occi.core import category
@@ -240,17 +242,19 @@ class TestCoreOCCIResource(base.TestCase):
         # after we get an object
 
     def test_resource(self):
-        r = resource.Resource("bar", [], "baz")
+        id = uuid.uuid4().hex
+        r = resource.Resource("bar", [], summary="baz", id=id)
         self.assertIsInstance(r.kind, kind.Kind)
         self.assertEqual("resource", r.kind.term)
         self.assertEqual("bar", r.title)
         self.assertEqual("baz", r.summary)
+        self.assertEqual(id, r.id)
         r.summary = "bazonk"
         self.assertEqual("bazonk", r.summary)
 
     def test_valid_link(self):
-        r1 = resource.Resource(None, [], None)
-        r2 = resource.Resource(None, [], None)
+        r1 = resource.Resource(None, [])
+        r2 = resource.Resource(None, [])
         r1.link(r2)
         self.assertIsInstance(r1.links[0], link.Link)
         self.assertIs(r1, r1.links[0].source)

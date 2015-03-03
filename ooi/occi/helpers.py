@@ -25,8 +25,8 @@ def build_schema(category):
 
 
 def check_type(obj_list, obj_type):
-    if not isinstance(obj_list, list):
-        raise TypeError('must be a list of objects')
+    if not isinstance(obj_list, (list, tuple)):
+        raise TypeError('must be a list or tuple of objects')
 
     if not all([isinstance(i, obj_type) for i in obj_list]):
         raise TypeError('object must be of class %s' % obj_type)
