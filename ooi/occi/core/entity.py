@@ -60,7 +60,7 @@ class Entity(object):
     attributes = attribute.AttributeCollection(["occi.core.id",
                                                 "occi.core.title"])
 
-    kind = kind.Kind(helpers.build_schema('core'), 'entity',
+    kind = kind.Kind(helpers.build_scheme('core'), 'entity',
                      'entity', attributes, '/entity/')
 
     def __init__(self, title, mixins, id=None):

@@ -20,16 +20,16 @@ from ooi.occi.core import kind
 from ooi.occi.core import resource
 from ooi.occi import helpers
 
-start = action.Action(helpers.build_schema('infrastructure/compute/action'),
+start = action.Action(helpers.build_scheme('infrastructure/compute/action'),
                       "start", "start compute instance")
 
-stop = action.Action(helpers.build_schema('infrastructure/compute/action'),
+stop = action.Action(helpers.build_scheme('infrastructure/compute/action'),
                      "stop", "stop compute instance")
 
-restart = action.Action(helpers.build_schema('infrastructure/compute/action'),
+restart = action.Action(helpers.build_scheme('infrastructure/compute/action'),
                         "restart", "restart compute instance")
 
-suspend = action.Action(helpers.build_schema('infrastructure/compute/action'),
+suspend = action.Action(helpers.build_scheme('infrastructure/compute/action'),
                         "suspend", "suspend compute instance")
 
 
@@ -41,7 +41,7 @@ class ComputeResource(resource.Resource):
                                            "occi.compute.memory",
                                            "occi.compute.state"])
     actions = (start, stop, restart, suspend)
-    kind = kind.Kind(helpers.build_schema('infrastructure'), 'compute',
+    kind = kind.Kind(helpers.build_scheme('infrastructure'), 'compute',
                      'compute resource', attributes, '/compute/',
                      actions=actions,
                      related=[resource.Resource.kind])

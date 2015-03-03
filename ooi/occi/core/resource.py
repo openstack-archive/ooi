@@ -35,7 +35,7 @@ class Resource(entity.Entity):
 
     attributes = attribute.AttributeCollection(["occi.core.summary"])
 
-    kind = kind.Kind(helpers.build_schema('core'), 'resource',
+    kind = kind.Kind(helpers.build_scheme('core'), 'resource',
                      'resource', attributes, '/resource/',
                      related=[entity.Entity.kind])
 

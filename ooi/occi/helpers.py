@@ -19,9 +19,9 @@ import urlparse
 _PREFIX = "http://schemas.ogf.org/occi/"
 
 
-def build_schema(category):
+def build_scheme(category, prefix=_PREFIX):
     category = "%s#" % category
-    return urlparse.urljoin(_PREFIX, category)
+    return urlparse.urljoin(prefix, category)
 
 
 def check_type(obj_list, obj_type):

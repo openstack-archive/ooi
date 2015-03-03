@@ -18,10 +18,10 @@ from ooi.occi.core import mixin
 from ooi.occi import helpers
 
 
-os_tpl = mixin.Mixin(helpers.build_schema("infrastructure"),
+os_tpl = mixin.Mixin(helpers.build_scheme("infrastructure"),
                      "os_tpl",
                      "OCCI OS Template")
 
-resource_tpl = mixin.Mixin(helpers.build_schema("infrastructure"),
+resource_tpl = mixin.Mixin(helpers.build_scheme("infrastructure"),
                            "resource_tpl",
                            "OCCI Resource Template")

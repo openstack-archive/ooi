@@ -30,7 +30,7 @@ class Link(entity.Entity):
     attributes = attribute.AttributeCollection(["occi.core.source",
                                                 "occi.core.target"])
 
-    kind = kind.Kind(helpers.build_schema("core"), 'link', 'link',
+    kind = kind.Kind(helpers.build_scheme("core"), 'link', 'link',
                      attributes, '/link/')
 
     def __init__(self, title, mixins, source, target):
