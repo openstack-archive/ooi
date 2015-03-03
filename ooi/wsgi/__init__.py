@@ -19,6 +19,7 @@ import routes
 import routes.middleware
 import webob.dec
 
+import ooi.api.compute
 from ooi import exception
 from ooi.wsgi import serializers
 from ooi.wsgi import utils
@@ -107,6 +108,11 @@ class OCCIMiddleware(object):
         """
         self.mapper.redirect("", "/")
 
+        self.resources["compute"] = Resource(
+            ooi.api.compute.ComputeController())
+        self.mapper.resource("server", "compute",
+                             controller=self.resources["compute"])
+
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, req):
         response = self.process_request(req)
@@ -170,7 +176,6 @@ class Resource(object):
             return Fault(webob.exc.HTTPBadRequest(explanation=msg))
 
         content_type, body = self.get_body(request)
-
         # Get the implementing method
         try:
             method = self.get_method(request, action,
@@ -225,7 +230,6 @@ class Resource(object):
 
     def dispatch(self, method, request, action_args):
         """Dispatch a call to the action-specific method."""
-
         return method(req=request, **action_args)
 
 

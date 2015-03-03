@@ -14,6 +14,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import ooi.api
 
-class BaseController(object):
-    pass
+
+class ComputeController(ooi.api.BaseController):
+    def index(self, req):
+        token_info = req.environ["keystone.token_info"]
+        tenant_id = token_info["token"]["tenant"]["id"]
+        req.environ["PATH_INFO"] = "/v2/%s/servers" % tenant_id
