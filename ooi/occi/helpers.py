@@ -14,7 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import urlparse
+import six.moves.urllib.parse as urlparse
 
 _PREFIX = "http://schemas.ogf.org/occi/"
 
