@@ -14,6 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from ooi.occi.core import attribute
 from ooi.occi.core import mixin
 from ooi.occi.infrastructure import templates
 from ooi.openstack import helpers
@@ -26,3 +27,44 @@ class OpenStackOSTemplate(mixin.Mixin):
             uuid,
             name,
             related=[templates.os_tpl])
+
+
+class OpenStackResourceTemplate(mixin.Mixin):
+
+    def __init__(self, name, cores, memory, disk, ephemeral=0, swap=0):
+        attrs = [
+            attribute.InmutableAttribute("occi.compute.cores", cores),
+            attribute.InmutableAttribute("occi.compute.memory", memory),
+            attribute.InmutableAttribute("occi.compute.disk", disk),
+            attribute.InmutableAttribute("occi.compute.ephemeral", ephemeral),
+            attribute.InmutableAttribute("occi.compute.swap", swap)
+        ]
+
+        attrs = attribute.AttributeCollection({a.name: a for a in attrs})
+
+        super(OpenStackResourceTemplate, self).__init__(
+            helpers.build_scheme("template/resource"),
+            name,
+            "Flavor: %s" % name,
+            related=[templates.resource_tpl],
+            attributes=attrs)
+
+    @property
+    def cores(self):
+        return self.attributes["occi.compute.cores"].value
+
+    @property
+    def memory(self):
+        return self.attributes["occi.compute.memory"].value
+
+    @property
+    def disk(self):
+        return self.attributes["occi.compute.disk"].value
+
+    @property
+    def ephemeral(self):
+        return self.attributes["occi.compute.ephemeral"].value
+
+    @property
+    def swap(self):
+        return self.attributes["occi.compute.swap"].value

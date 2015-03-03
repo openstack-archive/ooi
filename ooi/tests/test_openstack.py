@@ -33,3 +33,30 @@ class TestOpenStackOSTemplate(base.TestCase):
         self.assertEqual(title, tpl.title)
         self.assertTrue(tpl.scheme.startswith(helpers._PREFIX))
         self.assertIn(occi_templates.os_tpl, tpl.related)
+
+
+class TestOpenStackResourceTemplate(base.TestCase):
+    def test_resource_template(self):
+        name = "m1.humongous"
+        cores = 10
+        memory = 30
+        disk = 40
+        swap = 20
+        ephemeral = 50
+
+        tpl = templates.OpenStackResourceTemplate(name,
+                                                  cores,
+                                                  memory,
+                                                  disk,
+                                                  swap=swap,
+                                                  ephemeral=ephemeral)
+
+        self.assertEqual(name, tpl.term)
+        self.assertEqual("Flavor: %s" % name, tpl.title)
+        self.assertTrue(tpl.scheme.startswith(helpers._PREFIX))
+        self.assertIn(occi_templates.resource_tpl, tpl.related)
+        self.assertEqual(cores, tpl.cores)
+        self.assertEqual(memory, tpl.memory)
+        self.assertEqual(disk, tpl.disk)
+        self.assertEqual(swap, tpl.swap)
+        self.assertEqual(ephemeral, tpl.ephemeral)
