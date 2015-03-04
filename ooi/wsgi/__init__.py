@@ -124,7 +124,7 @@ class OCCIMiddleware(object):
         return self.process_response(response)
 
     def process_request(self, req):
-        match = self.mapper.match(req.path, req.environ)
+        match = self.mapper.match(req.path_info, req.environ)
         if not match:
             return webob.exc.HTTPNotFound()
         method = match["controller"]
