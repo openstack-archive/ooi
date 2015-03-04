@@ -25,7 +25,11 @@ _MEDIA_TYPE_MAP = {
 
 class TextSerializer(object):
     def serialize(self, data):
-        return utils.utf8(str(data))
+        if not isinstance(data, list):
+            data = [data]
+
+        ret = "\n".join([str(d) for d in data])
+        return utils.utf8(ret)
 
 
 _SERIALIZERS_MAP = {
