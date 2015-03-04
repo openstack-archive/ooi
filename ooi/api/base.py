@@ -20,8 +20,12 @@ class Controller(object):
         self.app = app
         self.openstack_version = openstack_version
 
-    def _get_req(self, req, path=None):
+    def _get_req(self, req, path=None, content_type=None, body=None):
         req.script_name = self.openstack_version
         if path is not None:
             req.path_info = path
+        if content_type is not None:
+            req.content_type = content_type
+        if body is not None:
+            req.body = body
         return req
