@@ -98,3 +98,10 @@ class TestMiddleware(base.TestCase):
                                   content_type="foo/bazonk")
         result = req.get_response(self.app)
         self.assertEqual(400, result.status_code)
+
+
+class TestOCCIMiddleware(base.TestCase):
+    def setUp(self):
+        super(TestOCCIMiddleware, self).setUp()
+
+        self.app = wsgi.OCCIMiddleware(fake_app)

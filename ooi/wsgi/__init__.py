@@ -19,6 +19,7 @@ import routes
 import routes.middleware
 import webob.dec
 
+from ooi.api import query
 from ooi import exception
 from ooi.wsgi import serializers
 from ooi.wsgi import utils
@@ -106,6 +107,11 @@ class OCCIMiddleware(object):
 
         """
         self.mapper.redirect("", "/")
+
+        self.resources["query"] = query.create_resource()
+        self.mapper.connect("query", "/-/",
+                            controller=self.resources["query"],
+                            action="index")
 
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, req):
