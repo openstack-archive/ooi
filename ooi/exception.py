@@ -85,6 +85,5 @@ class NotImplemented(OCCIException):
     code = 501
 
 
-class CategoryHeaderNotFound(Exception):
-    pass
-
+class HeaderNotFound(Invalid):
+    msg_fmt = "Header '%(header)s' not found."
