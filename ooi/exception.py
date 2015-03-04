@@ -78,6 +78,7 @@ class Invalid(OCCIException):
 
 class InvalidContentType(Invalid):
     msg_fmt = "Invalid content type %(content_type)s."
+    code = 406
 
 
 class NotImplemented(OCCIException):

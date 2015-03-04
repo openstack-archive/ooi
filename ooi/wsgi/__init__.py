@@ -174,7 +174,7 @@ class Resource(object):
             accept = request.get_best_match_content_type()
         except exception.InvalidContentType:
             msg = "Unsupported Content-Type"
-            return Fault(webob.exc.HTTPBadRequest(explanation=msg))
+            return Fault(webob.exc.HTTPNotAcceptable(explanation=msg))
 
         content_type, body = self.get_body(request)
 
@@ -355,6 +355,7 @@ class Fault(webob.exc.HTTPException):
         403: "forbidden",
         404: "itemNotFound",
         405: "badMethod",
+        406: "notAceptable",
         409: "conflictingRequest",
         413: "overLimit",
         415: "badMediaType",

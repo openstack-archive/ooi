@@ -97,7 +97,7 @@ class TestMiddleware(base.TestCase):
                                   accept="foo/bazonk",
                                   content_type="foo/bazonk")
         result = req.get_response(self.app)
-        self.assertEqual(400, result.status_code)
+        self.assertEqual(406, result.status_code)
 
 
 class TestOCCIMiddleware(base.TestCase):
