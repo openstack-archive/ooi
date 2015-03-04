@@ -19,6 +19,5 @@ import ooi.api
 
 class ComputeController(ooi.api.BaseController):
     def index(self, req):
-        token_info = req.environ["keystone.token_info"]
-        tenant_id = token_info["token"]["tenant"]["id"]
-        req.environ["PATH_INFO"] = "/v2/%s/servers" % tenant_id
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        req.path_info = "/%s/servers" % tenant_id

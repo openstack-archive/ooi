@@ -14,6 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import mock
 import webob
 import webob.dec
 import webob.exc
@@ -37,11 +38,12 @@ class TestComputeMiddleware(base.TestCase):
     def test_list_vms_all(self):
         req = webob.Request.blank("/compute",
                                   method="GET")
-        req.environ["keystone.token_info"] = {
-            "token": {
-                "tenant": {"id": "3dd7b3f6-c19d-11e4-8dfc-aa07a5b093db"}}}
+
+        m = mock.MagicMock()
+        m.user.project_id = "3dd7b3f6-c19d-11e4-8dfc-aa07a5b093db"
+        req.environ["keystone.token_auth"] = m
 
         req.get_response(self.app)
 
-        self.assertEqual("/v2/3dd7b3f6-c19d-11e4-8dfc-aa07a5b093db/servers",
+        self.assertEqual("/3dd7b3f6-c19d-11e4-8dfc-aa07a5b093db/servers",
                          req.environ["PATH_INFO"])
