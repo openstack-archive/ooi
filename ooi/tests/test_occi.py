@@ -61,7 +61,7 @@ class TestAttributeCollection(base.TestCase):
     def test_collection_from_seq(self):
         seq = ["foo", "bar"]
         col = attribute.AttributeCollection(seq)
-        self.assertEqual(seq, col.attributes.keys())
+        self.assertItemsEqual(seq, col.attributes.keys())
 
     def test_collection_from_map(self):
         mapping = {"foo": attribute.Attribute("occi.foo.bar", "crap")}
