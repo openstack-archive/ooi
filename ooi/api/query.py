@@ -14,14 +14,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import webob.exc
-
+from ooi.occi.infrastructure import compute
 import ooi.wsgi
 
 
 class Controller(object):
     def index(self, *args, **kwargs):
-        raise webob.exc.HTTPNotImplemented()
+        l = []
+        l.extend(compute.ComputeResource.actions)
+        return l
 
 
 def create_resource():

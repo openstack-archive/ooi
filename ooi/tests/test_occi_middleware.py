@@ -16,6 +16,7 @@
 
 import webob
 
+from ooi.occi.infrastructure import compute
 from ooi.tests import base
 import ooi.tests.test_wsgi
 from ooi import wsgi
@@ -35,4 +36,7 @@ class TestOCCIMiddleware(base.TestCase):
 
     def test_query(self):
         result = webob.Request.blank("/-/").get_response(self.app)
-        self.assertEqual(501, result.status_code)
+
+        for action in compute.ComputeResource.actions:
+            self.assertIn(str(action), result.text)
+        self.assertEqual(200, result.status_code)
