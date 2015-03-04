@@ -14,13 +14,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import collections
+
 from ooi.wsgi import utils
 
 
-_MEDIA_TYPE_MAP = {
-    'text/plain': 'text',
-    'text/occi': 'text',
-}
+_MEDIA_TYPE_MAP = collections.OrderedDict([
+    ('text/plain', 'text'),
+    ('text/occi', 'header')
+])
 
 
 class TextSerializer(object):
@@ -29,11 +31,28 @@ class TextSerializer(object):
             data = [data]
 
         ret = "\n".join([str(d) for d in data])
-        return utils.utf8(ret)
+        return None, utils.utf8(ret)
+
+
+class HeaderSerializer(object):
+    def serialize(self, data):
+        if not isinstance(data, list):
+            data = [data]
+
+        headers = []
+        body = []
+        for d in data:
+            if hasattr(d, "headers"):
+                headers.extend(d.headers())
+            else:
+                body.append(str(d))
+
+        return headers, body
 
 
 _SERIALIZERS_MAP = {
-    "text": TextSerializer
+    "text": TextSerializer,
+    "header": HeaderSerializer,
 }
 
 

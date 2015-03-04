@@ -29,14 +29,50 @@ class TestOCCIMiddleware(base.TestCase):
         super(TestOCCIMiddleware, self).setUp()
 
         self.app = wsgi.OCCIMiddleware(fake_app)
+        self.accept = None
+
+    def assertContentType(self, result):
+        expected = self.accept or "text/plain"
+        self.assertEqual(expected, result.content_type)
+
+    def assertExpectedResult(self, expected, result):
+        for e in expected:
+            self.assertIn(str(e), result.text)
+
+    def _build_req(self, path, **kwargs):
+        if self.accept is not None:
+            kwargs["accept"] = self.accept
+        return webob.Request.blank(path,
+                                   **kwargs)
 
     def test_404(self):
-        result = webob.Request.blank("/").get_response(self.app)
+        result = self._build_req("/").get_response(self.app)
         self.assertEqual(404, result.status_code)
 
     def test_query(self):
-        result = webob.Request.blank("/-/").get_response(self.app)
+        result = self._build_req("/-/").get_response(self.app)
 
-        for action in compute.ComputeResource.actions:
-            self.assertIn(str(action), result.text)
+        self.assertContentType(result)
+        self.assertExpectedResult(compute.ComputeResource.actions, result)
         self.assertEqual(200, result.status_code)
+
+
+class TestOCCIMiddlewareContentTypeText(TestOCCIMiddleware):
+    def setUp(self):
+        super(TestOCCIMiddlewareContentTypeText, self).setUp()
+
+        self.app = wsgi.OCCIMiddleware(fake_app)
+        self.accept = "text/plain"
+
+
+class TestOCCIMiddlewareContentTypeOCCIHeaders(TestOCCIMiddleware):
+    def setUp(self):
+        super(TestOCCIMiddlewareContentTypeOCCIHeaders, self).setUp()
+
+        self.app = wsgi.OCCIMiddleware(fake_app)
+        self.accept = "text/occi"
+
+    def assertExpectedResult(self, expected, result):
+        for e in expected:
+            for hdr, val in e.headers():
+                self.assertIn(val, result.headers.getall(hdr))

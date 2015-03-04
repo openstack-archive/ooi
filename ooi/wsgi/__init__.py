@@ -51,7 +51,8 @@ class Request(webob.Request):
         content_type = self.get_content_type()
         if content_type is None:
             content_types = serializers.get_supported_content_types()
-            content_type = self.accept.best_match(content_types)
+            content_type = self.accept.best_match(content_types,
+                                                  default_match="text/plain")
         return content_type
 
 
@@ -284,7 +285,12 @@ class ResponseObject(object):
         response.headers['Content-Type'] = content_type
         if self.obj is not None:
             response.charset = 'utf8'
-            response.body = serializer.serialize(self.obj)
+            headers, body = serializer.serialize(self.obj)
+            if headers is not None:
+                for hdr in headers:
+                    response.headers.add(*hdr)
+            if body:
+                response.body = body
 
         return response
 
@@ -387,7 +393,7 @@ class Fault(webob.exc.HTTPException):
         mtype = serializers.get_media_map().get(content_type,
                                                 "text")
         serializer = serializers.get_default_serializers()[mtype]
-        self.wrapped_exc.body = serializer().serialize(fault_data)
+        self.wrapped_exc.body = serializer().serialize(fault_data)[-1]
         self.wrapped_exc.content_type = content_type
 
         return self.wrapped_exc

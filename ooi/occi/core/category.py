@@ -33,11 +33,17 @@ class Category(object):
         self.attributes = attributes
         self.location = location
 
-    def __str__(self):
+    def _as_str(self):
         d = {
             "term": self.term,
             "scheme": self.scheme,
             "class": self.__class__.__name__.lower()
         }
 
-        return "Category: %(term)s; scheme=%(scheme)s; class=%(class)s" % d
+        return "%(term)s; scheme=%(scheme)s; class=%(class)s" % d
+
+    def headers(self):
+        return [("Category", self._as_str())]
+
+    def __str__(self):
+        return "Category: %s" % self._as_str()
