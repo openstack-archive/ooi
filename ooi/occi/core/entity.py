@@ -91,3 +91,7 @@ class Entity(object):
     @title.setter
     def title(self, value):
         self.attributes["occi.core.title"].value = value
+
+    @property
+    def location(self):
+        return helpers.join_url(self.kind.location, self.id)
