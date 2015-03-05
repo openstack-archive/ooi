@@ -14,6 +14,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import ooi.api
 
-class BaseController(object):
-    pass
+
+class ComputeController(ooi.api.BaseController):
+    def index(self, req):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        req.path_info = "/%s/servers" % tenant_id

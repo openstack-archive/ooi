@@ -84,3 +84,7 @@ class InvalidContentType(Invalid):
 class NotImplemented(OCCIException):
     msg_fmt = "Action not implemented."
     code = 501
+
+
+class HeaderNotFound(Invalid):
+    msg_fmt = "Header '%(header)s' not found."
