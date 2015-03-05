@@ -15,10 +15,21 @@
 # under the License.
 
 from ooi.api import base
+from ooi.occi.core import collection
+from ooi.occi.infrastructure import compute
 
 
 class Controller(base.Controller):
     def index(self, req):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         req = self._get_req(req, path="/%s/servers" % tenant_id)
-        return req.get_response(self.app)
+        response = req.get_response(self.app)
+
+        servers = response.json_body.get("servers", [])
+        occi_compute_resources = []
+        if servers:
+            for s in servers:
+                s = compute.ComputeResource(title=s["name"], id=s["id"])
+                occi_compute_resources.append(s)
+
+        return collection.Collection(resources=occi_compute_resources)

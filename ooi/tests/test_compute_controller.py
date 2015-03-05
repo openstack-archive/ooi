@@ -15,6 +15,7 @@
 # under the License.
 
 import json
+import uuid
 
 import mock
 import webob
@@ -41,7 +42,7 @@ def create_fake_json_resp(data):
 
 
 class TestComputeMiddleware(base.TestCase):
-    def test_list_vms_all(self):
+    def test_list_vms_empty(self):
         d = {"servers": []}
         fake_resp = create_fake_json_resp(d)
 
@@ -57,4 +58,30 @@ class TestComputeMiddleware(base.TestCase):
         self.assertEqual("/3dd7b3f6-c19d-11e4-8dfc-aa07a5b093db/servers",
                          req.environ["PATH_INFO"])
 
-        self.assertEqual(d, resp.json_body)
+        self.assertEqual(200, resp.status_code)
+        self.assertEqual("", resp.text)
+
+    def test_list_vms_one_vm(self):
+        tenant = uuid.uuid4().hex
+
+        d = {"servers": [{"id": uuid.uuid4().hex, "name": "foo"},
+                         {"id": uuid.uuid4().hex, "name": "bar"},
+                         {"id": uuid.uuid4().hex, "name": "baz"}]}
+
+        fake_resp = create_fake_json_resp(d)
+
+        app = wsgi.OCCIMiddleware(fake_app(fake_resp))
+        req = webob.Request.blank("/compute", method="GET")
+
+        m = mock.MagicMock()
+        m.user.project_id = tenant
+        req.environ["keystone.token_auth"] = m
+
+        resp = req.get_response(app)
+
+        self.assertEqual("/%s/servers" % tenant, req.environ["PATH_INFO"])
+
+        self.assertEqual(200, resp.status_code)
+        for s in d["servers"]:
+            expected = "X-OCCI-Location: /compute/%s" % s["id"]
+            self.assertIn(expected, resp.text)
