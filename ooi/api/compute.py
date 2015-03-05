@@ -14,11 +14,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import ooi.api
+from ooi.api import base
 import ooi.wsgi
 
 
-class ComputeController(ooi.api.BaseController):
+class Controller(base.Controller):
     def index(self, req):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         req.path_info = "/%s/servers" % tenant_id
@@ -26,4 +26,4 @@ class ComputeController(ooi.api.BaseController):
 
 
 def create_resource(app):
-    return ooi.wsgi.Resource(ComputeController(app))
+    return ooi.wsgi.Resource(Controller(app))

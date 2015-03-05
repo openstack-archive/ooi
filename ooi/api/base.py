@@ -14,17 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from ooi.api import base
-from ooi.occi.infrastructure import compute
-import ooi.wsgi
 
-
-class Controller(base.Controller):
-    def index(self, req):
-        l = []
-        l.extend(compute.ComputeResource.actions)
-        return l
-
-
-def create_resource(app):
-    return ooi.wsgi.Resource(Controller(app))
+class Controller(object):
+    def __init__(self, app):
+        self.app = app
