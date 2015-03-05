@@ -15,9 +15,15 @@
 # under the License.
 
 import ooi.api
+import ooi.wsgi
 
 
 class ComputeController(ooi.api.BaseController):
     def index(self, req):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         req.path_info = "/%s/servers" % tenant_id
+        return req.get_response(self.app)
+
+
+def create_resource(app):
+    return ooi.wsgi.Resource(ComputeController(app))

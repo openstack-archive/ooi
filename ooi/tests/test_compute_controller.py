@@ -14,6 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import json
+
 import mock
 import webob
 import webob.dec
@@ -23,27 +25,36 @@ from ooi.tests import base
 from ooi import wsgi
 
 
-@webob.dec.wsgify
-def fake_app(req):
-    resp = webob.Response("Hi")
-    return resp
+def fake_app(resp):
+    @webob.dec.wsgify
+    def app(req):
+        return resp
+    return app
+
+
+def create_fake_json_resp(data):
+    r = webob.Response()
+    r.headers["Content-Type"] = "application/json"
+    r.charset = "utf8"
+    r.body = json.dumps(data).encode("utf8")
+    return r
 
 
 class TestComputeMiddleware(base.TestCase):
-    def setUp(self):
-        super(TestComputeMiddleware, self).setUp()
-
-        self.app = wsgi.OCCIMiddleware(fake_app)
-
     def test_list_vms_all(self):
-        req = webob.Request.blank("/compute",
-                                  method="GET")
+        d = {"servers": []}
+        fake_resp = create_fake_json_resp(d)
+
+        app = wsgi.OCCIMiddleware(fake_app(fake_resp))
+        req = webob.Request.blank("/compute", method="GET")
 
         m = mock.MagicMock()
         m.user.project_id = "3dd7b3f6-c19d-11e4-8dfc-aa07a5b093db"
         req.environ["keystone.token_auth"] = m
 
-        req.get_response(self.app)
+        resp = req.get_response(app)
 
         self.assertEqual("/3dd7b3f6-c19d-11e4-8dfc-aa07a5b093db/servers",
                          req.environ["PATH_INFO"])
+
+        self.assertEqual(d, resp.json_body)

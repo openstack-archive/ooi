@@ -110,13 +110,13 @@ class OCCIMiddleware(object):
         """
         self.mapper.redirect("", "/")
 
-        self.resources["query"] = query.create_resource()
+        self.resources["query"] = query.create_resource(self.application)
         self.mapper.connect("query", "/-/",
                             controller=self.resources["query"],
                             action="index")
 
-        self.resources["compute"] = Resource(
-            ooi.api.compute.ComputeController())
+        self.resources["compute"] = ooi.api.compute.create_resource(
+            self.application)
         self.mapper.resource("server", "compute",
                              controller=self.resources["compute"])
 
