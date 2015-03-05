@@ -16,5 +16,12 @@
 
 
 class Controller(object):
-    def __init__(self, app):
+    def __init__(self, app, openstack_version):
         self.app = app
+        self.openstack_version = openstack_version
+
+    def _get_req(self, req, path=None):
+        req.script_name = self.openstack_version
+        if path is not None:
+            req.path_info = path
+        return req

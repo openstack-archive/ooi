@@ -16,7 +16,6 @@
 
 from ooi.api import base
 from ooi.occi.infrastructure import compute
-import ooi.wsgi
 
 
 class Controller(base.Controller):
@@ -24,7 +23,3 @@ class Controller(base.Controller):
         l = []
         l.extend(compute.ComputeResource.actions)
         return l
-
-
-def create_resource(app):
-    return ooi.wsgi.Resource(Controller(app))

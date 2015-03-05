@@ -61,15 +61,23 @@ class OCCIMiddleware(object):
     @classmethod
     def factory(cls, global_conf, **local_conf):
         """Factory method for paste.deploy."""
-        return cls
+        def _factory(app):
+            conf = global_conf.copy()
+            conf.update(local_conf)
+            return cls(app, **local_conf)
+        return _factory
 
-    def __init__(self, application):
+    def __init__(self, application, openstack_version="/v2.1"):
         self.application = application
+        self.openstack_version = openstack_version
 
         self.resources = {}
 
         self.mapper = routes.Mapper()
         self._setup_routes()
+
+    def _create_resource(self, controller):
+        return Resource(controller(self.application, self.openstack_version))
 
     def _setup_routes(self):
         """Setup the mapper routes.
@@ -86,15 +94,11 @@ class OCCIMiddleware(object):
                     # Currently we do not have anything to do here
                     return None
 
-
-            def create_resource():
-                return ooi.wsgi.Resource(Controller())
-
         This method could populate the mapper as follows:
 
         .. code-block:: python
 
-            self.resources["query"] = query.create_resource()
+            self.resources["query"] = self._create_resource(query.Controller)
             self.mapper.connect("query", "/-/",
                                 controller=self.resources["query"],
                                 action="index")
@@ -103,20 +107,20 @@ class OCCIMiddleware(object):
 
         .. code-block:: python
 
-            self.resources["resources"] = query.create_resource()
-            self.mapper.resource("resource", "resources",
-                                 controller=self.resources["resources"])
+            self.resources["servers"] = self._create_resource(query.Controller)
+            self.mapper.resource("server", "servers",
+                                 controller=self.resources["servers"])
 
         """
         self.mapper.redirect("", "/")
 
-        self.resources["query"] = query.create_resource(self.application)
+        self.resources["query"] = self._create_resource(query.Controller)
         self.mapper.connect("query", "/-/",
                             controller=self.resources["query"],
                             action="index")
 
-        self.resources["compute"] = ooi.api.compute.create_resource(
-            self.application)
+        self.resources["compute"] = self._create_resource(
+            ooi.api.compute.Controller)
         self.mapper.resource("server", "compute",
                              controller=self.resources["compute"])
 
