@@ -41,6 +41,8 @@ def create_fake_json_resp(data):
     return r
 
 
+# TODO(enolfc): split tests? i.e. one test to check that the correct
+# PATH_INFO, other for correct output (not text, but objects)
 class TestComputeMiddleware(base.TestCase):
     def test_list_vms_empty(self):
         d = {"servers": []}
@@ -85,3 +87,31 @@ class TestComputeMiddleware(base.TestCase):
         for s in d["servers"]:
             expected = "X-OCCI-Location: /compute/%s" % s["id"]
             self.assertIn(expected, resp.text)
+
+    def test_show_vm(self):
+        tenant = uuid.uuid4().hex
+
+        server_id = uuid.uuid4().hex
+        d = {"server": {"id": server_id,
+                        "name": "foo",
+                        "flavor": {"id": "1"},
+                        "image": {"id": uuid.uuid4().hex},
+                        "status": "ACTIVE"}}
+
+        fake_resp = create_fake_json_resp(d)
+
+        app = wsgi.OCCIMiddleware(fake_app(fake_resp))
+        req = webob.Request.blank("/compute/%s" % server_id, method="GET")
+
+        m = mock.MagicMock()
+        m.user.project_id = tenant
+        req.environ["keystone.token_auth"] = m
+
+        resp = req.get_response(app)
+
+        self.assertEqual("/%s/servers/%s" % (tenant, server_id),
+                         req.environ["PATH_INFO"])
+
+        self.assertEqual(200, resp.status_code)
+        expected = 'X-OCCI-Attribute: occi.core.id="%s"' % server_id
+        self.assertIn(expected, resp.text)

@@ -14,6 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import itertools
+
 from ooi.occi.core import action
 from ooi.occi.core import attribute as attr
 from ooi.occi.core import kind
@@ -111,3 +113,13 @@ class ComputeResource(resource.Resource):
     @property
     def state(self):
         return self.attributes["occi.compute.state"].value
+
+    def __str__(self):
+        """Render the resource to text/plain."""
+        ret = ["%s" % self.kind]
+        for what in itertools.chain(self.mixins, self.actions):
+            ret.append("%s" % what)
+        for attr_name in self.attributes:
+            if self.attributes[attr_name].value is not None:
+                ret.append("%s" % self.attributes[attr_name])
+        return "\n".join(ret)

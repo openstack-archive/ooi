@@ -19,6 +19,17 @@ from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 
 
+# TODO(enolfc): move this function elsewhere? Check the correct names
+# of nova states
+def map_occi_state(nova_status):
+    if nova_status in ["ACTIVE"]:
+        return "active"
+    elif nova_status in ["PAUSED", "SUSPENDED", "STOPPED"]:
+        return "suspended"
+    else:
+        return "inactive"
+
+
 class Controller(base.Controller):
     def index(self, req):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
@@ -33,3 +44,14 @@ class Controller(base.Controller):
                 occi_compute_resources.append(s)
 
         return collection.Collection(resources=occi_compute_resources)
+
+    def show(self, id, req):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        req = self._get_req(req, path="/%s/servers/%s" % (tenant_id, id))
+        response = req.get_response(self.app)
+
+        s = response.json_body.get("server", [])
+        comp = compute.ComputeResource(title=s["name"], id=s["id"],
+                                       hostname=s["name"],
+                                       state=map_occi_state(s["status"]))
+        return [comp]

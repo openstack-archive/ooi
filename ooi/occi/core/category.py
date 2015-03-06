@@ -40,7 +40,7 @@ class Category(object):
             "class": self.__class__.__name__.lower()
         }
 
-        return "%(term)s; scheme=%(scheme)s; class=%(class)s" % d
+        return '%(term)s; scheme="%(scheme)s"; class=%(class)s' % d
 
     def headers(self):
         return [("Category", self._as_str())]
