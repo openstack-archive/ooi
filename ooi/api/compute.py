@@ -18,7 +18,6 @@ from ooi.api import base
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 
-
 # TODO(enolfc): move this function elsewhere? Check the correct names
 # of nova states
 def map_occi_state(nova_status):

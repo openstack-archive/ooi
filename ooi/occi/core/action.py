@@ -23,4 +23,6 @@ class Action(category.Category):
     An Action represents an invocable operation applicable to a resource
     instance.
     """
-    pass
+
+    def _class_name(self):
+        return "action"

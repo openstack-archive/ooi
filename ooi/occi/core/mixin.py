@@ -37,3 +37,6 @@ class Mixin(category.Category):
 
         self.related = related
         self.actions = actions
+
+    def _class_name(self):
+        return "mixin"

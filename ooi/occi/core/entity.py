@@ -95,3 +95,13 @@ class Entity(object):
     @property
     def location(self):
         return helpers.join_url(self.kind.location, self.id)
+
+    def __str__(self):
+        """Render the entity to text/plain."""
+        ret = ["%s" % self.kind]
+        for m in self.mixins:
+            ret.append("%s" % m)
+        for attr_name in self.attributes:
+            if self.attributes[attr_name].value is not None:
+                ret.append("%s" % self.attributes[attr_name])
+        return "\n".join(ret)

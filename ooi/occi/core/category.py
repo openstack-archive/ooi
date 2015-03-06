@@ -33,14 +33,18 @@ class Category(object):
         self.attributes = attributes
         self.location = location
 
+    def _class_name(self):
+        """Returns this class name (see OCCI v1.1 rendering)."""
+        raise ValueError
+
     def _as_str(self):
         d = {
             "term": self.term,
             "scheme": self.scheme,
-            "class": self.__class__.__name__.lower()
+            "class": self._class_name()
         }
 
-        return '%(term)s; scheme="%(scheme)s"; class=%(class)s' % d
+        return '%(term)s; scheme="%(scheme)s"; class="%(class)s"' % d
 
     def headers(self):
         return [("Category", self._as_str())]
