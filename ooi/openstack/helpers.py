@@ -21,3 +21,13 @@ _PREFIX = "http://schemas.openstack.org/"
 
 def build_scheme(category):
     return helpers.build_scheme(category, prefix=_PREFIX)
+
+
+# TODO(enolfc): Check the correct names of nova states
+def occi_state(nova_status):
+    if nova_status in ["ACTIVE"]:
+        return "active"
+    elif nova_status in ["PAUSED", "SUSPENDED", "STOPPED"]:
+        return "suspended"
+    else:
+        return "inactive"

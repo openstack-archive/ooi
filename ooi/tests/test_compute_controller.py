@@ -29,7 +29,7 @@ from ooi import wsgi
 def fake_app(resp):
     @webob.dec.wsgify
     def app(req):
-        return resp
+        return resp[req.path_info]
     return app
 
 
@@ -41,24 +41,25 @@ def create_fake_json_resp(data):
     return r
 
 
-# TODO(enolfc): split tests? i.e. one test to check that the correct
-# PATH_INFO, other for correct output (not text, but objects)
+# TODO(enolfc): this should check the resulting obects, not the text.
 class TestComputeMiddleware(base.TestCase):
     def test_list_vms_empty(self):
+        tenant = uuid.uuid4().hex
         d = {"servers": []}
-        fake_resp = create_fake_json_resp(d)
+        fake_resp = {
+            '/%s/servers' % tenant: create_fake_json_resp(d),
+        }
 
         app = wsgi.OCCIMiddleware(fake_app(fake_resp))
         req = webob.Request.blank("/compute", method="GET")
 
         m = mock.MagicMock()
-        m.user.project_id = "3dd7b3f6-c19d-11e4-8dfc-aa07a5b093db"
+        m.user.project_id = tenant
         req.environ["keystone.token_auth"] = m
 
         resp = req.get_response(app)
 
-        self.assertEqual("/3dd7b3f6-c19d-11e4-8dfc-aa07a5b093db/servers",
-                         req.environ["PATH_INFO"])
+        self.assertEqual("/%s/servers" % tenant, req.environ["PATH_INFO"])
 
         self.assertEqual(200, resp.status_code)
         self.assertEqual("", resp.text)
@@ -70,7 +71,9 @@ class TestComputeMiddleware(base.TestCase):
                          {"id": uuid.uuid4().hex, "name": "bar"},
                          {"id": uuid.uuid4().hex, "name": "baz"}]}
 
-        fake_resp = create_fake_json_resp(d)
+        fake_resp = {
+            '/%s/servers' % tenant: create_fake_json_resp(d),
+        }
 
         app = wsgi.OCCIMiddleware(fake_app(fake_resp))
         req = webob.Request.blank("/compute", method="GET")
@@ -90,16 +93,25 @@ class TestComputeMiddleware(base.TestCase):
 
     def test_show_vm(self):
         tenant = uuid.uuid4().hex
-
         server_id = uuid.uuid4().hex
-        d = {"server": {"id": server_id,
+        s = {"server": {"id": server_id,
                         "name": "foo",
                         "flavor": {"id": "1"},
-                        "image": {"id": uuid.uuid4().hex},
+                        "image": {"id": "2"},
                         "status": "ACTIVE"}}
+        f = {"flavor": {"id": 1,
+                        "name": "foo",
+                        "vcpus": 2,
+                        "ram": 256,
+                        "disk": 10}}
+        i = {"image": {"id": 2,
+                       "name": "bar"}}
 
-        fake_resp = create_fake_json_resp(d)
-
+        fake_resp = {
+            '/%s/servers/%s' % (tenant, server_id): create_fake_json_resp(s),
+            '/%s/flavors/1' % tenant: create_fake_json_resp(f),
+            '/%s/images/2' % tenant: create_fake_json_resp(i),
+        }
         app = wsgi.OCCIMiddleware(fake_app(fake_resp))
         req = webob.Request.blank("/compute/%s" % server_id, method="GET")
 
@@ -108,9 +120,6 @@ class TestComputeMiddleware(base.TestCase):
         req.environ["keystone.token_auth"] = m
 
         resp = req.get_response(app)
-
-        self.assertEqual("/%s/servers/%s" % (tenant, server_id),
-                         req.environ["PATH_INFO"])
 
         self.assertEqual(200, resp.status_code)
         expected = 'X-OCCI-Attribute: occi.core.id="%s"' % server_id

@@ -48,9 +48,7 @@ class ComputeResource(resource.Resource):
 
     def __init__(self, title, summary=None, id=None, architecture=None,
                  cores=None, hostname=None, speed=None, memory=None,
-                 state=None):
-
-        mixins = []
+                 state=None, mixins=[]):
 
         super(ComputeResource, self).__init__(title, mixins, summary=summary,
                                               id=id)
@@ -98,7 +96,7 @@ class ComputeResource(resource.Resource):
 
     @speed.setter
     def speed(self, value):
-        self.attributes["occi.compute.speed.speed"].value = value
+        self.attributes["occi.compute.speed"].value = value
 
     @property
     def memory(self):

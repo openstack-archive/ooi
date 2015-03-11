@@ -46,6 +46,16 @@ class TestAttributes(base.TestCase):
 
         self.assertRaises(AttributeError, set_val)
 
+    def test_as_str(self):
+        attr = attribute.MutableAttribute("occi.foo.bar", "bar")
+        self.assertEqual('"bar"', attr._as_str())
+        attr.value = True
+        self.assertEqual('"true"', attr._as_str())
+        attr.value = False
+        self.assertEqual('"false"', attr._as_str())
+        attr.value = 4.5
+        self.assertEqual("4.5", attr._as_str())
+
 
 class TestAttributeCollection(base.TestCase):
     def test_collection(self):
@@ -99,7 +109,7 @@ class TestAttributeCollection(base.TestCase):
                           mapping)
 
 
-class TestCoreOCCICategory(base.TestCase):
+class BaseTestCoreOCCICategory(base.TestCase):
     args = ("scheme", "term", "title")
     obj = category.Category
 
@@ -110,7 +120,13 @@ class TestCoreOCCICategory(base.TestCase):
             self.assertEqual(i, getattr(cat, i))
 
 
-class TestCoreOCCIKind(TestCoreOCCICategory):
+class TestCoreOCCICategory(BaseTestCoreOCCICategory):
+    def test_str(self):
+        cat = self.obj(*self.args)
+        self.assertRaises(ValueError, cat.__str__)
+
+
+class TestCoreOCCIKind(BaseTestCoreOCCICategory):
     obj = kind.Kind
 
     def setUp(self):
@@ -186,7 +202,7 @@ class TestCoreOCCIMixin(TestCoreOCCIKind):
     obj = mixin.Mixin
 
 
-class TestCoreOCCIAction(TestCoreOCCICategory):
+class TestCoreOCCIAction(BaseTestCoreOCCICategory):
     obj = action.Action
 
 

@@ -58,6 +58,33 @@ class TestOCCICompute(base.TestCase):
         self.assertIsNone(c.memory)
         self.assertIsNone(c.speed)
 
+    def test_getters(self):
+        c = compute.ComputeResource("foo")
+        c.architecture = "bar"
+        self.assertEqual("bar",
+                         c.attributes["occi.compute.architecture"].value)
+        c.cores = 5
+        self.assertEqual(5, c.attributes["occi.compute.cores"].value)
+        c.hostname = "foobar"
+        self.assertEqual("foobar", c.attributes["occi.compute.hostname"].value)
+        c.speed = 8
+        self.assertEqual(8, c.attributes["occi.compute.speed"].value)
+        c.memory = 4
+        self.assertEqual(4, c.attributes["occi.compute.memory"].value)
+
+    def test_setters(self):
+        c = compute.ComputeResource("foo")
+        c.attributes["occi.compute.architecture"].value = "bar"
+        self.assertEqual("bar", c.architecture)
+        c.attributes["occi.compute.cores"].value = 5
+        self.assertEqual(5, c.cores)
+        c.attributes["occi.compute.hostname"].value = "foobar"
+        self.assertEqual("foobar", c.hostname)
+        c.attributes["occi.compute.speed"].value = 8
+        self.assertEqual(8, c.speed)
+        c.attributes["occi.compute.memory"].value = 9
+        self.assertEqual(9, c.memory)
+
 
 class TestTemplates(base.TestCase):
     def test_os_tpl(self):

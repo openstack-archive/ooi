@@ -60,3 +60,12 @@ class TestOpenStackResourceTemplate(base.TestCase):
         self.assertEqual(disk, tpl.disk)
         self.assertEqual(swap, tpl.swap)
         self.assertEqual(ephemeral, tpl.ephemeral)
+
+
+class TestHelpers(base.TestCase):
+    def test_occi_state(self):
+        self.assertEqual("active", helpers.occi_state("ACTIVE"))
+        self.assertEqual("suspended", helpers.occi_state("PAUSED"))
+        self.assertEqual("suspended", helpers.occi_state("SUSPENDED"))
+        self.assertEqual("suspended", helpers.occi_state("STOPPED"))
+        self.assertEqual("inactive", helpers.occi_state("BUILDING"))

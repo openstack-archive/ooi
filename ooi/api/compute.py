@@ -17,16 +17,8 @@
 from ooi.api import base
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
-
-# TODO(enolfc): move this function elsewhere? Check the correct names
-# of nova states
-def map_occi_state(nova_status):
-    if nova_status in ["ACTIVE"]:
-        return "active"
-    elif nova_status in ["PAUSED", "SUSPENDED", "STOPPED"]:
-        return "suspended"
-    else:
-        return "inactive"
+from ooi.openstack import helpers
+from ooi.openstack import templates
 
 
 class Controller(base.Controller):
@@ -46,11 +38,36 @@ class Controller(base.Controller):
 
     def show(self, id, req):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
+
+        # get info from server
         req = self._get_req(req, path="/%s/servers/%s" % (tenant_id, id))
         response = req.get_response(self.app)
+        s = response.json_body.get("server", {})
 
-        s = response.json_body.get("server", [])
+        # get info from flavor
+        req = self._get_req(req, path="/%s/flavors/%s" % (tenant_id,
+                                                          s["flavor"]["id"]))
+        response = req.get_response(self.app)
+        flavor = response.json_body.get("flavor", {})
+        res_tpl = templates.OpenStackResourceTemplate(flavor["name"],
+                                                      flavor["vcpus"],
+                                                      flavor["ram"],
+                                                      flavor["disk"])
+
+        # get info from image
+        req = self._get_req(req, path="/%s/images/%s" % (tenant_id,
+                                                         s["image"]["id"]))
+        response = req.get_response(self.app)
+        image = response.json_body.get("image", {})
+        os_tpl = templates.OpenStackOSTemplate(image["id"],
+                                               image["name"])
+
+        # build the compute object
+        # TODO(enolfc): link to network + storage
         comp = compute.ComputeResource(title=s["name"], id=s["id"],
+                                       cores=flavor["vcpus"],
                                        hostname=s["name"],
-                                       state=map_occi_state(s["status"]))
+                                       memory=flavor["ram"],
+                                       state=helpers.occi_state(s["status"]),
+                                       mixins=[os_tpl, res_tpl])
         return [comp]
