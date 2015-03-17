@@ -16,7 +16,6 @@
 
 import webob
 
-from ooi.occi.infrastructure import compute
 from ooi.tests import base
 import ooi.tests.test_wsgi
 from ooi import wsgi
@@ -36,8 +35,8 @@ class TestOCCIMiddleware(base.TestCase):
         self.assertEqual(expected, result.content_type)
 
     def assertExpectedResult(self, expected, result):
-        for e in expected:
-            self.assertIn(str(e), result.text)
+        expected = ["%s: %s" % e for e in expected]
+        self.assertEqual("\n".join(expected), result.text)
 
     def _build_req(self, path, **kwargs):
         if self.accept is not None:
@@ -52,8 +51,15 @@ class TestOCCIMiddleware(base.TestCase):
     def test_query(self):
         result = self._build_req("/-/").get_response(self.app)
 
+        expected_result = [
+            ('Category', 'start; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa
+            ('Category', 'stop; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa
+            ('Category', 'restart; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa
+            ('Category', 'suspend; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa
+        ]
+
         self.assertContentType(result)
-        self.assertExpectedResult(compute.ComputeResource.actions, result)
+        self.assertExpectedResult(expected_result, result)
         self.assertEqual(200, result.status_code)
 
 
@@ -73,6 +79,5 @@ class TestOCCIMiddlewareContentTypeOCCIHeaders(TestOCCIMiddleware):
         self.accept = "text/occi"
 
     def assertExpectedResult(self, expected, result):
-        for e in expected:
-            for hdr, val in e.headers():
-                self.assertIn(val, result.headers.getall(hdr))
+        for hdr, val in expected:
+            self.assertIn(val, result.headers.getall(hdr))
