@@ -48,7 +48,11 @@ class TestMiddleware(base.TestCase):
 
     def assertExpectedResult(self, expected, result):
         expected = ["%s: %s" % e for e in expected]
-        self.assertEqual("\n".join(expected), result.text)
+        # NOTE(aloga): the order of the result does not matter
+        results = result.text.splitlines()
+        results.sort()
+        expected.sort()
+        self.assertEqual(expected, results)
 
     def _build_req(self, path, **kwargs):
         if self.accept is not None:
