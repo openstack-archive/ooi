@@ -83,29 +83,3 @@ class TestMiddlewareTextOcci(TestMiddleware):
 
     def test_correct_accept(self):
         self.assertEqual("text/occi", self.accept)
-
-
-class TestQueryController(TestMiddleware):
-    """Test OCCI query controller."""
-
-    def test_query(self):
-        result = self._build_req("/-/").get_response(self.app)
-
-        expected_result = [
-            ('Category', 'start; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa
-            ('Category', 'stop; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa
-            ('Category', 'restart; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa
-            ('Category', 'suspend; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa
-        ]
-
-        self.assertContentType(result)
-        self.assertExpectedResult(expected_result, result)
-        self.assertEqual(200, result.status_code)
-
-
-class QueryControllerTextPlain(TestMiddlewareTextPlain, TestQueryController):
-    """Test OCCI query controller with Accept: text/plain."""
-
-
-class QueryControllerTextOcci(TestMiddlewareTextOcci, TestQueryController):
-    """Test OCCI query controller with Accept: text/cci."""
