@@ -50,4 +50,4 @@ class Category(object):
         return [("Category", self._as_str())]
 
     def __str__(self):
-        return "Category: %s" % self._as_str()
+        return ": ".join(self.headers()[0])
