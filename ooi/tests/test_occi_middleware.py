@@ -23,9 +23,15 @@ from ooi import wsgi
 fake_app = ooi.tests.test_wsgi.fake_app
 
 
-class TestOCCIMiddleware(base.TestCase):
+class TestMiddleware(base.TestCase):
+    """OCCI middleware test without Accept header.
+
+    According to the OCCI HTTP rendering, no Accept header
+    means text/plain.
+    """
+
     def setUp(self):
-        super(TestOCCIMiddleware, self).setUp()
+        super(TestMiddleware, self).setUp()
 
         self.app = wsgi.OCCIMiddleware(fake_app)
         self.accept = None
@@ -48,6 +54,40 @@ class TestOCCIMiddleware(base.TestCase):
         result = self._build_req("/").get_response(self.app)
         self.assertEqual(404, result.status_code)
 
+
+class TestMiddlewareTextPlain(TestMiddleware):
+    """OCCI middleware test with Accept: text/plain."""
+
+    def setUp(self):
+        super(TestMiddlewareTextPlain, self).setUp()
+
+        self.app = wsgi.OCCIMiddleware(fake_app)
+        self.accept = "text/plain"
+
+    def test_correct_accept(self):
+        self.assertEqual("text/plain", self.accept)
+
+
+class TestMiddlewareTextOcci(TestMiddleware):
+    """OCCI middleware text with Accept: text/occi."""
+
+    def setUp(self):
+        super(TestMiddlewareTextOcci, self).setUp()
+
+        self.app = wsgi.OCCIMiddleware(fake_app)
+        self.accept = "text/occi"
+
+    def assertExpectedResult(self, expected, result):
+        for hdr, val in expected:
+            self.assertIn(val, result.headers.getall(hdr))
+
+    def test_correct_accept(self):
+        self.assertEqual("text/occi", self.accept)
+
+
+class TestQueryController(TestMiddleware):
+    """Test OCCI query controller."""
+
     def test_query(self):
         result = self._build_req("/-/").get_response(self.app)
 
@@ -63,21 +103,9 @@ class TestOCCIMiddleware(base.TestCase):
         self.assertEqual(200, result.status_code)
 
 
-class TestOCCIMiddlewareContentTypeText(TestOCCIMiddleware):
-    def setUp(self):
-        super(TestOCCIMiddlewareContentTypeText, self).setUp()
-
-        self.app = wsgi.OCCIMiddleware(fake_app)
-        self.accept = "text/plain"
+class QueryControllerTextPlain(TestMiddlewareTextPlain, TestQueryController):
+    """Test OCCI query controller with Accept: text/plain."""
 
 
-class TestOCCIMiddlewareContentTypeOCCIHeaders(TestOCCIMiddleware):
-    def setUp(self):
-        super(TestOCCIMiddlewareContentTypeOCCIHeaders, self).setUp()
-
-        self.app = wsgi.OCCIMiddleware(fake_app)
-        self.accept = "text/occi"
-
-    def assertExpectedResult(self, expected, result):
-        for hdr, val in expected:
-            self.assertIn(val, result.headers.getall(hdr))
+class QueryControllerTextOcci(TestMiddlewareTextOcci, TestQueryController):
+    """Test OCCI query controller with Accept: text/cci."""
