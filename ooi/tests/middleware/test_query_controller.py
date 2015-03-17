@@ -22,7 +22,7 @@ class TestQueryController(test_middleware.TestMiddleware):
     """Test OCCI query controller."""
 
     def test_query(self):
-        result = self._build_req("/-/").get_response(self.app)
+        result = self._build_req("/-/").get_response(self.get_app())
 
         expected_result = [
             ('Category', 'start; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa

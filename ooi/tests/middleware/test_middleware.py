@@ -17,10 +17,7 @@
 import webob
 
 from ooi.tests import base
-import ooi.tests.test_wsgi
 from ooi import wsgi
-
-fake_app = ooi.tests.test_wsgi.fake_app
 
 
 class TestMiddleware(base.TestCase):
@@ -33,8 +30,17 @@ class TestMiddleware(base.TestCase):
     def setUp(self):
         super(TestMiddleware, self).setUp()
 
-        self.app = wsgi.OCCIMiddleware(fake_app)
         self.accept = None
+
+    def get_app(self, resp=None):
+        if resp is None:
+            resp = webob.Response()
+
+        @webob.dec.wsgify
+        def app(req):
+            # FIXME(aloga): raise some exception here
+            return resp.get(req.path_info)
+        return wsgi.OCCIMiddleware(app)
 
     def assertContentType(self, result):
         expected = self.accept or "text/plain"
@@ -51,7 +57,7 @@ class TestMiddleware(base.TestCase):
                                    **kwargs)
 
     def test_404(self):
-        result = self._build_req("/").get_response(self.app)
+        result = self._build_req("/").get_response(self.get_app())
         self.assertEqual(404, result.status_code)
 
 
@@ -61,7 +67,6 @@ class TestMiddlewareTextPlain(TestMiddleware):
     def setUp(self):
         super(TestMiddlewareTextPlain, self).setUp()
 
-        self.app = wsgi.OCCIMiddleware(fake_app)
         self.accept = "text/plain"
 
     def test_correct_accept(self):
@@ -74,7 +79,6 @@ class TestMiddlewareTextOcci(TestMiddleware):
     def setUp(self):
         super(TestMiddlewareTextOcci, self).setUp()
 
-        self.app = wsgi.OCCIMiddleware(fake_app)
         self.accept = "text/occi"
 
     def assertExpectedResult(self, expected, result):

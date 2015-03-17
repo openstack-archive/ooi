@@ -22,15 +22,7 @@ import webob
 import webob.dec
 import webob.exc
 
-from ooi.tests import base
-from ooi import wsgi
-
-
-def fake_app(resp):
-    @webob.dec.wsgify
-    def app(req):
-        return resp[req.path_info]
-    return app
+from ooi.tests.middleware import test_middleware
 
 
 def create_fake_json_resp(data):
@@ -41,17 +33,18 @@ def create_fake_json_resp(data):
     return r
 
 
-# TODO(enolfc): this should check the resulting obects, not the text.
-class TestComputeMiddleware(base.TestCase):
+class TestComputeController(test_middleware.TestMiddleware):
+    """Test OCCI compute controller."""
+
     def test_list_vms_empty(self):
         tenant = uuid.uuid4().hex
         d = {"servers": []}
         fake_resp = {
             '/%s/servers' % tenant: create_fake_json_resp(d),
         }
+        app = self.get_app(resp=fake_resp)
 
-        app = wsgi.OCCIMiddleware(fake_app(fake_resp))
-        req = webob.Request.blank("/compute", method="GET")
+        req = self._build_req("/compute", method="GET")
 
         m = mock.MagicMock()
         m.user.project_id = tenant
@@ -61,8 +54,10 @@ class TestComputeMiddleware(base.TestCase):
 
         self.assertEqual("/%s/servers" % tenant, req.environ["PATH_INFO"])
 
+        expected_result = ""
+        self.assertContentType(resp)
+        self.assertExpectedResult(expected_result, resp)
         self.assertEqual(200, resp.status_code)
-        self.assertEqual("", resp.text)
 
     def test_list_vms_one_vm(self):
         tenant = uuid.uuid4().hex
@@ -75,8 +70,8 @@ class TestComputeMiddleware(base.TestCase):
             '/%s/servers' % tenant: create_fake_json_resp(d),
         }
 
-        app = wsgi.OCCIMiddleware(fake_app(fake_resp))
-        req = webob.Request.blank("/compute", method="GET")
+        app = self.get_app(resp=fake_resp)
+        req = self._build_req("/compute", method="GET")
 
         m = mock.MagicMock()
         m.user.project_id = tenant
@@ -87,9 +82,10 @@ class TestComputeMiddleware(base.TestCase):
         self.assertEqual("/%s/servers" % tenant, req.environ["PATH_INFO"])
 
         self.assertEqual(200, resp.status_code)
+        expected = []
         for s in d["servers"]:
-            expected = "X-OCCI-Location: /compute/%s" % s["id"]
-            self.assertIn(expected, resp.text)
+            expected.append(("X-OCCI-Location", "/compute/%s" % s["id"]))
+        self.assertExpectedResult(expected, resp)
 
     def test_show_vm(self):
         tenant = uuid.uuid4().hex
@@ -112,8 +108,8 @@ class TestComputeMiddleware(base.TestCase):
             '/%s/flavors/1' % tenant: create_fake_json_resp(f),
             '/%s/images/2' % tenant: create_fake_json_resp(i),
         }
-        app = wsgi.OCCIMiddleware(fake_app(fake_resp))
-        req = webob.Request.blank("/compute/%s" % server_id, method="GET")
+        app = self.get_app(resp=fake_resp)
+        req = self._build_req("/compute/%s" % server_id, method="GET")
 
         m = mock.MagicMock()
         m.user.project_id = tenant
@@ -121,6 +117,27 @@ class TestComputeMiddleware(base.TestCase):
 
         resp = req.get_response(app)
 
+        expected = [
+            ('Category', 'compute; scheme="http://schemas.ogf.org/occi/infrastructure"; class="kind"'),  # noqa
+            ('Category', '2; scheme="http://schemas.openstack.org/template/os"; class="mixin"'),  # noqa
+            ('Category', 'foo; scheme="http://schemas.openstack.org/template/resource"; class="mixin"'),  # noqa
+            ('X-OCCI-Attribute', 'occi.core.title="foo"'),
+            ('X-OCCI-Attribute', 'occi.compute.state="active"'),
+            ('X-OCCI-Attribute', 'occi.compute.memory=256'),
+            ('X-OCCI-Attribute', 'occi.compute.cores=2'),
+            ('X-OCCI-Attribute', 'occi.compute.hostname="foo"'),
+            ('X-OCCI-Attribute', 'occi.core.id="%s"' % server_id),
+        ]
+        self.assertContentType(resp)
+        self.assertExpectedResult(expected, resp)
         self.assertEqual(200, resp.status_code)
-        expected = 'X-OCCI-Attribute: occi.core.id="%s"' % server_id
-        self.assertIn(expected, resp.text)
+
+
+class ComputeControllerTextPlain(test_middleware.TestMiddlewareTextPlain,
+                                 TestComputeController):
+    """Test OCCI compute controller with Accept: text/plain."""
+
+
+class ComputeControllerTextOcci(test_middleware.TestMiddlewareTextOcci,
+                                TestComputeController):
+    """Test OCCI compute controller with Accept: text/occi."""

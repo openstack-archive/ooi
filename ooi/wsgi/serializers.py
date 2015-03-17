@@ -40,14 +40,14 @@ class HeaderSerializer(object):
             data = [data]
 
         headers = []
-        body = []
         for d in data:
             if hasattr(d, "headers"):
                 headers.extend(d.headers())
             else:
-                body.append(str(d))
+                # NOTE(aloga): we should not be here.
+                pass
 
-        return headers, body
+        return headers, ""
 
 
 _SERIALIZERS_MAP = {

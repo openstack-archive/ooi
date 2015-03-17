@@ -219,7 +219,6 @@ class Resource(object):
         if not response:
             resp_obj = None
             # We got something
-#            if type(action_result) is list:
             if isinstance(action_result, (list, collection.Collection)):
                 resp_obj = ResponseObject(action_result)
             elif isinstance(action_result, ResponseObject):
