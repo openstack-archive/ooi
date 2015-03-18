@@ -25,8 +25,7 @@ from ooi.openstack import templates
 
 
 class Controller(ooi.api.base.Controller):
-    def _get_compute_resources(self, response):
-        servers = response.json_body.get("servers", [])
+    def _get_compute_resources(self, servers):
         occi_compute_resources = []
         if servers:
             for s in servers:
@@ -39,7 +38,8 @@ class Controller(ooi.api.base.Controller):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         req = self._get_req(req, path="/%s/servers" % tenant_id)
         response = req.get_response(self.app)
-        occi_compute_resources = self._get_compute_resources(response)
+        servers = response.json_body.get("servers", [])
+        occi_compute_resources = self._get_compute_resources(servers)
 
         return collection.Collection(resources=occi_compute_resources)
 
@@ -62,7 +62,12 @@ class Controller(ooi.api.base.Controller):
                                     "flavorRef": params["/template/resource"]
                                 }}))
         response = req.get_response(self.app)
-        occi_compute_resources = self._get_compute_resources(response)
+        # We only get one server
+        server = response.json_body.get("server", {})
+
+        # The returned JSON does not contain the server name
+        server["name"] = params["/occi/infrastructure"]
+        occi_compute_resources = self._get_compute_resources([server])
 
         return collection.Collection(resources=occi_compute_resources)
 
