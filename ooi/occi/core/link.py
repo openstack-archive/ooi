@@ -33,8 +33,8 @@ class Link(entity.Entity):
     kind = kind.Kind(helpers.build_scheme("core"), 'link', 'link',
                      attributes, 'link/')
 
-    def __init__(self, title, mixins, source, target):
-        super(Link, self).__init__(title, mixins)
+    def __init__(self, title, mixins, source, target, id=None):
+        super(Link, self).__init__(title, mixins, id)
         self.attributes["occi.core.source"] = attribute.MutableAttribute(
             "occi.core.source", source)
         self.attributes["occi.core.target"] = attribute.MutableAttribute(

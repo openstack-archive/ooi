@@ -64,12 +64,15 @@ class TestOpenStackResourceTemplate(base.TestCase):
 
 
 class TestHelpers(base.TestCase):
-    def test_occi_state(self):
-        self.assertEqual("active", helpers.occi_state("ACTIVE"))
-        self.assertEqual("suspended", helpers.occi_state("PAUSED"))
-        self.assertEqual("suspended", helpers.occi_state("SUSPENDED"))
-        self.assertEqual("suspended", helpers.occi_state("STOPPED"))
-        self.assertEqual("inactive", helpers.occi_state("BUILDING"))
+    def test_vm_state(self):
+        self.assertEqual("active", helpers.vm_state("ACTIVE"))
+        self.assertEqual("suspended", helpers.vm_state("PAUSED"))
+        self.assertEqual("suspended", helpers.vm_state("SUSPENDED"))
+        self.assertEqual("suspended", helpers.vm_state("STOPPED"))
+        self.assertEqual("inactive", helpers.vm_state("BUILDING"))
+
+    def test_vol_state(self):
+        self.assertEqual("online", helpers.vol_state("in-use"))
 
 
 class TestOpenStackUserData(base.TestCase):

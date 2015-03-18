@@ -21,6 +21,7 @@ import webob.dec
 
 import ooi.api.compute
 from ooi.api import query
+import ooi.api.storage
 from ooi import exception
 from ooi import utils
 from ooi.wsgi import serializers
@@ -122,6 +123,11 @@ class OCCIMiddleware(object):
                             controller=self.resources["compute"],
                             action="delete_all",
                             conditions=dict(method=["DELETE"]))
+
+        self.resources["storage"] = self._create_resource(
+            ooi.api.storage.Controller)
+        self.mapper.resource("volume", "storage",
+                             controller=self.resources["storage"])
 
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, req):

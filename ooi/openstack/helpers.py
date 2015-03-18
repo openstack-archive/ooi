@@ -24,10 +24,15 @@ def build_scheme(category):
 
 
 # TODO(enolfc): Check the correct names of nova states
-def occi_state(nova_status):
+def vm_state(nova_status):
     if nova_status in ["ACTIVE"]:
         return "active"
     elif nova_status in ["PAUSED", "SUSPENDED", "STOPPED"]:
         return "suspended"
     else:
         return "inactive"
+
+
+# TODO(enolfc): Do really implement this.
+def vol_state(nova_status):
+    return "online"

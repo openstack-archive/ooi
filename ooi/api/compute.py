@@ -20,6 +20,8 @@ import ooi.api
 import ooi.api.base
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
+from ooi.occi.infrastructure import storage
+from ooi.occi.infrastructure import storage_link
 from ooi.openstack import helpers
 from ooi.openstack import templates
 
@@ -124,8 +126,13 @@ class Controller(ooi.api.base.Controller):
                                        cores=flavor["vcpus"],
                                        hostname=s["name"],
                                        memory=flavor["ram"],
-                                       state=helpers.occi_state(s["status"]),
+                                       state=helpers.vm_state(s["status"]),
                                        mixins=[os_tpl, res_tpl])
+        # storage links
+        vols_attached = s.get("os-extended-volumes:volumes_attached", [])
+        for v in vols_attached:
+            st = storage.StorageResource(title="storage", id=v["id"])
+            comp._links.append(storage_link.StorageLink(comp, st))
         return [comp]
 
     def delete(self, req, id):

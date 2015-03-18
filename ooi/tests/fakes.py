@@ -88,6 +88,30 @@ servers = {
     tenants["bar"]["id"]: [],
 }
 
+volumes = {
+    tenants["foo"]["id"]: [
+        {
+            "id": uuid.uuid4().hex,
+            "displayName": "foo",
+            "size": 2,
+            "status": "in-use",
+        },
+        {
+            "id": uuid.uuid4().hex,
+            "displayName": "bar",
+            "size": 3,
+            "status": "in-use",
+        },
+        {
+            "id": uuid.uuid4().hex,
+            "displayName": "baz",
+            "size": 5,
+            "status": "in-use",
+        },
+    ],
+    tenants["bar"]["id"]: [],
+}
+
 
 def fake_query_results():
     cats = []
@@ -201,20 +225,24 @@ class FakeApp(object):
             path = "/%s" % tenant["id"]
 
             self._populate(path, "server", servers[tenant["id"]])
+            self._populate(path, "volume", volumes[tenant["id"]], "os-volumes")
             # NOTE(aloga): dict_values un Py3 is not serializable in JSON
             self._populate(path, "image", list(images.values()))
             self._populate(path, "flavor", list(flavors.values()))
 
-    def _populate(self, path_base, obj_name, obj_list):
+    def _populate(self, path_base, obj_name, obj_list, objs_path=None):
         objs_name = "%ss" % obj_name
-        objs_path = "%s/%s" % (path_base, objs_name)
-        objs_details_path = "%s/%s/detail" % (path_base, objs_name)
-        self.routes[objs_path] = create_fake_json_resp({objs_name: obj_list})
+        if objs_path:
+            path = "%s/%s" % (path_base, objs_path)
+        else:
+            path = "%s/%s" % (path_base, objs_name)
+        objs_details_path = "%s/detail" % path
+        self.routes[path] = create_fake_json_resp({objs_name: obj_list})
         self.routes[objs_details_path] = create_fake_json_resp(
             {objs_name: obj_list})
 
         for o in obj_list:
-            obj_path = "%s/%s" % (objs_path, o["id"])
+            obj_path = "%s/%s" % (path, o["id"])
             self.routes[obj_path] = create_fake_json_resp({obj_name: o})
 
     @webob.dec.wsgify()
