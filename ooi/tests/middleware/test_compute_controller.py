@@ -132,6 +132,43 @@ class TestComputeController(test_middleware.TestMiddleware):
         self.assertExpectedResult(expected, resp)
         self.assertEqual(200, resp.status_code)
 
+    def test_create_vm(self):
+        tenant = uuid.uuid4().hex
+        server_id = uuid.uuid4().hex
+
+        s = {"server": {"id": server_id,
+                        "name": "foo",
+                        "flavor": {"id": "1"},
+                        "image": {"id": "2"},
+                        "status": "ACTIVE"}}
+
+        fake_resp = {"/%s/servers" % tenant: create_fake_json_resp(s)}
+        app = self.get_app(resp=fake_resp)
+        headers = {
+            'Category': (
+                'compute;'
+                'scheme="http://schemas.ogf.org/occi/infrastructure#";'
+                'class="kind",'
+                'big;'
+                'scheme="http://schemas.openstack.org/template/resource#";'
+                'class="mixin",'
+                'cirros;'
+                'scheme="http://schemas.openstack.org/template/os#";'
+                'class="mixin"')
+        }
+        req = self._build_req("/compute", method="POST", headers=headers)
+
+        m = mock.MagicMock()
+        m.user.project_id = tenant
+        req.environ["keystone.token_auth"] = m
+
+        resp = req.get_response(app)
+
+        expected = [("X-OCCI-Location", "/compute/%s" % server_id)]
+        self.assertEqual(200, resp.status_code)
+        self.assertExpectedResult(expected, resp)
+        self.assertContentType(resp)
+
 
 class ComputeControllerTextPlain(test_middleware.TestMiddlewareTextPlain,
                                  TestComputeController):

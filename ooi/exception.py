@@ -88,3 +88,19 @@ class NotImplemented(OCCIException):
 
 class HeaderNotFound(Invalid):
     msg_fmt = "Header '%(header)s' not found."
+
+
+class HeaderValidation(Invalid):
+    """Parent class for header validation error exceptions."""
+
+
+class OCCINoClassFound(HeaderValidation):
+    msg_fmt = "Found no headers matching class '%(class_id)s'."
+
+
+class OCCISchemaOccurrencesMismatch(HeaderValidation):
+    msg_fmt = "Schema occurrences do not match: '%(mismatched_schemas)s'."
+
+
+class OCCINotCompliantTerm(HeaderValidation):
+    msg_fmt = "Found a non-compliant term '%(term)s'."

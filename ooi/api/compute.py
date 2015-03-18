@@ -14,25 +14,60 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from ooi.api import base
+import json
+
+import ooi.api
+import ooi.api.base
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 from ooi.openstack import helpers
 from ooi.openstack import templates
 
 
-class Controller(base.Controller):
-    def index(self, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req = self._get_req(req, path="/%s/servers" % tenant_id)
-        response = req.get_response(self.app)
-
-        servers = response.json_body.get("servers", [])
+class Controller(ooi.api.base.Controller):
+    def _get_compute_resources(self, servers):
         occi_compute_resources = []
         if servers:
             for s in servers:
                 s = compute.ComputeResource(title=s["name"], id=s["id"])
                 occi_compute_resources.append(s)
+
+        return occi_compute_resources
+
+    def index(self, req):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        req = self._get_req(req, path="/%s/servers" % tenant_id)
+        response = req.get_response(self.app)
+        servers = response.json_body.get("servers", [])
+        occi_compute_resources = self._get_compute_resources(servers)
+
+        return collection.Collection(resources=occi_compute_resources)
+
+    @ooi.api.parse
+    @ooi.api.validate("kind",
+                      {"http://schemas.ogf.org/occi/infrastructure#": 1},
+                      term="compute")
+    @ooi.api.validate("mixin",
+                      {"http://schemas.openstack.org/template/resource#": 1,
+                       "http://schemas.openstack.org/template/os#": 1})
+    def create(self, req, headers, params, body):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        req = self._get_req(req,
+                            path="/%s/servers" % tenant_id,
+                            content_type="application/json",
+                            body=json.dumps({
+                                "server": {
+                                    "name": params["/occi/infrastructure"],
+                                    "imageRef": params["/template/os"],
+                                    "flavorRef": params["/template/resource"]
+                                }}))
+        response = req.get_response(self.app)
+        # We only get one server
+        server = response.json_body.get("server", {})
+
+        # The returned JSON does not contain the server name
+        server["name"] = params["/occi/infrastructure"]
+        occi_compute_resources = self._get_compute_resources([server])
 
         return collection.Collection(resources=occi_compute_resources)
 
