@@ -14,6 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+from ooi.wsgi import utils
+
 
 class Controller(object):
     def __init__(self, app, openstack_version):
@@ -27,5 +29,5 @@ class Controller(object):
         if content_type is not None:
             req.content_type = content_type
         if body is not None:
-            req.body = body
+            req.body = utils.utf8(body)
         return req
