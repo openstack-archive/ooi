@@ -14,9 +14,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import mock
 import webob
 
 from ooi.tests import base
+from ooi.tests import fakes
 from ooi import wsgi
 
 
@@ -33,14 +35,7 @@ class TestMiddleware(base.TestCase):
         self.accept = None
 
     def get_app(self, resp=None):
-        if resp is None:
-            resp = webob.Response()
-
-        @webob.dec.wsgify
-        def app(req):
-            # FIXME(aloga): raise some exception here
-            return resp.get(req.path_info)
-        return wsgi.OCCIMiddleware(app)
+        return wsgi.OCCIMiddleware(fakes.FakeApp())
 
     def assertContentType(self, result):
         expected = self.accept or "text/plain"
@@ -54,14 +49,18 @@ class TestMiddleware(base.TestCase):
         expected.sort()
         self.assertEqual(expected, results)
 
-    def _build_req(self, path, **kwargs):
+    def _build_req(self, path, tenant_id, **kwargs):
         if self.accept is not None:
             kwargs["accept"] = self.accept
-        return webob.Request.blank(path,
-                                   **kwargs)
+
+        m = mock.MagicMock()
+        m.user.project_id = tenant_id
+        environ = {"keystone.token_auth": m}
+
+        return webob.Request.blank(path, environ=environ, **kwargs)
 
     def test_404(self):
-        result = self._build_req("/").get_response(self.get_app())
+        result = self._build_req("/", "tenant").get_response(self.get_app())
         self.assertEqual(404, result.status_code)
 
 

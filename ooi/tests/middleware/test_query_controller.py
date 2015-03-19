@@ -15,6 +15,7 @@
 # under the License.
 
 
+from ooi.tests import fakes
 from ooi.tests.middleware import test_middleware
 
 
@@ -22,17 +23,9 @@ class TestQueryController(test_middleware.TestMiddleware):
     """Test OCCI query controller."""
 
     def test_query(self):
-        result = self._build_req("/-/").get_response(self.get_app())
-
-        expected_result = [
-            ('Category', 'start; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa
-            ('Category', 'stop; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa
-            ('Category', 'restart; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa
-            ('Category', 'suspend; scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; class="action"'),  # noqa
-        ]
-
+        result = self._build_req("/-/", "tenant").get_response(self.get_app())
         self.assertContentType(result)
-        self.assertExpectedResult(expected_result, result)
+        self.assertExpectedResult(fakes.fake_query_results(), result)
         self.assertEqual(200, result.status_code)
 
 
