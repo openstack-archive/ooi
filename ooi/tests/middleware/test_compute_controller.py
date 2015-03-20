@@ -14,45 +14,71 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import json
-import uuid
-
 import mock
-import webob
-import webob.dec
-import webob.exc
 
+from ooi.tests import fakes
 from ooi.tests.middleware import test_middleware
 
 
-def create_fake_json_resp(data):
-    r = webob.Response()
-    r.headers["Content-Type"] = "application/json"
-    r.charset = "utf8"
-    r.body = json.dumps(data).encode("utf8")
-    return r
+def build_occi_server(server):
+    name = server["name"]
+    server_id = server["id"]
+    flavor_name = fakes.flavors[server["flavor"]["id"]]["name"]
+    ram = fakes.flavors[server["flavor"]["id"]]["ram"]
+    cores = fakes.flavors[server["flavor"]["id"]]["vcpus"]
+    image_id = server["image"]["id"]
+
+    status = server["status"].upper()
+    if status in ("ACTIVE",):
+        status = "active"
+    elif status in ("PAUSED", "SUSPENDED", "STOPPED"):
+        status = "suspended"
+    else:
+        status = "inactive"
+
+    cats = []
+    cats.append('compute; '
+                'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+                'class="kind"'),
+    cats.append('%s; '
+                'scheme="http://schemas.openstack.org/template/os"; '
+                'class="mixin"' % image_id),
+    cats.append('%s; '
+                'scheme="http://schemas.openstack.org/template/resource"; '
+                'class="mixin"' % flavor_name),
+
+    attrs = [
+        'occi.core.title="%s"' % name,
+        'occi.compute.state="%s"' % status,
+        'occi.compute.memory=%s' % ram,
+        'occi.compute.cores=%s' % cores,
+        'occi.compute.hostname="%s"' % name,
+        'occi.core.id="%s"' % server_id,
+    ]
+    result = []
+    for c in cats:
+        result.append(("Category", c))
+    for a in attrs:
+        result.append(("X-OCCI-Attribute", a))
+    return result
 
 
 class TestComputeController(test_middleware.TestMiddleware):
     """Test OCCI compute controller."""
 
     def test_list_vms_empty(self):
-        tenant = uuid.uuid4().hex
-        d = {"servers": []}
-        fake_resp = {
-            '/%s/servers' % tenant: create_fake_json_resp(d),
-        }
-        app = self.get_app(resp=fake_resp)
+        tenant = fakes.tenants["bar"]
+        app = self.get_app()
 
-        req = self._build_req("/compute", method="GET")
+        req = self._build_req("/compute", tenant["id"], method="GET")
 
         m = mock.MagicMock()
-        m.user.project_id = tenant
+        m.user.project_id = tenant["id"]
         req.environ["keystone.token_auth"] = m
 
         resp = req.get_response(app)
 
-        self.assertEqual("/%s/servers" % tenant, req.environ["PATH_INFO"])
+        self.assertEqual("/%s/servers" % tenant["id"], req.path_info)
 
         expected_result = ""
         self.assertContentType(resp)
@@ -60,111 +86,56 @@ class TestComputeController(test_middleware.TestMiddleware):
         self.assertEqual(200, resp.status_code)
 
     def test_list_vms_one_vm(self):
-        tenant = uuid.uuid4().hex
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
 
-        d = {"servers": [{"id": uuid.uuid4().hex, "name": "foo"},
-                         {"id": uuid.uuid4().hex, "name": "bar"},
-                         {"id": uuid.uuid4().hex, "name": "baz"}]}
-
-        fake_resp = {
-            '/%s/servers' % tenant: create_fake_json_resp(d),
-        }
-
-        app = self.get_app(resp=fake_resp)
-        req = self._build_req("/compute", method="GET")
-
-        m = mock.MagicMock()
-        m.user.project_id = tenant
-        req.environ["keystone.token_auth"] = m
+        req = self._build_req("/compute", tenant["id"], method="GET")
 
         resp = req.get_response(app)
 
-        self.assertEqual("/%s/servers" % tenant, req.environ["PATH_INFO"])
+        self.assertEqual("/%s/servers" % tenant["id"], req.path_info)
 
         self.assertEqual(200, resp.status_code)
         expected = []
-        for s in d["servers"]:
+        for s in fakes.servers[tenant["id"]]:
             expected.append(("X-OCCI-Location", "/compute/%s" % s["id"]))
         self.assertExpectedResult(expected, resp)
 
     def test_show_vm(self):
-        tenant = uuid.uuid4().hex
-        server_id = uuid.uuid4().hex
-        s = {"server": {"id": server_id,
-                        "name": "foo",
-                        "flavor": {"id": "1"},
-                        "image": {"id": "2"},
-                        "status": "ACTIVE"}}
-        f = {"flavor": {"id": 1,
-                        "name": "foo",
-                        "vcpus": 2,
-                        "ram": 256,
-                        "disk": 10}}
-        i = {"image": {"id": 2,
-                       "name": "bar"}}
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
 
-        fake_resp = {
-            '/%s/servers/%s' % (tenant, server_id): create_fake_json_resp(s),
-            '/%s/flavors/1' % tenant: create_fake_json_resp(f),
-            '/%s/images/2' % tenant: create_fake_json_resp(i),
-        }
-        app = self.get_app(resp=fake_resp)
-        req = self._build_req("/compute/%s" % server_id, method="GET")
+        for server in fakes.servers[tenant["id"]]:
+            req = self._build_req("/compute/%s" % server["id"],
+                                  tenant["id"], method="GET")
 
-        m = mock.MagicMock()
-        m.user.project_id = tenant
-        req.environ["keystone.token_auth"] = m
-
-        resp = req.get_response(app)
-
-        expected = [
-            ('Category', 'compute; scheme="http://schemas.ogf.org/occi/infrastructure"; class="kind"'),  # noqa
-            ('Category', '2; scheme="http://schemas.openstack.org/template/os"; class="mixin"'),  # noqa
-            ('Category', 'foo; scheme="http://schemas.openstack.org/template/resource"; class="mixin"'),  # noqa
-            ('X-OCCI-Attribute', 'occi.core.title="foo"'),
-            ('X-OCCI-Attribute', 'occi.compute.state="active"'),
-            ('X-OCCI-Attribute', 'occi.compute.memory=256'),
-            ('X-OCCI-Attribute', 'occi.compute.cores=2'),
-            ('X-OCCI-Attribute', 'occi.compute.hostname="foo"'),
-            ('X-OCCI-Attribute', 'occi.core.id="%s"' % server_id),
-        ]
-        self.assertContentType(resp)
-        self.assertExpectedResult(expected, resp)
-        self.assertEqual(200, resp.status_code)
+            resp = req.get_response(app)
+            expected = build_occi_server(server)
+            self.assertContentType(resp)
+            self.assertExpectedResult(expected, resp)
+            self.assertEqual(200, resp.status_code)
 
     def test_create_vm(self):
-        tenant = uuid.uuid4().hex
-        server_id = uuid.uuid4().hex
+        tenant = fakes.tenants["foo"]
 
-        s = {"server": {"id": server_id,
-                        "name": "foo",
-                        "flavor": {"id": "1"},
-                        "image": {"id": "2"},
-                        "status": "ACTIVE"}}
-
-        fake_resp = {"/%s/servers" % tenant: create_fake_json_resp(s)}
-        app = self.get_app(resp=fake_resp)
+        app = self.get_app()
         headers = {
             'Category': (
                 'compute;'
                 'scheme="http://schemas.ogf.org/occi/infrastructure#";'
                 'class="kind",'
-                'big;'
+                'foo;'
                 'scheme="http://schemas.openstack.org/template/resource#";'
                 'class="mixin",'
-                'cirros;'
+                'bar;'
                 'scheme="http://schemas.openstack.org/template/os#";'
                 'class="mixin"')
         }
-        req = self._build_req("/compute", method="POST", headers=headers)
-
-        m = mock.MagicMock()
-        m.user.project_id = tenant
-        req.environ["keystone.token_auth"] = m
-
+        req = self._build_req("/compute", tenant["id"], method="POST",
+                              headers=headers)
         resp = req.get_response(app)
 
-        expected = [("X-OCCI-Location", "/compute/%s" % server_id)]
+        expected = [("X-OCCI-Location", "/compute/%s" % "foo")]
         self.assertEqual(200, resp.status_code)
         self.assertExpectedResult(expected, resp)
         self.assertContentType(resp)
