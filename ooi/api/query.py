@@ -19,25 +19,38 @@ from ooi.occi.core import entity
 from ooi.occi.core import link
 from ooi.occi.core import resource
 from ooi.occi.infrastructure import compute
-from ooi.occi.infrastructure import mixin as infra_mixin
+from ooi.occi.infrastructure import templates as infra_templates
+from ooi.openstack import mixins
 from ooi.openstack import templates
 
 
 class Controller(base.Controller):
     def _resource_tpls(self, req):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req = self._get_req(req, path="/%s/flavors" % tenant_id)
+        req = self._get_req(req, path="/%s/flavors/detail" % tenant_id)
         response = req.get_response(self.app)
         flavors = response.json_body.get("flavors", [])
         occi_resource_templates = []
         if flavors:
             for f in flavors:
-                r = templates.OpenStackResourceTemplate(f["name"],
-                                                        f["vcpus"],
-                                                        f["ram"],
-                                                        f["disk"])
-                occi_resource_templates.append(r)
+                tpl = templates.OpenStackResourceTemplate(f["name"],
+                                                          f["vcpus"],
+                                                          f["ram"],
+                                                          f["disk"])
+                occi_resource_templates.append(tpl)
         return occi_resource_templates
+
+    def _os_tpls(self, req):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        req = self._get_req(req, path="/%s/images/detail" % tenant_id)
+        response = req.get_response(self.app)
+        images = response.json_body.get("images", [])
+        occi_os_templates = []
+        if images:
+            for i in images:
+                tpl = templates.OpenStackOSTemplate(i["id"], i["name"])
+                occi_os_templates.append(tpl)
+        return occi_os_templates
 
     def index(self, req):
         l = []
@@ -51,12 +64,14 @@ class Controller(base.Controller):
         l.extend(compute.ComputeResource.actions)
 
         # OCCI infra mixins
-        #l.append(infra_mixin.os_tpl)
-        #l.append(infra_mixin.resource_tpl)
+        l.append(infra_templates.os_tpl)
+        l.append(infra_templates.resource_tpl)
 
-        # OpenStack flavors
+        # OpenStack flavors & images
         l.extend(self._resource_tpls(req))
+        l.extend(self._os_tpls(req))
 
         # OpenStack mixins (contextualization)
-        #l.append
+        l.append(mixins.user_data)
+        l.append(mixins.public_key)
         return l
