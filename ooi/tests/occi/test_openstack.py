@@ -18,6 +18,7 @@ import uuid
 
 from ooi.occi.infrastructure import templates as occi_templates
 from ooi.openstack import helpers
+from ooi.openstack import mixins
 from ooi.openstack import templates
 from ooi.tests import base
 
@@ -69,3 +70,27 @@ class TestHelpers(base.TestCase):
         self.assertEqual("suspended", helpers.occi_state("SUSPENDED"))
         self.assertEqual("suspended", helpers.occi_state("STOPPED"))
         self.assertEqual("inactive", helpers.occi_state("BUILDING"))
+
+
+class TestOpenStackUserData(base.TestCase):
+    def test_os_userdata(self):
+        user_data = "foobar"
+
+        mxn = mixins.OpenStackUserData(user_data)
+
+        self.assertEqual("user_data", mxn.term)
+        self.assertTrue(mxn.scheme.startswith(helpers._PREFIX))
+        self.assertEqual(user_data, mxn.user_data)
+
+
+class TestOpenStackPublicKey(base.TestCase):
+    def test_os_userdata(self):
+        key_name = "foobar"
+        key_data = "1234"
+
+        mxn = mixins.OpenStackPublicKey(key_name, key_data)
+
+        self.assertEqual("public_key", mxn.term)
+        self.assertTrue(mxn.scheme.startswith(helpers._PREFIX))
+        self.assertEqual(key_name, mxn.name)
+        self.assertEqual(key_data, mxn.data)

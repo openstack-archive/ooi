@@ -23,7 +23,8 @@ class TestQueryController(test_middleware.TestMiddleware):
     """Test OCCI query controller."""
 
     def test_query(self):
-        result = self._build_req("/-/", "tenant").get_response(self.get_app())
+        tenant_id = fakes.tenants["bar"]["id"]
+        result = self._build_req("/-/", tenant_id).get_response(self.get_app())
         self.assertContentType(result)
         self.assertExpectedResult(fakes.fake_query_results(), result)
         self.assertEqual(200, result.status_code)
