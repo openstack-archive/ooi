@@ -86,6 +86,22 @@ servers = {
 def fake_query_results():
     cats = []
     cats.append(
+        'compute; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+        'class="kind"')
+    cats.append(
+        'link; '
+        'scheme="http://schemas.ogf.org/occi/core"; '
+        'class="kind"')
+    cats.append(
+        'resource; '
+        'scheme="http://schemas.ogf.org/occi/core"; '
+        'class="kind"')
+    cats.append(
+        'entity; '
+        'scheme="http://schemas.ogf.org/occi/core"; '
+        'class="kind"')
+    cats.append(
         'start; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; '
         'class="action"')
@@ -101,6 +117,38 @@ def fake_query_results():
         'suspend; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; '
         'class="action"')
+    cats.append(
+        'bar; '
+        'scheme="http://schemas.openstack.org/template/os"; '
+        'class="mixin"')
+    cats.append(
+        'bar; '
+        'scheme="http://schemas.openstack.org/template/resource"; '
+        'class="mixin"')
+    cats.append(
+        'foo; '
+        'scheme="http://schemas.openstack.org/template/os"; '
+        'class="mixin"')
+    cats.append(
+        'foo; '
+        'scheme="http://schemas.openstack.org/template/resource"; '
+        'class="mixin"')
+    cats.append(
+        'os_tpl; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+        'class="mixin"')
+    cats.append(
+        'resource_tpl; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+        'class="mixin"')
+    cats.append(
+        'user_data; '
+        'scheme="http://schemas.openstack.org/compute/instance"; '
+        'class="mixin"')
+    cats.append(
+        'public_key; '
+        'scheme="http://schemas.openstack.org/instance/credentials"; '
+        'class="mixin"')
 
     result = []
     for c in cats:
@@ -125,7 +173,10 @@ class FakeApp(object):
     def _populate(self, path_base, obj_name, obj_list):
         objs_name = "%ss" % obj_name
         objs_path = "%s/%s" % (path_base, objs_name)
+        objs_details_path = "%s/%s/detail" % (path_base, objs_name)
         self.routes[objs_path] = create_fake_json_resp({objs_name: obj_list})
+        self.routes[objs_details_path] = create_fake_json_resp(
+            {objs_name: obj_list})
 
         for o in obj_list:
             obj_path = "%s/%s" % (objs_path, o["id"])
