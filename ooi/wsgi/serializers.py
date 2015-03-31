@@ -16,6 +16,8 @@
 
 import collections
 
+from ooi.occi.rendering import headers as header_rendering
+from ooi.occi.rendering import text as text_rendering
 from ooi.wsgi import utils
 
 
@@ -30,7 +32,11 @@ class TextSerializer(object):
         if not isinstance(data, list):
             data = [data]
 
-        ret = "\n".join([str(d) for d in data])
+        renderers = []
+        for d in data:
+            renderers.append(text_rendering.get_renderer(d))
+
+        ret = "\n".join([r.render() for r in renderers])
         return None, utils.utf8(ret)
 
 
@@ -39,14 +45,13 @@ class HeaderSerializer(object):
         if not isinstance(data, list):
             data = [data]
 
-        headers = []
+        renderers = []
         for d in data:
-            if hasattr(d, "headers"):
-                headers.extend(d.headers())
-            else:
-                # NOTE(aloga): we should not be here.
-                pass
+            renderers.append(header_rendering.get_renderer(d))
 
+        # Header renderers will return a list, so we must flatten the results
+        # before returning them
+        headers = [i for r in renderers for i in r.render()]
         return headers, ""
 
 

@@ -358,20 +358,6 @@ class ResourceExceptionHandler(object):
 class Fault(webob.exc.HTTPException):
     """Wrap webob.exc.HTTPException to provide API friendly response."""
 
-    _fault_names = {
-        400: "badRequest",
-        401: "unauthorized",
-        403: "forbidden",
-        404: "itemNotFound",
-        405: "badMethod",
-        406: "notAceptable",
-        409: "conflictingRequest",
-        413: "overLimit",
-        415: "badMediaType",
-        429: "overLimit",
-        501: "notImplemented",
-        503: "serviceUnavailable"}
-
     def __init__(self, exception):
         """Create a Fault for the given webob.exc.exception."""
         self.wrapped_exc = exception
@@ -385,25 +371,16 @@ class Fault(webob.exc.HTTPException):
 
         # Replace the body with fault details.
         code = self.wrapped_exc.status_int
-        fault_name = self._fault_names.get(code, "occiFault")
         explanation = self.wrapped_exc.explanation
         LOG.debug("Returning %(code)s to user: %(explanation)s",
                   {'code': code, 'explanation': explanation})
-
-        fault_data = {
-            fault_name: {
-                'code': code,
-                'message': explanation}}
-        if code == 413 or code == 429:
-            retry = self.wrapped_exc.headers.get('Retry-After', None)
-            if retry:
-                fault_data[fault_name]['retryAfter'] = retry
 
         content_type = req.content_type or "text/plain"
         mtype = serializers.get_media_map().get(content_type,
                                                 "text")
         serializer = serializers.get_default_serializers()[mtype]
-        self.wrapped_exc.body = serializer().serialize(fault_data)[-1]
+        serialized_exc = serializer().serialize(self.wrapped_exc)
+        self.wrapped_exc.body = serialized_exc[1]
         self.wrapped_exc.content_type = content_type
 
         return self.wrapped_exc

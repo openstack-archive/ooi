@@ -37,17 +37,6 @@ class Category(object):
         """Returns this class name (see OCCI v1.1 rendering)."""
         raise ValueError
 
-    def _as_str(self):
-        d = {
-            "term": self.term,
-            "scheme": self.scheme,
-            "class": self._class_name()
-        }
-
-        return '%(term)s; scheme="%(scheme)s"; class="%(class)s"' % d
-
-    def headers(self):
-        return [("Category", self._as_str())]
-
-    def __str__(self):
-        return ": ".join(self.headers()[0])
+    @property
+    def occi_class(self):
+        return self._class_name()
