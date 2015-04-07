@@ -22,6 +22,7 @@ from ooi.occi.core import collection
 from ooi.occi.core import kind
 from ooi.occi.core import mixin
 from ooi.occi.core import resource
+from ooi.occi import helpers
 
 
 class HeaderRenderer(object):
@@ -54,7 +55,20 @@ class KindRenderer(CategoryRenderer):
 
 
 class ActionRenderer(CategoryRenderer):
-    pass
+    def render(self, instance=None, env={}):
+        # FIXME(aloga): ugly code
+
+        # We have an instance id, render it as a link
+        if instance is not None:
+            url = env.get("application_url", "")
+            url = helpers.join_url(url, instance)
+            d = {"location": helpers.join_url(url, self.obj.location),
+                 "rel": self.obj.type_id}
+            link = "<%(location)s>; rel=%(rel)s" % d
+            return [('Link', link)]
+        else:
+            # Otherwise, render as category
+            return super(ActionRenderer, self).render(env=env)
 
 
 class MixinRenderer(CategoryRenderer):
@@ -96,6 +110,8 @@ class ResourceRenderer(HeaderRenderer):
             if self.obj.attributes[a].value is None:
                 continue
             ret.extend(AttributeRenderer(self.obj.attributes[a]).render())
+        for a in self.obj.actions:
+            ret.extend(ActionRenderer(a).render(instance=self.obj.id))
         for l in self.obj.links:
             pass
             # FIXME(aloga): we need to fix this

@@ -57,9 +57,21 @@ def build_occi_server(server):
         'occi.compute.hostname="%s"' % name,
         'occi.core.id="%s"' % server_id,
     ]
+    links = []
+    links.append('<%s?action=restart>; rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#restart' % server_id)
+    links.append('<%s?action=start>; rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#start' % server_id)
+    links.append('<%s?action=stop>; rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#stop' % server_id)
+    links.append('<%s?action=suspend>; rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#suspend' % server_id)
+
     result = []
     for c in cats:
         result.append(("Category", c))
+    for l in links:
+        result.append(("Link", l))
     for a in attrs:
         result.append(("X-OCCI-Attribute", a))
     return result

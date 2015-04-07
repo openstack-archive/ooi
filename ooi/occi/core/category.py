@@ -15,6 +15,7 @@
 # under the License.
 
 from ooi.occi.core import attribute
+from ooi.occi import helpers
 
 
 class Category(object):
@@ -40,3 +41,7 @@ class Category(object):
     @property
     def occi_class(self):
         return self._class_name()
+
+    @property
+    def type_id(self):
+        return helpers.join_url(self.scheme, "", fragments=self.term)
