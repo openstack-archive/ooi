@@ -22,7 +22,7 @@ from ooi.occi.core import collection
 from ooi.occi.core import kind
 from ooi.occi.core import mixin
 from ooi.occi.core import resource
-from ooi.occi import helpers
+from ooi import utils
 
 
 class HeaderRenderer(object):
@@ -59,7 +59,7 @@ class ActionRenderer(CategoryRenderer):
         # We have an instance id, render it as a link
         if instance is not None:
             url = env.get("application_url", "")
-            url = helpers.join_url(url, [instance, self.obj.location])
+            url = utils.join_url(url, [instance, self.obj.location])
             d = {"location": url,
                  "rel": self.obj.type_id}
             link = "<%(location)s>; rel=%(rel)s" % d

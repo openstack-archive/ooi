@@ -14,7 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from ooi.wsgi import utils
+from ooi import utils
 
 import webob.exc
 

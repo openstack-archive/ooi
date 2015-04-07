@@ -22,6 +22,7 @@ from ooi.occi.core import attribute
 from ooi.occi.core import kind
 from ooi.occi.core import mixin
 from ooi.occi import helpers
+from ooi import utils
 
 
 class EntityMeta(type):
@@ -94,4 +95,4 @@ class Entity(object):
 
     @property
     def location(self):
-        return helpers.join_url(self.kind.location, self.id)
+        return utils.join_url(self.kind.location, self.id)

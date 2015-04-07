@@ -20,8 +20,8 @@ import uuid
 import webob.dec
 import webob.exc
 
+from ooi import utils
 import ooi.wsgi
-import ooi.wsgi.utils
 
 
 tenants = {
@@ -184,7 +184,7 @@ class FakeOpenStackFault(ooi.wsgi.Fault):
             fault_name: {
                 'code': code,
                 'message': explanation}}
-        self.wrapped_exc.body = ooi.wsgi.utils.utf8(json.dumps(fault_data))
+        self.wrapped_exc.body = utils.utf8(json.dumps(fault_data))
         self.wrapped_exc.content_type = "application/json"
         return self.wrapped_exc
 

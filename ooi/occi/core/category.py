@@ -15,7 +15,7 @@
 # under the License.
 
 from ooi.occi.core import attribute
-from ooi.occi import helpers
+from ooi import utils
 
 
 class Category(object):
@@ -44,4 +44,4 @@ class Category(object):
 
     @property
     def type_id(self):
-        return helpers.join_url(self.scheme, "#%s" % self.term)
+        return utils.join_url(self.scheme, "#%s" % self.term)

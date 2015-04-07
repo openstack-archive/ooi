@@ -23,8 +23,8 @@ import ooi.api.compute
 from ooi.api import query
 from ooi import exception
 from ooi.occi.core import collection
+from ooi import utils
 from ooi.wsgi import serializers
-from ooi.wsgi import utils
 
 LOG = logging.getLogger(__name__)
 

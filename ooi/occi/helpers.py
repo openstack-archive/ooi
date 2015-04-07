@@ -30,13 +30,3 @@ def check_type(obj_list, obj_type):
 
     if not all([isinstance(i, obj_type) for i in obj_list]):
         raise TypeError('object must be of class %s' % obj_type)
-
-
-def join_url(base, parts):
-    url = base
-    if not isinstance(parts, (list, tuple)):
-        parts = [parts]
-
-    for p in parts:
-        url = urlparse.urljoin(url, p)
-    return url
