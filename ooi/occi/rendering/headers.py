@@ -56,13 +56,11 @@ class KindRenderer(CategoryRenderer):
 
 class ActionRenderer(CategoryRenderer):
     def render(self, instance=None, env={}):
-        # FIXME(aloga): ugly code
-
         # We have an instance id, render it as a link
         if instance is not None:
             url = env.get("application_url", "")
-            url = helpers.join_url(url, instance)
-            d = {"location": helpers.join_url(url, self.obj.location),
+            url = helpers.join_url(url, [instance, self.obj.location])
+            d = {"location": url,
                  "rel": self.obj.type_id}
             link = "<%(location)s>; rel=%(rel)s" % d
             return [('Link', link)]

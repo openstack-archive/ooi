@@ -44,4 +44,4 @@ class Category(object):
 
     @property
     def type_id(self):
-        return helpers.join_url(self.scheme, "", fragments=self.term)
+        return helpers.join_url(self.scheme, "#%s" % self.term)
