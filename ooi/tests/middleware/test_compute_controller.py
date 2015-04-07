@@ -14,6 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import uuid
+
 import mock
 
 from ooi.tests import fakes
@@ -114,6 +116,15 @@ class TestComputeController(test_middleware.TestMiddleware):
             self.assertContentType(resp)
             self.assertExpectedResult(expected, resp)
             self.assertEqual(200, resp.status_code)
+
+    def test_vm_not_found(self):
+        tenant = fakes.tenants["foo"]
+
+        app = self.get_app()
+        req = self._build_req("/compute/%s" % uuid.uuid4().hex,
+                              tenant["id"], method="GET")
+        resp = req.get_response(app)
+        self.assertEqual(404, resp.status_code)
 
     def test_create_vm(self):
         tenant = fakes.tenants["foo"]

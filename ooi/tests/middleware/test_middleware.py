@@ -16,6 +16,8 @@
 
 import mock
 import webob
+import webob.dec
+import webob.exc
 
 from ooi.tests import base
 from ooi.tests import fakes
@@ -62,6 +64,16 @@ class TestMiddleware(base.TestCase):
     def test_404(self):
         result = self._build_req("/", "tenant").get_response(self.get_app())
         self.assertEqual(404, result.status_code)
+
+    def test_400_from_openstack(self):
+        @webob.dec.wsgify()
+        def _fake_app(req):
+            exc = webob.exc.HTTPBadRequest()
+            resp = fakes.FakeOpenStackFault(exc)
+            return resp
+
+        result = self._build_req("/-/", "tenant").get_response(_fake_app)
+        self.assertEqual(400, result.status_code)
 
 
 class TestMiddlewareTextPlain(TestMiddleware):

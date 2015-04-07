@@ -16,6 +16,8 @@
 
 from ooi.wsgi import utils
 
+import webob.exc
+
 
 class Controller(object):
     def __init__(self, app, openstack_version):
@@ -31,3 +33,53 @@ class Controller(object):
         if body is not None:
             req.body = utils.utf8(body)
         return req
+
+    @staticmethod
+    def get_from_response(response, element, default):
+        """Get a JSON element from a valid response or raise an exception.
+
+        This method will extract an element a JSON response (falling back to a
+        default value) if the response has a code of 200, otherwise it will
+        raise a webob.exc.exception
+
+        :param response: The webob.Response object
+        :param element: The element to look for in the JSON body
+        :param default: The default element to be returned if not found.
+        """
+        if response.status_int == 200:
+            return response.json_body.get(element, default)
+        else:
+            raise exception_from_response(response)
+
+
+def exception_from_response(response):
+    """Convert an OpenStack V2 Fault into a webob exception.
+
+    Since we are calling the OpenStack API we should process the Faults
+    produced by them. Extract the Fault information according to [1] and
+    convert it back to a webob exception.
+
+    [1] http://docs.openstack.org/developer/nova/v2/faults.html
+
+    :param response: a webob.Response containing an exception
+    :returns: a webob.exc.exception object
+    """
+    exceptions = {
+        400: webob.exc.HTTPBadRequest,
+        401: webob.exc.HTTPUnauthorized,
+        403: webob.exc.HTTPForbidden,
+        404: webob.exc.HTTPNotFound,
+        405: webob.exc.HTTPMethodNotAllowed,
+        406: webob.exc.HTTPNotAcceptable,
+        409: webob.exc.HTTPConflict,
+        413: webob.exc.HTTPRequestEntityTooLarge,
+        415: webob.exc.HTTPUnsupportedMediaType,
+        429: webob.exc.HTTPTooManyRequests,
+        501: webob.exc.HTTPNotImplemented,
+        503: webob.exc.HTTPServiceUnavailable,
+    }
+    code = response.status_int
+    message = response.json_body.popitem()[1].get("message")
+
+    exc = exceptions.get(code, webob.exc.HTTPInternalServerError)
+    return exc(explanation=message)
