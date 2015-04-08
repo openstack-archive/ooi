@@ -35,6 +35,7 @@ class TestMiddleware(base.TestCase):
         super(TestMiddleware, self).setUp()
 
         self.accept = None
+        self.application_url = fakes.application_url
 
     def get_app(self, resp=None):
         return wsgi.OCCIMiddleware(fakes.FakeApp())
@@ -47,9 +48,7 @@ class TestMiddleware(base.TestCase):
         expected = ["%s: %s" % e for e in expected]
         # NOTE(aloga): the order of the result does not matter
         results = result.text.splitlines()
-        results.sort()
-        expected.sort()
-        self.assertEqual(expected, results)
+        self.assertItemsEqual(expected, results)
 
     def _build_req(self, path, tenant_id, **kwargs):
         if self.accept is not None:
@@ -58,6 +57,8 @@ class TestMiddleware(base.TestCase):
         m = mock.MagicMock()
         m.user.project_id = tenant_id
         environ = {"keystone.token_auth": m}
+
+        kwargs["base_url"] = self.application_url
 
         return webob.Request.blank(path, environ=environ, **kwargs)
 

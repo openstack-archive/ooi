@@ -42,5 +42,8 @@ def join_url(base, parts):
         parts = [parts]
 
     for p in parts:
+        if p.startswith("/"):
+            # We won't get an absolute url
+            p = p[1:]
         url = urlparse.urljoin(url, p)
     return url

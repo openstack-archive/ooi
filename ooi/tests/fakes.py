@@ -24,6 +24,8 @@ from ooi import utils
 import ooi.wsgi
 
 
+application_url = "https://foo.example.org:8774/ooiv1"
+
 tenants = {
     "foo": {"id": uuid.uuid4().hex,
             "name": "foo"},

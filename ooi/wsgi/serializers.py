@@ -27,7 +27,12 @@ _MEDIA_TYPE_MAP = collections.OrderedDict([
 ])
 
 
-class TextSerializer(object):
+class BaseSerializer(object):
+    def __init__(self, env):
+        self.env = env
+
+
+class TextSerializer(BaseSerializer):
     def serialize(self, data):
         if not isinstance(data, list):
             data = [data]
@@ -36,11 +41,11 @@ class TextSerializer(object):
         for d in data:
             renderers.append(text_rendering.get_renderer(d))
 
-        ret = "\n".join([r.render() for r in renderers])
+        ret = "\n".join([r.render(env=self.env) for r in renderers])
         return None, utils.utf8(ret)
 
 
-class HeaderSerializer(object):
+class HeaderSerializer(BaseSerializer):
     def serialize(self, data):
         if not isinstance(data, list):
             data = [data]
@@ -51,7 +56,7 @@ class HeaderSerializer(object):
 
         # Header renderers will return a list, so we must flatten the results
         # before returning them
-        headers = [i for r in renderers for i in r.render()]
+        headers = [i for r in renderers for i in r.render(env=self.env)]
         return headers, ""
 
 

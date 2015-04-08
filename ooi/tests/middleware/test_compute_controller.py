@@ -20,6 +20,7 @@ import mock
 
 from ooi.tests import fakes
 from ooi.tests.middleware import test_middleware
+from ooi import utils
 
 
 def build_occi_server(server):
@@ -58,14 +59,22 @@ def build_occi_server(server):
         'occi.core.id="%s"' % server_id,
     ]
     links = []
-    links.append('<%s?action=restart>; rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/compute/action#restart' % server_id)
-    links.append('<%s?action=start>; rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/compute/action#start' % server_id)
-    links.append('<%s?action=stop>; rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/compute/action#stop' % server_id)
-    links.append('<%s?action=suspend>; rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/compute/action#suspend' % server_id)
+    links.append('<%s/compute/%s?action=restart>; '
+                 'rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#restart' %
+                 (fakes.application_url, server_id))
+    links.append('<%s/compute/%s?action=start>; '
+                 'rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#start' %
+                 (fakes.application_url, server_id))
+    links.append('<%s/compute/%s?action=stop>; '
+                 'rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#stop' %
+                 (fakes.application_url, server_id))
+    links.append('<%s/compute/%s?action=suspend>; '
+                 'rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#suspend' %
+                 (fakes.application_url, server_id))
 
     result = []
     for c in cats:
@@ -108,7 +117,11 @@ class TestComputeController(test_middleware.TestMiddleware):
         self.assertEqual(200, resp.status_code)
         expected = []
         for s in fakes.servers[tenant["id"]]:
-            expected.append(("X-OCCI-Location", "/compute/%s" % s["id"]))
+            expected.append(
+                ("X-OCCI-Location", utils.join_url(self.application_url + "/",
+                                                   "compute/%s" % s["id"]))
+            )
+        self.assertContentType(resp)
         self.assertExpectedResult(expected, resp)
 
     def test_show_vm(self):
@@ -154,7 +167,9 @@ class TestComputeController(test_middleware.TestMiddleware):
                               headers=headers)
         resp = req.get_response(app)
 
-        expected = [("X-OCCI-Location", "/compute/%s" % "foo")]
+        expected = [("X-OCCI-Location",
+                     utils.join_url(self.application_url + "/",
+                                    "compute/%s" % "foo"))]
         self.assertEqual(200, resp.status_code)
         self.assertExpectedResult(expected, resp)
         self.assertContentType(resp)

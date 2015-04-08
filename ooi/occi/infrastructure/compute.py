@@ -42,7 +42,7 @@ class ComputeResource(resource.Resource):
                                            "occi.compute.state"])
     actions = (start, stop, restart, suspend)
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'compute',
-                     'compute resource', attributes, '/compute/',
+                     'compute resource', attributes, 'compute/',
                      actions=actions,
                      related=[resource.Resource.kind])
 

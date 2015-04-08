@@ -62,7 +62,7 @@ class Entity(object):
                                                 "occi.core.title"])
 
     kind = kind.Kind(helpers.build_scheme('core'), 'entity',
-                     'entity', attributes, '/entity/')
+                     'entity', attributes, 'entity/')
 
     def __init__(self, title, mixins, id=None):
         helpers.check_type(mixins, mixin.Mixin)

@@ -55,11 +55,12 @@ class KindRenderer(CategoryRenderer):
 
 
 class ActionRenderer(CategoryRenderer):
-    def render(self, instance=None, env={}):
-        # We have an instance id, render it as a link
-        if instance is not None:
+    def render(self, ass_obj=None, env={}):
+        # We have an associated object, render it as a link to that object
+        if ass_obj is not None:
             url = env.get("application_url", "")
-            url = utils.join_url(url, [instance, self.obj.location])
+            term = ass_obj.kind.term + "/"
+            url = utils.join_url(url, [term, ass_obj.id, self.obj.location])
             d = {"location": url,
                  "rel": self.obj.type_id}
             link = "<%(location)s>; rel=%(rel)s" % d
@@ -80,7 +81,7 @@ class CollectionRenderer(HeaderRenderer):
         for what in [self.obj.kinds, self.obj.mixins, self.obj.actions,
                      self.obj.resources, self.obj.links]:
             for el in what:
-                url = app_url + el.location
+                url = utils.join_url(app_url, el.location)
                 ret.append(('X-OCCI-Location', '%s' % url))
         return ret
 
@@ -100,16 +101,18 @@ class AttributeRenderer(HeaderRenderer):
 class ResourceRenderer(HeaderRenderer):
     def render(self, env={}):
         ret = []
-        ret.extend(KindRenderer(self.obj.kind).render())
+        ret.extend(KindRenderer(self.obj.kind).render(env=env))
         for m in self.obj.mixins:
-            ret.extend(MixinRenderer(m).render())
+            ret.extend(MixinRenderer(m).render(env=env))
         for a in self.obj.attributes:
             # FIXME(aloga): I dont like this test here
             if self.obj.attributes[a].value is None:
                 continue
-            ret.extend(AttributeRenderer(self.obj.attributes[a]).render())
+            r = AttributeRenderer(self.obj.attributes[a])
+            ret.extend(r.render(env=env))
         for a in self.obj.actions:
-            ret.extend(ActionRenderer(a).render(instance=self.obj.id))
+            r = ActionRenderer(a)
+            ret.extend(r.render(ass_obj=self.obj, env=env))
         for l in self.obj.links:
             pass
             # FIXME(aloga): we need to fix this

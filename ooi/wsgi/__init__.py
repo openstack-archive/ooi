@@ -285,7 +285,8 @@ class ResponseObject(object):
         else:
             _mtype, _serializer = self.get_serializer(content_type,
                                                       default_serializers)
-            serializer = _serializer()
+            env = {"application_url": request.application_url + "/"}
+            serializer = _serializer(env)
 
         response = webob.Response()
         response.status_int = self.code
@@ -379,7 +380,8 @@ class Fault(webob.exc.HTTPException):
         mtype = serializers.get_media_map().get(content_type,
                                                 "text")
         serializer = serializers.get_default_serializers()[mtype]
-        serialized_exc = serializer().serialize(self.wrapped_exc)
+        env = {}
+        serialized_exc = serializer(env).serialize(self.wrapped_exc)
         self.wrapped_exc.body = serialized_exc[1]
         self.wrapped_exc.content_type = content_type
 
