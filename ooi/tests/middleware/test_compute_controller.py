@@ -106,7 +106,7 @@ class TestComputeController(test_middleware.TestMiddleware):
         self.assertExpectedResult(expected_result, resp)
         self.assertEqual(204, resp.status_code)
 
-    def test_list_vms_one_vm(self):
+    def test_list_vms(self):
         tenant = fakes.tenants["foo"]
         app = self.get_app()
 

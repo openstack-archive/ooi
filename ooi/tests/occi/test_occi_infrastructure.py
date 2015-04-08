@@ -16,10 +16,12 @@
 
 import uuid
 
+from ooi.occi.core import link
 from ooi.occi.core import mixin
 from ooi.occi.core import resource
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import storage
+from ooi.occi.infrastructure import storage_link
 from ooi.occi.infrastructure import templates
 from ooi.tests import base
 
@@ -125,6 +127,63 @@ class TestOCCIStorage(base.TestCase):
         s = storage.StorageResource("foo", size=5, state="foobar")
         self.assertEqual(5, s.size)
         self.assertEqual("foobar", s.state)
+
+
+class TestOCCIStorageLink(base.TestCase):
+    def test_storagelink_class(self):
+        s = storage_link.StorageLink
+        self.assertIn("occi.core.id", s.attributes)
+        self.assertIn("occi.core.title", s.attributes)
+        self.assertIn("occi.core.source", s.attributes)
+        self.assertIn("occi.core.target", s.attributes)
+        self.assertIn("occi.storagelink.mountpoint", s.attributes)
+        self.assertIn("occi.storagelink.deviceid", s.attributes)
+        self.assertIn("occi.storagelink.state", s.attributes)
+        self.assertIn(link.Link.kind, s.kind.related)
+
+    def test_storagelink(self):
+        server_id = uuid.uuid4().hex
+        c = compute.ComputeResource("foo",
+                                    summary="This is a summary",
+                                    id=server_id)
+        vol_id = uuid.uuid4().hex
+        s = storage.StorageResource("bar",
+                                    summary="This is a summary",
+                                    id=vol_id)
+        l = storage_link.StorageLink(c, s)
+        link_id = '%s_%s' % (server_id, vol_id)
+        self.assertEqual(link_id, l.id)
+        self.assertIsNone(l.deviceid)
+        self.assertIsNone(l.mountpoint)
+        self.assertIsNone(l.state)
+
+    def test_setters(self):
+        c = compute.ComputeResource("foo",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        s = storage.StorageResource("bar",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        l = storage_link.StorageLink(c, s)
+        l.deviceid = "/dev/vdc"
+        self.assertEqual("/dev/vdc",
+                         l.attributes["occi.storagelink.deviceid"].value)
+        l.mountpoint = "/mnt"
+        self.assertEqual("/mnt",
+                         l.attributes["occi.storagelink.mountpoint"].value)
+
+    def test_getters(self):
+        c = compute.ComputeResource("foo",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        s = storage.StorageResource("bar",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        l = storage_link.StorageLink(c, s, deviceid="/dev/vdc",
+                                     mountpoint="/mnt", state="foobar")
+        self.assertEqual("/dev/vdc", l.deviceid)
+        self.assertEqual("/mnt", l.mountpoint)
+        self.assertEqual("foobar", l.state)
 
 
 class TestTemplates(base.TestCase):
