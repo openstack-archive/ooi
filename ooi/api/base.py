@@ -14,6 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import copy
+
 from ooi import utils
 
 import webob.exc
@@ -25,14 +27,29 @@ class Controller(object):
         self.openstack_version = openstack_version
 
     def _get_req(self, req, path=None, content_type=None, body=None):
-        req.script_name = self.openstack_version
+        """Return a new Request object to interact with OpenStack.
+
+        This method will create a new request starting with the same WSGI
+        environment as the original request, prepared to interact with
+        OpenStack. Namely, it will override the script name to match the
+        OpenStack version. It will also override the path, content_type and
+        body of the request, if any of those keyword arguments are passed.
+
+        :param req: the original request
+        :param path: new path for the request
+        :param content_type: new content type for the request
+        :param body: new body for the request
+        :returns: a Request object
+        """
+        new_req = webob.Request(copy.copy(req.environ))
+        new_req.script_name = self.openstack_version
         if path is not None:
-            req.path_info = path
+            new_req.path_info = path
         if content_type is not None:
-            req.content_type = content_type
+            new_req.content_type = content_type
         if body is not None:
-            req.body = utils.utf8(body)
-        return req
+            new_req.body = utils.utf8(body)
+        return new_req
 
     @staticmethod
     def get_from_response(response, element, default):

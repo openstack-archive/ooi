@@ -92,8 +92,6 @@ class TestComputeController(test_middleware.TestMiddleware):
 
         resp = req.get_response(app)
 
-        self.assertEqual("/%s/servers" % tenant["id"], req.path_info)
-
         expected_result = ""
         self.assertContentType(resp)
         self.assertExpectedResult(expected_result, resp)
@@ -106,8 +104,6 @@ class TestComputeController(test_middleware.TestMiddleware):
         req = self._build_req("/compute", tenant["id"], method="GET")
 
         resp = req.get_response(app)
-
-        self.assertEqual("/%s/servers" % tenant["id"], req.path_info)
 
         self.assertEqual(200, resp.status_code)
         expected = []
