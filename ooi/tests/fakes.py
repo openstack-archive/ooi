@@ -18,6 +18,10 @@ import json
 import uuid
 
 import webob.dec
+import webob.exc
+
+from ooi import utils
+import ooi.wsgi
 
 
 tenants = {
@@ -156,6 +160,35 @@ def fake_query_results():
     return result
 
 
+class FakeOpenStackFault(ooi.wsgi.Fault):
+    _fault_names = {
+        400: "badRequest",
+        401: "unauthorized",
+        403: "forbidden",
+        404: "itemNotFound",
+        405: "badMethod",
+        406: "notAceptable",
+        409: "conflictingRequest",
+        413: "overLimit",
+        415: "badMediaType",
+        429: "overLimit",
+        501: "notImplemented",
+        503: "serviceUnavailable"}
+
+    @webob.dec.wsgify()
+    def __call__(self, req):
+        code = self.wrapped_exc.status_int
+        fault_name = self._fault_names.get(code)
+        explanation = self.wrapped_exc.explanation
+        fault_data = {
+            fault_name: {
+                'code': code,
+                'message': explanation}}
+        self.wrapped_exc.body = utils.utf8(json.dumps(fault_data))
+        self.wrapped_exc.content_type = "application/json"
+        return self.wrapped_exc
+
+
 class FakeApp(object):
     """Poor man's fake application."""
 
@@ -205,8 +238,9 @@ class FakeApp(object):
     def _do_get(self, req):
         try:
             ret = self.routes[req.path_info]
-        except Exception:
-            raise
+        except KeyError:
+            exc = webob.exc.HTTPNotFound()
+            ret = FakeOpenStackFault(exc)
         return ret
 
 

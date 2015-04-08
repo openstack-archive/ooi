@@ -15,6 +15,7 @@
 # under the License.
 
 import six
+import six.moves.urllib.parse as urlparse
 
 
 def utf8(value):
@@ -28,3 +29,18 @@ def utf8(value):
         return value.encode('utf-8')
     assert isinstance(value, str)
     return value
+
+
+def join_url(base, parts):
+    """Join several parts into a url.
+
+    :param base: the base url
+    :parts: parts to join into the url
+    """
+    url = base
+    if not isinstance(parts, (list, tuple)):
+        parts = [parts]
+
+    for p in parts:
+        url = urlparse.urljoin(url, p)
+    return url

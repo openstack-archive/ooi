@@ -30,27 +30,3 @@ class Collection(object):
         self.actions = actions
         self.resources = resources
         self.links = links
-
-    def __str__(self):
-        """Render the collection to text/plain."""
-        # NOTE(aloga): This is unfinished, we need to check what is inside the
-        # collection and render it properly. For example, if we have a
-        # collection of resources, we should render  only their locations.
-        ret = []
-        for what in [self.kinds, self.mixins, self.actions,
-                     self.resources, self.links]:
-            for el in what:
-                ret.append("X-OCCI-Location: %s" % el.location)
-        return "\n".join(ret)
-
-    def headers(self):
-        """Render the collection to text/occi."""
-        # NOTE(aloga): This is unfinished, we need to check what is inside the
-        # collection and render it properly. For example, if we have a
-        # collection of resources, we should render  only their locations.
-        headers = []
-        for what in [self.kinds, self.mixins, self.actions,
-                     self.resources, self.links]:
-            for el in what:
-                headers.append(("X-OCCI-Location", el.location))
-        return headers

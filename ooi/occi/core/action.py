@@ -24,5 +24,10 @@ class Action(category.Category):
     instance.
     """
 
+    def __init__(self, scheme, term, title, attributes=None, location=None):
+        super(Action, self).__init__(scheme, term, title,
+                                     attributes=attributes,
+                                     location="?action=%s" % term)
+
     def _class_name(self):
         return "action"

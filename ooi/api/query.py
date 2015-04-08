@@ -29,7 +29,7 @@ class Controller(base.Controller):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         req = self._get_req(req, path="/%s/flavors/detail" % tenant_id)
         response = req.get_response(self.app)
-        flavors = response.json_body.get("flavors", [])
+        flavors = self.get_from_response(response, "flavors", [])
         occi_resource_templates = []
         if flavors:
             for f in flavors:
@@ -44,7 +44,7 @@ class Controller(base.Controller):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         req = self._get_req(req, path="/%s/images/detail" % tenant_id)
         response = req.get_response(self.app)
-        images = response.json_body.get("images", [])
+        images = self.get_from_response(response, "images", [])
         occi_os_templates = []
         if images:
             for i in images:

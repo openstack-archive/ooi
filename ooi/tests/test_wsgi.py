@@ -42,7 +42,7 @@ class FakeController(object):
     def show(self, req, id):
         # Returning a ResponseObject should stop the pipepline
         # so the application won't be called.
-        resp = wsgi.ResponseObject("Show and stop")
+        resp = wsgi.ResponseObject([])
         return resp
 
 
@@ -69,7 +69,7 @@ class TestMiddleware(base.TestCase):
         result = webob.Request.blank("/foos/stop",
                                      method="GET").get_response(self.app)
         self.assertEqual(200, result.status_code)
-        self.assertEqual("Show and stop", result.text)
+        self.assertEqual("", result.text)
 
     def test_post(self):
         result = webob.Request.blank("/foos",

@@ -46,16 +46,6 @@ class TestAttributes(base.TestCase):
 
         self.assertRaises(AttributeError, set_val)
 
-    def test_as_str(self):
-        attr = attribute.MutableAttribute("occi.foo.bar", "bar")
-        self.assertEqual('occi.foo.bar="bar"', attr._as_str())
-        attr.value = True
-        self.assertEqual('occi.foo.bar="true"', attr._as_str())
-        attr.value = False
-        self.assertEqual('occi.foo.bar="false"', attr._as_str())
-        attr.value = 4.5
-        self.assertEqual("occi.foo.bar=4.5", attr._as_str())
-
 
 class TestAttributeCollection(base.TestCase):
     def test_collection(self):
@@ -121,9 +111,7 @@ class BaseTestCoreOCCICategory(base.TestCase):
 
 
 class TestCoreOCCICategory(BaseTestCoreOCCICategory):
-    def test_str(self):
-        cat = self.obj(*self.args)
-        self.assertRaises(ValueError, cat.__str__)
+    pass
 
 
 class TestCoreOCCIKind(BaseTestCoreOCCICategory):

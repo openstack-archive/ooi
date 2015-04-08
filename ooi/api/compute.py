@@ -38,7 +38,7 @@ class Controller(ooi.api.base.Controller):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         req = self._get_req(req, path="/%s/servers" % tenant_id)
         response = req.get_response(self.app)
-        servers = response.json_body.get("servers", [])
+        servers = self.get_from_response(response, "servers", [])
         occi_compute_resources = self._get_compute_resources(servers)
 
         return collection.Collection(resources=occi_compute_resources)
@@ -63,7 +63,7 @@ class Controller(ooi.api.base.Controller):
                                 }}))
         response = req.get_response(self.app)
         # We only get one server
-        server = response.json_body.get("server", {})
+        server = self.get_from_response(response, "server", {})
 
         # The returned JSON does not contain the server name
         server["name"] = params["/occi/infrastructure"]
@@ -77,13 +77,13 @@ class Controller(ooi.api.base.Controller):
         # get info from server
         req = self._get_req(req, path="/%s/servers/%s" % (tenant_id, id))
         response = req.get_response(self.app)
-        s = response.json_body.get("server", {})
+        s = self.get_from_response(response, "server", {})
 
         # get info from flavor
         req = self._get_req(req, path="/%s/flavors/%s" % (tenant_id,
                                                           s["flavor"]["id"]))
         response = req.get_response(self.app)
-        flavor = response.json_body.get("flavor", {})
+        flavor = self.get_from_response(response, "flavor", {})
         res_tpl = templates.OpenStackResourceTemplate(flavor["name"],
                                                       flavor["vcpus"],
                                                       flavor["ram"],
@@ -93,7 +93,7 @@ class Controller(ooi.api.base.Controller):
         req = self._get_req(req, path="/%s/images/%s" % (tenant_id,
                                                          s["image"]["id"]))
         response = req.get_response(self.app)
-        image = response.json_body.get("image", {})
+        image = self.get_from_response(response, "image", {})
         os_tpl = templates.OpenStackOSTemplate(image["id"],
                                                image["name"])
 

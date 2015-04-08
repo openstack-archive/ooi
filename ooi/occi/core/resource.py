@@ -60,10 +60,3 @@ class Resource(entity.Entity):
     @summary.setter
     def summary(self, value):
         self.attributes["occi.core.summary"].value = value
-
-    def __str__(self):
-        """Render the resource to text/plain."""
-        ret = [super(Resource, self).__str__()]
-        for link in self.links:
-            ret.append("%s" % link)
-        return "\n".join(ret)

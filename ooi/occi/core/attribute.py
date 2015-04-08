@@ -35,24 +35,6 @@ class Attribute(object):
     def value(self):
         return self._value
 
-    def _as_str(self):
-        value_str = ''
-        if isinstance(self._value, six.string_types):
-            value_str = '"%s"' % self._value
-        elif isinstance(self._value, bool):
-            value_str = '"%s"' % str(self._value).lower()
-        else:
-            value_str = "%s" % self._value
-        return "%s=%s" % (self.name, value_str)
-
-    def __str__(self):
-        """Render the attribute to text/plain."""
-        return ": ".join(self.headers()[0])
-
-    def headers(self):
-        """Render the attribute to text/occi."""
-        return [("X-OCCI-Attribute", self._as_str())]
-
 
 class MutableAttribute(Attribute):
     @Attribute.value.setter

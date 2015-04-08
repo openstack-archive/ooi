@@ -22,6 +22,7 @@ from ooi.occi.core import attribute
 from ooi.occi.core import kind
 from ooi.occi.core import mixin
 from ooi.occi import helpers
+from ooi import utils
 
 
 class EntityMeta(type):
@@ -94,21 +95,4 @@ class Entity(object):
 
     @property
     def location(self):
-        return helpers.join_url(self.kind.location, self.id)
-
-    def headers(self):
-        """Render the entity to text/occi."""
-        h = self.kind.headers()
-        for m in self.mixins:
-            h.extend(m.headers())
-        for attr_name in self.attributes:
-            if self.attributes[attr_name].value is not None:
-                h.extend(self.attributes[attr_name].headers())
-        return h
-
-    def __str__(self):
-        """Render the entity to text/plain."""
-        ret = []
-        for h in self.headers():
-            ret.append(": ".join(h))
-        return "\n".join(ret)
+        return utils.join_url(self.kind.location, self.id)

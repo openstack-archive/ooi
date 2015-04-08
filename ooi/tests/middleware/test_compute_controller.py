@@ -14,6 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import uuid
+
 import mock
 
 from ooi.tests import fakes
@@ -55,9 +57,21 @@ def build_occi_server(server):
         'occi.compute.hostname="%s"' % name,
         'occi.core.id="%s"' % server_id,
     ]
+    links = []
+    links.append('<%s?action=restart>; rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#restart' % server_id)
+    links.append('<%s?action=start>; rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#start' % server_id)
+    links.append('<%s?action=stop>; rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#stop' % server_id)
+    links.append('<%s?action=suspend>; rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#suspend' % server_id)
+
     result = []
     for c in cats:
         result.append(("Category", c))
+    for l in links:
+        result.append(("Link", l))
     for a in attrs:
         result.append(("X-OCCI-Attribute", a))
     return result
@@ -114,6 +128,15 @@ class TestComputeController(test_middleware.TestMiddleware):
             self.assertContentType(resp)
             self.assertExpectedResult(expected, resp)
             self.assertEqual(200, resp.status_code)
+
+    def test_vm_not_found(self):
+        tenant = fakes.tenants["foo"]
+
+        app = self.get_app()
+        req = self._build_req("/compute/%s" % uuid.uuid4().hex,
+                              tenant["id"], method="GET")
+        resp = req.get_response(app)
+        self.assertEqual(404, resp.status_code)
 
     def test_create_vm(self):
         tenant = fakes.tenants["foo"]
