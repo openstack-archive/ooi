@@ -116,6 +116,14 @@ volumes = {
 def fake_query_results():
     cats = []
     cats.append(
+        'storage; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+        'class="kind"')
+    cats.append(
+        'storagelink; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+        'class="kind"')
+    cats.append(
         'compute; '
         'scheme="http://schemas.ogf.org/occi/infrastructure"; '
         'class="kind"')
@@ -131,6 +139,26 @@ def fake_query_results():
         'entity; '
         'scheme="http://schemas.ogf.org/occi/core"; '
         'class="kind"')
+    cats.append(
+        'offline; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action"; '
+        'class="action"')
+    cats.append(
+        'online; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action"; '
+        'class="action"')
+    cats.append(
+        'backup; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action"; '
+        'class="action"')
+    cats.append(
+        'resize; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action"; '
+        'class="action"')
+    cats.append(
+        'snapshot; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action"; '
+        'class="action"')
     cats.append(
         'start; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; '

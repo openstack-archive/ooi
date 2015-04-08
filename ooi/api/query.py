@@ -19,6 +19,8 @@ from ooi.occi.core import entity
 from ooi.occi.core import link
 from ooi.occi.core import resource
 from ooi.occi.infrastructure import compute
+from ooi.occi.infrastructure import storage
+from ooi.occi.infrastructure import storage_link
 from ooi.occi.infrastructure import templates as infra_templates
 from ooi.openstack import mixins
 from ooi.openstack import templates
@@ -62,6 +64,11 @@ class Controller(base.Controller):
         # OCCI infra Compute:
         l.append(compute.ComputeResource.kind)
         l.extend(compute.ComputeResource.actions)
+
+        # OCCI infra Storage
+        l.append(storage.StorageResource.kind)
+        l.append(storage_link.StorageLink.kind)
+        l.extend(storage.StorageResource.actions)
 
         # OCCI infra mixins
         l.append(infra_templates.os_tpl)
