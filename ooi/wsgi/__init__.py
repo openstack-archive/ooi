@@ -123,7 +123,8 @@ class OCCIMiddleware(object):
         self.resources["compute"] = self._create_resource(
             ooi.api.compute.Controller)
         self.mapper.resource("server", "compute",
-                             controller=self.resources["compute"])
+                             controller=self.resources["compute"],
+                             collection={"delete": "DELETE"})
 
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, req):

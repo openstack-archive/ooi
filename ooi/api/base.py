@@ -26,7 +26,11 @@ class Controller(object):
         self.app = app
         self.openstack_version = openstack_version
 
-    def _get_req(self, req, path=None, content_type=None, body=None):
+    def _get_req(self, req,
+                 path=None,
+                 content_type=None,
+                 body=None,
+                 method=None):
         """Return a new Request object to interact with OpenStack.
 
         This method will create a new request starting with the same WSGI
@@ -49,6 +53,8 @@ class Controller(object):
             new_req.content_type = content_type
         if body is not None:
             new_req.body = utils.utf8(body)
+        if method is not None:
+            new_req.method = method
         return new_req
 
     @staticmethod
@@ -63,7 +69,7 @@ class Controller(object):
         :param element: The element to look for in the JSON body
         :param default: The default element to be returned if not found.
         """
-        if response.status_int == 200:
+        if response.status_int in [200, 201]:
             return response.json_body.get(element, default)
         else:
             raise exception_from_response(response)

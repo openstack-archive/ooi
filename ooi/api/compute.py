@@ -71,7 +71,7 @@ class Controller(ooi.api.base.Controller):
 
         return collection.Collection(resources=occi_compute_resources)
 
-    def show(self, id, req):
+    def show(self, req, id):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
 
         # get info from server
@@ -106,3 +106,27 @@ class Controller(ooi.api.base.Controller):
                                        state=helpers.occi_state(s["status"]),
                                        mixins=[os_tpl, res_tpl])
         return [comp]
+
+    def delete(self, req, id=None):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+
+        servers = []
+        if id:
+            servers.append(id)
+        else:
+            req = self._get_req(req,
+                                path="/%s/servers" % tenant_id,
+                                method="GET")
+            response = req.get_response(self.app)
+            for s in self.get_from_response(response, "servers", []):
+                servers.append(s["id"])
+
+        for server_id in servers:
+            req = self._get_req(req,
+                                path="/%s/servers/%s" % (tenant_id,
+                                                         server_id),
+                                method="DELETE")
+            response = req.get_response(self.app)
+            if response.status_int not in [204]:
+                raise ooi.api.base.exception_from_response(response)
+        return []
