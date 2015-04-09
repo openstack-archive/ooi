@@ -303,6 +303,8 @@ class FakeApp(object):
             return self._do_post(req)
 
     def _do_create(self, req):
+        # TODO(enolfc): this should check the json is
+        # semantically correct
         s = {"server": {"id": "foo",
                         "name": "foo",
                         "flavor": {"id": "1"},
