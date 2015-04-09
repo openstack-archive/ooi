@@ -187,11 +187,47 @@ class TestComputeController(test_middleware.TestMiddleware):
                 'scheme="http://schemas.openstack.org/template/os#";'
                 'class="mixin"')
         }
+
         req = self._build_req("/compute", tenant["id"], method="POST",
                               headers=headers)
         resp = req.get_response(app)
 
         self.assertEqual(400, resp.status_code)
+        self.assertContentType(resp)
+
+    def test_create_with_context(self):
+        tenant = fakes.tenants["foo"]
+
+        app = self.get_app()
+        headers = {
+            'Category': (
+                'compute;'
+                'scheme="http://schemas.ogf.org/occi/infrastructure#";'
+                'class="kind",'
+                'foo;'
+                'scheme="http://schemas.openstack.org/template/resource#";'
+                'class="mixin",'
+                'bar;'
+                'scheme="http://schemas.openstack.org/template/os#";'
+                'class="mixin",'
+                'user_data;'
+                'scheme="http://schemas.openstack.org/compute/instance#";'
+                'class="mixin"'
+            ),
+            'X-OCCI-Attribute': (
+                'org.openstack.compute.user_data="foo"'
+            )
+        }
+
+        req = self._build_req("/compute", tenant["id"], method="POST",
+                              headers=headers)
+        resp = req.get_response(app)
+
+        expected = [("X-OCCI-Location",
+                     utils.join_url(self.application_url + "/",
+                                    "compute/%s" % "foo"))]
+        self.assertEqual(200, resp.status_code)
+        self.assertExpectedResult(expected, resp)
         self.assertContentType(resp)
 
     def test_vm_links(self):
