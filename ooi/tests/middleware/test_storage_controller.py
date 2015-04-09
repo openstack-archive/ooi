@@ -20,6 +20,7 @@ import mock
 
 from ooi.tests import fakes
 from ooi.tests.middleware import test_middleware
+from ooi import utils
 
 
 def build_occi_volume(vol):
@@ -40,16 +41,26 @@ def build_occi_volume(vol):
         'occi.core.id="%s"' % vol_id,
     ]
     links = []
-    links.append('<%s?action=backup>; rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#backup' % vol_id)
-    links.append('<%s?action=resize>; rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#resize' % vol_id)
-    links.append('<%s?action=snapshot>; rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#snapshot' % vol_id)
-    links.append('<%s?action=offline>; rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#offline' % vol_id)
-    links.append('<%s?action=online>; rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#online' % vol_id)
+    links.append('<%s/storage/%s?action=backup>; '
+                 'rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#backup' %
+                 (fakes.application_url, vol_id))
+    links.append('<%s/storage/%s?action=resize>; '
+                 'rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#resize' %
+                 (fakes.application_url, vol_id))
+    links.append('<%s/storage/%s?action=online>; '
+                 'rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#online' %
+                 (fakes.application_url, vol_id))
+    links.append('<%s/storage/%s?action=snapshot>; '
+                 'rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#snapshot' %
+                 (fakes.application_url, vol_id))
+    links.append('<%s/storage/%s?action=offline>; '
+                 'rel=http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#offline' %
+                 (fakes.application_url, vol_id))
 
     result = []
     for c in cats:
@@ -76,8 +87,6 @@ class TestStorageController(test_middleware.TestMiddleware):
 
         resp = req.get_response(app)
 
-        self.assertEqual("/%s/os-volumes" % tenant["id"], req.path_info)
-
         expected_result = ""
         self.assertContentType(resp)
         self.assertExpectedResult(expected_result, resp)
@@ -91,12 +100,13 @@ class TestStorageController(test_middleware.TestMiddleware):
 
         resp = req.get_response(app)
 
-        self.assertEqual("/%s/os-volumes" % tenant["id"], req.path_info)
-
         self.assertEqual(200, resp.status_code)
         expected = []
         for s in fakes.volumes[tenant["id"]]:
-            expected.append(("X-OCCI-Location", "/storage/%s" % s["id"]))
+            expected.append(
+                ("X-OCCI-Location", utils.join_url(self.application_url + "/",
+                                                   "storage/%s" % s["id"]))
+            )
         self.assertExpectedResult(expected, resp)
 
     def test_show_vol(self):

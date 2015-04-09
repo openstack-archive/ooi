@@ -53,6 +53,20 @@ class TestMiddleware(base.TestCase):
         results = result.text.splitlines()
         self.assertItemsEqual(expected, results)
 
+    def assertResultIncludesLink(self, link_id, source, target, result):
+        expected_attrs = set([
+            'occi.core.source="%s"' % source,
+            'occi.core.target="%s"' % target,
+            'occi.core.id="%s"' % link_id,
+        ])
+        for lines in result.text.splitlines():
+            r = lines.split(":", 1)
+            if r[0] == "Link":
+                attrs = set([s.strip() for s in r[1].split(";")])
+                if expected_attrs.issubset(attrs):
+                    return
+        self.fail("Failed to find %s in %s." % expected_attrs, result)
+
     def _build_req(self, path, tenant_id, **kwargs):
         if self.accept is not None:
             kwargs["accept"] = self.accept
@@ -109,3 +123,15 @@ class TestMiddlewareTextOcci(TestMiddleware):
 
     def test_correct_accept(self):
         self.assertEqual("text/occi", self.accept)
+
+    def assertResultIncludesLink(self, link_id, source, target, result):
+        expected_attrs = set([
+            'occi.core.source="%s"' % source,
+            'occi.core.target="%s"' % target,
+            'occi.core.id="%s"' % link_id,
+        ])
+        for val in result.headers.getall("Link"):
+            attrs = set([s.strip() for s in val.split(";")])
+            if expected_attrs.issubset(attrs):
+                return
+        self.fail("Failed to find %s in %s." % expected_attrs, result)

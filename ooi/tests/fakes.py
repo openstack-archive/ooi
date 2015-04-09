@@ -30,7 +30,9 @@ tenants = {
     "foo": {"id": uuid.uuid4().hex,
             "name": "foo"},
     "bar": {"id": uuid.uuid4().hex,
-            "name": "bar"}
+            "name": "bar"},
+    "baz": {"id": uuid.uuid4().hex,
+            "name": "baz"},
 }
 
 flavors = {
@@ -61,6 +63,38 @@ images = {
     }
 }
 
+volumes = {
+    tenants["foo"]["id"]: [
+        {
+            "id": uuid.uuid4().hex,
+            "displayName": "foo",
+            "size": 2,
+            "status": "in-use",
+        },
+        {
+            "id": uuid.uuid4().hex,
+            "displayName": "bar",
+            "size": 3,
+            "status": "in-use",
+        },
+        {
+            "id": uuid.uuid4().hex,
+            "displayName": "baz",
+            "size": 5,
+            "status": "in-use",
+        },
+    ],
+    tenants["bar"]["id"]: [],
+    tenants["baz"]["id"]: [
+        {
+            "id": uuid.uuid4().hex,
+            "displayName": "volume",
+            "size": 5,
+            "status": "in-use",
+        },
+    ],
+}
+
 servers = {
     tenants["foo"]["id"]: [
         {
@@ -86,30 +120,18 @@ servers = {
         },
     ],
     tenants["bar"]["id"]: [],
-}
-
-volumes = {
-    tenants["foo"]["id"]: [
+    tenants["baz"]["id"]: [
         {
             "id": uuid.uuid4().hex,
-            "displayName": "foo",
-            "size": 2,
-            "status": "in-use",
-        },
-        {
-            "id": uuid.uuid4().hex,
-            "displayName": "bar",
-            "size": 3,
-            "status": "in-use",
-        },
-        {
-            "id": uuid.uuid4().hex,
-            "displayName": "baz",
-            "size": 5,
-            "status": "in-use",
+            "name": "withvolume",
+            "flavor": {"id": flavors[1]["id"]},
+            "image": {"id": images["bar"]["id"]},
+            "status": "ACTIVE",
+            "os-extended-volumes:volumes_attached": [
+                {"id": volumes[tenants["baz"]["id"]][0]["id"]}
+            ]
         },
     ],
-    tenants["bar"]["id"]: [],
 }
 
 

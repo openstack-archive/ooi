@@ -194,6 +194,24 @@ class TestComputeController(test_middleware.TestMiddleware):
         self.assertEqual(400, resp.status_code)
         self.assertContentType(resp)
 
+    def test_vm_links(self):
+        tenant = fakes.tenants["baz"]
+
+        app = self.get_app()
+
+        for server in fakes.servers[tenant["id"]]:
+            req = self._build_req("/compute/%s" % server["id"],
+                                  tenant["id"], method="GET")
+
+            resp = req.get_response(app)
+
+            vol_id = server["os-extended-volumes:volumes_attached"][0]["id"]
+            link_id = '_'.join([server["id"], vol_id])
+
+            self.assertContentType(resp)
+            self.assertResultIncludesLink(link_id, server["id"], vol_id, resp)
+            self.assertEqual(200, resp.status_code)
+
 
 class ComputeControllerTextPlain(test_middleware.TestMiddlewareTextPlain,
                                  TestComputeController):
