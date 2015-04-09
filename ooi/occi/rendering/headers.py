@@ -19,6 +19,7 @@ import webob.exc
 
 from ooi.occi.core import action
 from ooi.occi.core import collection
+from ooi.occi.core import entity
 from ooi.occi.core import kind
 from ooi.occi.core import mixin
 from ooi.occi.core import resource
@@ -87,15 +88,38 @@ class CollectionRenderer(HeaderRenderer):
 
 
 class AttributeRenderer(HeaderRenderer):
-    def render(self, env={}):
+    def render_attr(self, env={}):
         value_str = ''
         if isinstance(self.obj.value, six.string_types):
             value_str = '"%s"' % self.obj.value
         elif isinstance(self.obj.value, bool):
             value_str = '"%s"' % str(self.obj.value).lower()
+        elif isinstance(self.obj.value, entity.Entity):
+            value_str = '"%s"' % self.obj.value.id
         else:
             value_str = "%s" % self.obj.value
-        return [('X-OCCI-Attribute', '%s=%s' % (self.obj.name, value_str))]
+        return '%s=%s' % (self.obj.name, value_str)
+
+    def render(self, env={}):
+        return [('X-OCCI-Attribute', self.render_attr(env))]
+
+
+class LinkRenderer(HeaderRenderer):
+    def render(self, env={}):
+        ret = []
+        url = env.get("application_url", "")
+        url = utils.join_url(url, self.obj.location)
+        d = {"location": url,
+             "scheme": self.obj.target.kind.scheme,
+             "term": self.obj.target.kind.term,
+             "self": url}
+        link = '<%(location)s>; rel="%(scheme)s#%(term)s"; self="%(self)s"' % d
+        ret.append(link)
+        for a in self.obj.attributes:
+            if self.obj.attributes[a].value is None:
+                continue
+            ret.append(AttributeRenderer(self.obj.attributes[a]).render_attr())
+        return [('Link', '; '.join(ret))]
 
 
 class ResourceRenderer(HeaderRenderer):
@@ -114,9 +138,7 @@ class ResourceRenderer(HeaderRenderer):
             r = ActionRenderer(a)
             ret.extend(r.render(ass_obj=self.obj, env=env))
         for l in self.obj.links:
-            pass
-            # FIXME(aloga): we need to fix this
-#            ret.append(LinkRenderer(l))
+            ret.extend(LinkRenderer(l).render())
         return ret
 
 
