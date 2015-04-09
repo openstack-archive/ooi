@@ -24,13 +24,12 @@ from ooi import wsgi
 
 @webob.dec.wsgify
 def fake_app(req):
-    resp = webob.Response("Hi")
+    resp = webob.Response("Foo")
     return resp
 
 
 class FakeController(object):
     def index(self, *args, **kwargs):
-        # Return none so that the middleware passes to the app
         return None
 
     def create(self, req, body):
@@ -63,7 +62,7 @@ class TestMiddleware(base.TestCase):
         result = webob.Request.blank("/foos",
                                      method="GET").get_response(self.app)
         self.assertEqual(200, result.status_code)
-        self.assertEqual("Hi", result.text)
+        self.assertEqual("", result.text)
 
     def test_show(self):
         result = webob.Request.blank("/foos/stop",
@@ -91,10 +90,32 @@ class TestMiddleware(base.TestCase):
         result = webob.Request.blank("/bazonk").get_response(self.app)
         self.assertEqual(404, result.status_code)
 
+    def test_empty_accept(self):
+        req = webob.Request.blank("/foos",
+                                  method="GET",
+                                  accept=None)
+        result = req.get_response(self.app)
+        self.assertEqual(200, result.status_code)
+        self.assertEqual("text/plain", result.content_type)
+
+    def test_accept_all(self):
+        req = webob.Request.blank("/foos",
+                                  method="GET",
+                                  accept="*/*")
+        result = req.get_response(self.app)
+        self.assertEqual(200, result.status_code)
+        self.assertEqual("text/plain", result.content_type)
+
     def test_bad_accept(self):
         req = webob.Request.blank("/foos",
                                   method="GET",
-                                  accept="foo/bazonk",
+                                  accept="foo/bazonk")
+        result = req.get_response(self.app)
+        self.assertEqual(406, result.status_code)
+
+    def test_bad_content_type(self):
+        req = webob.Request.blank("/foos",
+                                  method="GET",
                                   content_type="foo/bazonk")
         result = req.get_response(self.app)
         self.assertEqual(406, result.status_code)

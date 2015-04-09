@@ -34,14 +34,17 @@ class TestMiddleware(base.TestCase):
     def setUp(self):
         super(TestMiddleware, self).setUp()
 
-        self.accept = None
+        self.accept = self.content_type = None
         self.application_url = fakes.application_url
 
     def get_app(self, resp=None):
         return wsgi.OCCIMiddleware(fakes.FakeApp())
 
     def assertContentType(self, result):
-        expected = self.accept or "text/plain"
+        if self.accept in (None, "*/*"):
+            expected = "text/plain"
+        else:
+            expected = self.accept
         self.assertEqual(expected, result.content_type)
 
     def assertExpectedResult(self, expected, result):
@@ -53,6 +56,9 @@ class TestMiddleware(base.TestCase):
     def _build_req(self, path, tenant_id, **kwargs):
         if self.accept is not None:
             kwargs["accept"] = self.accept
+
+        if self.content_type is not None:
+            kwargs["content_type"] = self.content_type
 
         m = mock.MagicMock()
         m.user.project_id = tenant_id

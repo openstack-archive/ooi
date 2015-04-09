@@ -36,7 +36,7 @@ class HeaderRenderer(object):
 
 class ExceptionRenderer(HeaderRenderer):
     def render(self, env={}):
-        return []
+        return [("X-OCCI-Error", self.obj.explanation)]
 
 
 class CategoryRenderer(HeaderRenderer):

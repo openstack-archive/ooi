@@ -77,8 +77,16 @@ class Invalid(OCCIException):
 
 
 class InvalidContentType(Invalid):
-    msg_fmt = "Invalid content type %(content_type)s."
+    msg_fmt = "Invalid Content-type %(content_type)s."
     code = 406
+
+
+class NoContentType(InvalidContentType):
+    msg_fmt = "No Content-type provided."
+
+
+class InvalidAccept(InvalidContentType):
+    msg_fmt = "Invalid Accept %(content_type)s."
 
 
 class NotImplemented(OCCIException):
