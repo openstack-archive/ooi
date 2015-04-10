@@ -57,7 +57,7 @@ class HeaderSerializer(BaseSerializer):
         # Header renderers will return a list, so we must flatten the results
         # before returning them
         headers = [i for r in renderers for i in r.render(env=self.env)]
-        return headers, ""
+        return headers, utils.utf8("")
 
 
 _SERIALIZERS_MAP = {

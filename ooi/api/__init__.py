@@ -90,7 +90,7 @@ def validate(class_id, schemas, term=None):
                 if len(s) != 0:
                     mismatched_schemas = [(scheme, d[scheme])
                                           for scheme in dict(s).keys()]
-                    raise exception.OCCISchemaOcurrencesMismatch(
+                    raise exception.OCCISchemaOccurrencesMismatch(
                         mismatched_schemas=mismatched_schemas)
 
             def term_validation():

@@ -174,6 +174,26 @@ class TestComputeController(test_middleware.TestMiddleware):
         self.assertExpectedResult(expected, resp)
         self.assertContentType(resp)
 
+    def test_create_vm_incomplete(self):
+        tenant = fakes.tenants["foo"]
+
+        app = self.get_app()
+        headers = {
+            'Category': (
+                'compute;'
+                'scheme="http://schemas.ogf.org/occi/infrastructure#";'
+                'class="kind",'
+                'bar;'
+                'scheme="http://schemas.openstack.org/template/os#";'
+                'class="mixin"')
+        }
+        req = self._build_req("/compute", tenant["id"], method="POST",
+                              headers=headers)
+        resp = req.get_response(app)
+
+        self.assertEqual(400, resp.status_code)
+        self.assertContentType(resp)
+
 
 class ComputeControllerTextPlain(test_middleware.TestMiddlewareTextPlain,
                                  TestComputeController):

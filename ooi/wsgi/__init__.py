@@ -22,7 +22,6 @@ import webob.dec
 import ooi.api.compute
 from ooi.api import query
 from ooi import exception
-from ooi.occi.core import collection
 from ooi import utils
 from ooi.wsgi import serializers
 
@@ -31,30 +30,25 @@ LOG = logging.getLogger(__name__)
 
 class Request(webob.Request):
     def get_content_type(self):
-        """Determine content type of the request body.
-
-        Does not do any body introspection, only checks header
-
-        """
-        if "Content-Type" not in self.headers:
+        """Determine content type of the request body."""
+        if not self.content_type:
             return None
 
-        content_type = self.content_type
+        # FIXME: we should change this, since the content type does not depend
+        # on the serializers, but on the parsers
+        if self.content_type not in serializers.get_supported_content_types():
+            LOG.debug("Unrecognized Content-Type provided in request")
+            raise exception.InvalidContentType(content_type=self.content_type)
 
-        if not content_type or content_type == 'text/plain':
-            return None
+        return self.content_type
 
-        if content_type not in serializers.get_supported_content_types():
-            raise exception.InvalidContentType(content_type=content_type)
-
-        return content_type
-
-    def get_best_match_content_type(self):
-        content_type = self.get_content_type()
-        if content_type is None:
-            content_types = serializers.get_supported_content_types()
-            content_type = self.accept.best_match(content_types,
-                                                  default_match="text/plain")
+    def get_best_match_content_type(self, default_match=None):
+        content_types = serializers.get_supported_content_types()
+        content_type = self.accept.best_match(content_types,
+                                              default_match=default_match)
+        if not content_type:
+            LOG.debug("Unrecognized Accept Content-type provided in request")
+            raise exception.InvalidAccept(content_type=content_type)
         return content_type
 
 
@@ -164,15 +158,6 @@ class Resource(object):
 
         return args
 
-    def get_body(self, request):
-        try:
-            content_type = request.get_content_type()
-        except exception.InvalidContentType:
-            LOG.debug("Unrecognized Content-Type provided in request")
-            return None, ''
-
-        return content_type, request.body
-
     @staticmethod
     def _should_have_body(request):
         return request.method in ("POST", "PUT")
@@ -183,11 +168,13 @@ class Resource(object):
         action = action_args.pop('action', None)
         try:
             accept = request.get_best_match_content_type()
-        except exception.InvalidContentType:
-            msg = "Unsupported Content-Type"
+            content_type = request.get_content_type()
+        except exception.InvalidContentType as e:
+            msg = e.format_message()
             return Fault(webob.exc.HTTPNotAcceptable(explanation=msg))
 
-        content_type, body = self.get_body(request)
+        body = request.body
+
         # Get the implementing method
         try:
             method = self.get_method(request, action,
@@ -216,18 +203,17 @@ class Resource(object):
             response = ex
 
         # No exceptions, so create a response
+        # NOTE(aloga): if the middleware returns None, the pipeline will
+        # continue, but we do not want to do so, so we convert the action
+        # result to a ResponseObject.
         if not response:
-            resp_obj = None
-            # We got something
-            if isinstance(action_result, (list, collection.Collection)):
-                resp_obj = ResponseObject(action_result)
-            elif isinstance(action_result, ResponseObject):
+            if isinstance(action_result, ResponseObject):
                 resp_obj = action_result
             else:
-                response = action_result
-            if resp_obj and not response:
-                response = resp_obj.serialize(request, accept,
-                                              self.default_serializers)
+                resp_obj = ResponseObject(action_result)
+
+            response = resp_obj.serialize(request, accept,
+                                          self.default_serializers)
         return response
 
     def get_method(self, request, action, content_type, body):
@@ -293,8 +279,8 @@ class ResponseObject(object):
         for hdr, value in self._headers.items():
             response.headers[hdr] = utils.utf8(value)
         response.headers['Content-Type'] = content_type
+        response.charset = 'utf8'
         if self.obj is not None:
-            response.charset = 'utf8'
             headers, body = serializer.serialize(self.obj)
             if headers is not None:
                 for hdr in headers:
@@ -371,7 +357,7 @@ class Fault(webob.exc.HTTPException):
             self.wrapped_exc.headers[key] = str(value)
         self.status_int = exception.status_int
 
-    @webob.dec.wsgify()
+    @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, req):
         """Generate a WSGI response based on the exception passed to ctor."""
 
@@ -381,14 +367,24 @@ class Fault(webob.exc.HTTPException):
         LOG.debug("Returning %(code)s to user: %(explanation)s",
                   {'code': code, 'explanation': explanation})
 
-        content_type = req.content_type or "text/plain"
+        def_ct = "text/plain"
+        content_type = req.get_best_match_content_type(default_match=def_ct)
         mtype = serializers.get_media_map().get(content_type,
                                                 "text")
         serializer = serializers.get_default_serializers()[mtype]
         env = {}
         serialized_exc = serializer(env).serialize(self.wrapped_exc)
-        self.wrapped_exc.body = serialized_exc[1]
         self.wrapped_exc.content_type = content_type
+        self.wrapped_exc.body = serialized_exc[1]
+
+        # We need to specify the HEAD req.method here to be HEAD because of the
+        # way that webob.exc.WSGIHTTPException.__call__ generates the response.
+        # The text/occi will not have a body since it is based on headers. We
+        # cannot set this earlier in the middleware, since we are calling
+        # OpenStack and it will fail because the responses won't contain a
+        # body.
+        if content_type == "text/occi":
+            req.method = "HEAD"
 
         return self.wrapped_exc
 
