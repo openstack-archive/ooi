@@ -302,6 +302,11 @@ class ResponseObject(object):
             if body:
                 response.body = body
 
+            # 204 should be used if there is no content
+            if (not (headers or body) and
+                    response.status_int in [200, 201, 202]):
+                response.status_int = 204
+
         return response
 
     @property
