@@ -34,6 +34,27 @@ class Controller(ooi.api.base.Controller):
 
         return occi_compute_resources
 
+    def _get_compute_ids(self, req):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        req = self._get_req(req,
+                            path="/%s/servers" % tenant_id,
+                            method="GET")
+        response = req.get_response(self.app)
+        return [s["id"] for s in self.get_from_response(response,
+                                                        "servers", [])]
+
+    def _delete(self, req, ids):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        for id in ids:
+            req = self._get_req(req,
+                                path="/%s/servers/%s" % (tenant_id,
+                                                         id),
+                                method="DELETE")
+            response = req.get_response(self.app)
+            if response.status_int not in [204]:
+                raise ooi.api.base.exception_from_response(response)
+        return []
+
     def index(self, req):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         req = self._get_req(req, path="/%s/servers" % tenant_id)
@@ -107,26 +128,8 @@ class Controller(ooi.api.base.Controller):
                                        mixins=[os_tpl, res_tpl])
         return [comp]
 
-    def delete(self, req, id=None):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
+    def delete(self, req, id):
+        return self._delete(req, [id])
 
-        servers = []
-        if id:
-            servers.append(id)
-        else:
-            req = self._get_req(req,
-                                path="/%s/servers" % tenant_id,
-                                method="GET")
-            response = req.get_response(self.app)
-            for s in self.get_from_response(response, "servers", []):
-                servers.append(s["id"])
-
-        for server_id in servers:
-            req = self._get_req(req,
-                                path="/%s/servers/%s" % (tenant_id,
-                                                         server_id),
-                                method="DELETE")
-            response = req.get_response(self.app)
-            if response.status_int not in [204]:
-                raise ooi.api.base.exception_from_response(response)
-        return []
+    def delete_all(self, req):
+        return self._delete(req, self._get_compute_ids(req))
