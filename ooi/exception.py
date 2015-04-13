@@ -94,21 +94,14 @@ class NotImplemented(OCCIException):
     code = 501
 
 
-class HeaderNotFound(Invalid):
-    msg_fmt = "Header '%(header)s' not found."
+class OCCIInvalidSchema(Invalid):
+    msg_fmt = "Found invalid schema: '%(msg)s'."
 
 
-class HeaderValidation(Invalid):
-    """Parent class for header validation error exceptions."""
+class OCCIMissingType(Invalid):
+    msg_fmt = "Missing OCCI types: '%(type_id)s'."
 
 
-class OCCINoClassFound(HeaderValidation):
-    msg_fmt = "Found no headers matching class '%(class_id)s'."
-
-
-class OCCISchemaOccurrencesMismatch(HeaderValidation):
-    msg_fmt = "Schema occurrences do not match: '%(mismatched_schemas)s'."
-
-
-class OCCINotCompliantTerm(HeaderValidation):
-    msg_fmt = "Found a non-compliant term '%(term)s'."
+class OCCISchemaMismatch(Invalid):
+    msg_fmt = ("Schema does not match. Expecting '%(expected)s', "
+               "but found '%(found)s'.")
