@@ -17,8 +17,8 @@
 import uuid
 
 from ooi.occi.infrastructure import templates as occi_templates
+from ooi.openstack import contextualization
 from ooi.openstack import helpers
-from ooi.openstack import mixins
 from ooi.openstack import templates
 from ooi.tests import base
 
@@ -79,7 +79,7 @@ class TestOpenStackUserData(base.TestCase):
     def test_os_userdata(self):
         user_data = "foobar"
 
-        mxn = mixins.OpenStackUserData(user_data)
+        mxn = contextualization.OpenStackUserData(user_data)
 
         self.assertEqual("user_data", mxn.term)
         self.assertTrue(mxn.scheme.startswith(helpers._PREFIX))
@@ -91,7 +91,7 @@ class TestOpenStackPublicKey(base.TestCase):
         key_name = "foobar"
         key_data = "1234"
 
-        mxn = mixins.OpenStackPublicKey(key_name, key_data)
+        mxn = contextualization.OpenStackPublicKey(key_name, key_data)
 
         self.assertEqual("public_key", mxn.term)
         self.assertTrue(mxn.scheme.startswith(helpers._PREFIX))

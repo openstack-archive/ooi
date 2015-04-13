@@ -21,15 +21,18 @@ from ooi.openstack import helpers
 
 
 class OpenStackOSTemplate(mixin.Mixin):
+    scheme = helpers.build_scheme("template/os")
+
     def __init__(self, uuid, name):
         super(OpenStackOSTemplate, self).__init__(
-            helpers.build_scheme("template/os"),
+            OpenStackOSTemplate.scheme,
             uuid,
             name,
             related=[templates.os_tpl])
 
 
 class OpenStackResourceTemplate(mixin.Mixin):
+    scheme = helpers.build_scheme("template/resource")
 
     def __init__(self, name, cores, memory, disk, ephemeral=0, swap=0):
         attrs = [
@@ -43,7 +46,7 @@ class OpenStackResourceTemplate(mixin.Mixin):
         attrs = attribute.AttributeCollection({a.name: a for a in attrs})
 
         super(OpenStackResourceTemplate, self).__init__(
-            helpers.build_scheme("template/resource"),
+            OpenStackResourceTemplate.scheme,
             name,
             "Flavor: %s" % name,
             related=[templates.resource_tpl],

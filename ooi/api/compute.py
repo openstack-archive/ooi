@@ -22,6 +22,7 @@ from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
+from ooi.openstack import contextualization
 from ooi.openstack import helpers
 from ooi.openstack import templates
 
@@ -66,30 +67,43 @@ class Controller(ooi.api.base.Controller):
 
         return collection.Collection(resources=occi_compute_resources)
 
-    @ooi.api.parse
-    @ooi.api.validate("kind",
-                      {"http://schemas.ogf.org/occi/infrastructure#": 1},
-                      term="compute")
-    @ooi.api.validate("mixin",
-                      {"http://schemas.openstack.org/template/resource#": 1,
-                       "http://schemas.openstack.org/template/os#": 1})
-    def create(self, req, headers, params, body):
+    @ooi.api.validate({"kind": compute.ComputeResource.kind,
+                       "mixins": [
+                           templates.OpenStackOSTemplate,
+                           templates.OpenStackResourceTemplate,
+                       ],
+                       "optional_mixins": [
+                           contextualization.user_data,
+                           contextualization.public_key,
+                       ]
+                       })
+    def create(self, obj, req, body):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
+        name = obj.get("occi.core.title", "OCCI VM")
+        image = obj["schemes"][templates.OpenStackOSTemplate.scheme][0]
+        flavor = obj["schemes"][templates.OpenStackResourceTemplate.scheme][0]
+        req_body = {"server": {
+            "name": name,
+            "imageRef": image,
+            "flavorRef": flavor,
+        }}
+        if contextualization.user_data.scheme in obj["schemes"]:
+            req_body["user_data"] = obj.get("org.openstack.compute.user_data")
         req = self._get_req(req,
                             path="/%s/servers" % tenant_id,
                             content_type="application/json",
                             body=json.dumps({
                                 "server": {
-                                    "name": params["/occi/infrastructure"],
-                                    "imageRef": params["/template/os"],
-                                    "flavorRef": params["/template/resource"]
+                                    "name": name,
+                                    "imageRef": image,
+                                    "flavorRef": flavor,
                                 }}))
         response = req.get_response(self.app)
         # We only get one server
         server = self.get_from_response(response, "server", {})
 
         # The returned JSON does not contain the server name
-        server["name"] = params["/occi/infrastructure"]
+        server["name"] = name
         occi_compute_resources = self._get_compute_resources([server])
 
         return collection.Collection(resources=occi_compute_resources)

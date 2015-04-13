@@ -20,6 +20,9 @@ from ooi.openstack import helpers
 
 
 class OpenStackUserData(mixin.Mixin):
+    scheme = helpers.build_scheme("compute/instance")
+    term = "user_data"
+
     def __init__(self, user_data=None):
         attrs = [
             attribute.InmutableAttribute("org.openstack.compute.user_data",
@@ -29,8 +32,8 @@ class OpenStackUserData(mixin.Mixin):
         attrs = attribute.AttributeCollection({a.name: a for a in attrs})
 
         super(OpenStackUserData, self).__init__(
-            helpers.build_scheme("compute/instance"),
-            "user_data", "Contextualization extension - user_data",
+            OpenStackUserData.scheme, OpenStackUserData.term,
+            "Contextualization extension - user_data",
             attributes=attrs)
 
     @property
@@ -39,6 +42,9 @@ class OpenStackUserData(mixin.Mixin):
 
 
 class OpenStackPublicKey(mixin.Mixin):
+    scheme = helpers.build_scheme("instance/credentials")
+    term = "public_key"
+
     def __init__(self, name=None, data=None):
         attrs = [
             attribute.InmutableAttribute(
@@ -50,8 +56,8 @@ class OpenStackPublicKey(mixin.Mixin):
         attrs = attribute.AttributeCollection({a.name: a for a in attrs})
 
         super(OpenStackPublicKey, self).__init__(
-            helpers.build_scheme("instance/credentials"),
-            "public_key", "Contextualization extension - public_key",
+            OpenStackPublicKey.scheme, OpenStackPublicKey.term,
+            "Contextualization extension - public_key",
             attributes=attrs)
 
     @property

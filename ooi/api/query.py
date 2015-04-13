@@ -22,7 +22,7 @@ from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
 from ooi.occi.infrastructure import templates as infra_templates
-from ooi.openstack import mixins
+from ooi.openstack import contextualization
 from ooi.openstack import templates
 
 
@@ -78,7 +78,7 @@ class Controller(base.Controller):
         l.extend(self._resource_tpls(req))
         l.extend(self._os_tpls(req))
 
-        # OpenStack mixins (contextualization)
-        l.append(mixins.user_data)
-        l.append(mixins.public_key)
+        # OpenStack Contextualization
+        l.append(contextualization.user_data)
+        l.append(contextualization.public_key)
         return l

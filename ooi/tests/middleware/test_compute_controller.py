@@ -41,13 +41,13 @@ def build_occi_server(server):
 
     cats = []
     cats.append('compute; '
-                'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+                'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
                 'class="kind"'),
     cats.append('%s; '
-                'scheme="http://schemas.openstack.org/template/os"; '
+                'scheme="http://schemas.openstack.org/template/os#"; '
                 'class="mixin"' % image_id),
     cats.append('%s; '
-                'scheme="http://schemas.openstack.org/template/resource"; '
+                'scheme="http://schemas.openstack.org/template/resource#"; '
                 'class="mixin"' % flavor_name),
 
     attrs = [

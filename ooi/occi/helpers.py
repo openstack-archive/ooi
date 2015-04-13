@@ -20,8 +20,8 @@ _PREFIX = "http://schemas.ogf.org/occi/"
 
 
 def build_scheme(category, prefix=_PREFIX):
-    category = "%s#" % category
-    return urlparse.urljoin(prefix, category)
+    scheme = urlparse.urljoin(prefix, category)
+    return '%s#' % scheme
 
 
 def check_type(obj_list, obj_type):
@@ -30,3 +30,8 @@ def check_type(obj_list, obj_type):
 
     if not all([isinstance(i, obj_type) for i in obj_list]):
         raise TypeError('object must be of class %s' % obj_type)
+
+
+def decompose_type(type_id):
+    scheme, term = type_id.split('#', 1)
+    return '%s#' % scheme, term

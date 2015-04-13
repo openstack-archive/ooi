@@ -32,7 +32,7 @@ def build_occi_volume(vol):
 
     cats = []
     cats.append('storage; '
-                'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+                'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
                 'class="kind"'),
     attrs = [
         'occi.core.title="%s"' % name,
@@ -90,7 +90,7 @@ class TestStorageController(test_middleware.TestMiddleware):
         expected_result = ""
         self.assertContentType(resp)
         self.assertExpectedResult(expected_result, resp)
-        self.assertEqual(200, resp.status_code)
+        self.assertEqual(204, resp.status_code)
 
     def test_list_vols(self):
         tenant = fakes.tenants["foo"]

@@ -24,6 +24,7 @@ from ooi.api import query
 import ooi.api.storage
 from ooi import exception
 from ooi import utils
+from ooi.wsgi import parsers
 from ooi.wsgi import serializers
 
 LOG = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ class Request(webob.Request):
 
         # FIXME: we should change this, since the content type does not depend
         # on the serializers, but on the parsers
-        if self.content_type not in serializers.get_supported_content_types():
+        if self.content_type not in parsers.get_supported_content_types():
             LOG.debug("Unrecognized Content-Type provided in request")
             raise exception.InvalidContentType(content_type=self.content_type)
 
@@ -51,6 +52,10 @@ class Request(webob.Request):
             LOG.debug("Unrecognized Accept Content-type provided in request")
             raise exception.InvalidAccept(content_type=content_type)
         return content_type
+
+    def parse(self):
+        parser = parsers.HeaderParser()
+        return parser.parse(self.headers, self.body)
 
 
 class OCCIMiddleware(object):

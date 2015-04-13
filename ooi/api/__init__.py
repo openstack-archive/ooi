@@ -14,94 +14,56 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import collections
-import shlex
 
-import six.moves.urllib.parse as urlparse
+import copy
 
 from ooi import exception
+from ooi.occi import helpers
 
 
-def _lexize(s, separator, ignore_whitespace=False):
-    lex = shlex.shlex(instream=s, posix=True)
-    lex.commenters = ""
-    if ignore_whitespace:
-        lex.whitespace = separator
-    else:
-        lex.whitespace += separator
-    lex.whitespace_split = True
-    return list(lex)
+def compare_schemes(expected_type, actual):
+    actual_scheme, actual_term = helpers.decompose_type(actual)
+    if expected_type.scheme != actual_scheme:
+        return False
+    try:
+        if expected_type.term != actual_term:
+            return False
+    except AttributeError:
+        # ignore the fact the type does not have a term
+        pass
+    return True
 
 
-def parse(f):
-    def _parse(obj, req, *args, **kwargs):
-        headers = {}
-        try:
-            l = []
-            params = {}
-            for ctg in _lexize(req.headers["Category"],
-                               separator=',',
-                               ignore_whitespace=True):
-                ll = _lexize(ctg, ';')
-                d = {"term": ll[0]}  # assumes 1st element => term's value
-                d.update(dict([i.split('=') for i in ll[1:]]))
-                l.append(d)
-                params[urlparse.urlparse(d["scheme"]).path] = d["term"]
-            headers["Category"] = l
-        except KeyError:
-            raise exception.HeaderNotFound(header="Category")
-
-        return f(obj, req, headers, params, *args, **kwargs)
-    return _parse
-
-
-def _get_header_by_class(headers, class_id):
-    return [h for h in headers["Category"] if h["class"] in [class_id]]
-
-
-def validate(class_id, schemas, term=None):
+def validate(schema):
     def accepts(f):
-        def _validate(obj, req, headers, params, *args, **kwargs):
-            """Category headers validation.
-
-            Arguments::
-                class_id:        type of OCCI class (kind, mixin, ..).
-                schemas:         dict mapping the mandatory schemas with its
-                                 occurrences.
-                term (optional): if present, validates its value.
-
-            Validation checks::
-                class_presence:     asserts the existance of given class_id.
-                scheme_occurrences: enforces the number of occurrences of the
-                                    given schemas.
-                term_validation:    asserts the correct term value of the
-                                    matching headers.
-            """
-            header_l = _get_header_by_class(headers, class_id)
-
-            def class_presence():
-                if not header_l:
-                    raise exception.OCCINoClassFound(class_id=class_id)
-
-            def scheme_occurrences():
-                d = collections.Counter([h["scheme"]
-                                         for h in header_l])
-                s = set(d.items()) ^ set(schemas.items())
-                if len(s) != 0:
-                    mismatched_schemas = [(scheme, d[scheme])
-                                          for scheme in dict(s).keys()]
-                    raise exception.OCCISchemaOccurrencesMismatch(
-                        mismatched_schemas=mismatched_schemas)
-
-            def term_validation():
-                if [h for h in header_l if h["term"] not in [term]]:
-                    raise exception.OCCINotCompliantTerm(term=term)
-
-            class_presence()
-            scheme_occurrences()
-            if term:
-                term_validation()
-
-            return f(obj, req, headers, params, *args, **kwargs)
+        # TODO(enolfc): proper testing and attribute checking.
+        def _validate(obj, req, body, *args, **kwargs):
+            parsed_obj = req.parse()
+            if "kind" in schema:
+                try:
+                    if schema["kind"].type_id != parsed_obj["kind"]:
+                        raise exception.OCCISchemaMismatch(
+                            expected=schema["kind"].type_id,
+                            found=parsed_obj["kind"])
+                except KeyError:
+                    raise exception.OCCIMissingType(
+                        type_id=schema["kind"].type_id)
+            unmatched = copy.copy(parsed_obj["mixins"])
+            for m in schema.get("mixins", []):
+                for um in unmatched:
+                    if compare_schemes(m, um):
+                        unmatched[um] -= 1
+                        break
+                else:
+                    raise exception.OCCIMissingType(type_id=m.scheme)
+            for m in schema.get("optional_mixins", []):
+                for um in unmatched:
+                    if compare_schemes(m, um):
+                        unmatched[um] -= 1
+            unexpected = [m for m in unmatched if unmatched[m]]
+            if unexpected:
+                raise exception.OCCISchemaMismatch(expected="",
+                                                   found=unexpected)
+            return f(obj, parsed_obj, req, body, *args, **kwargs)
         return _validate
     return accepts

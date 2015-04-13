@@ -139,95 +139,95 @@ def fake_query_results():
     cats = []
     cats.append(
         'storage; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
         'class="kind"')
     cats.append(
         'storagelink; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
         'class="kind"')
     cats.append(
         'compute; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
         'class="kind"')
     cats.append(
         'link; '
-        'scheme="http://schemas.ogf.org/occi/core"; '
+        'scheme="http://schemas.ogf.org/occi/core#"; '
         'class="kind"')
     cats.append(
         'resource; '
-        'scheme="http://schemas.ogf.org/occi/core"; '
+        'scheme="http://schemas.ogf.org/occi/core#"; '
         'class="kind"')
     cats.append(
         'entity; '
-        'scheme="http://schemas.ogf.org/occi/core"; '
+        'scheme="http://schemas.ogf.org/occi/core#"; '
         'class="kind"')
     cats.append(
         'offline; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
         'class="action"')
     cats.append(
         'online; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
         'class="action"')
     cats.append(
         'backup; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
         'class="action"')
     cats.append(
         'resize; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
         'class="action"')
     cats.append(
         'snapshot; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
         'class="action"')
     cats.append(
         'start; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
         'class="action"')
     cats.append(
         'stop; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
         'class="action"')
     cats.append(
         'restart; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
         'class="action"')
     cats.append(
         'suspend; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
         'class="action"')
     cats.append(
         'bar; '
-        'scheme="http://schemas.openstack.org/template/os"; '
+        'scheme="http://schemas.openstack.org/template/os#"; '
         'class="mixin"')
     cats.append(
         'bar; '
-        'scheme="http://schemas.openstack.org/template/resource"; '
+        'scheme="http://schemas.openstack.org/template/resource#"; '
         'class="mixin"')
     cats.append(
         'foo; '
-        'scheme="http://schemas.openstack.org/template/os"; '
+        'scheme="http://schemas.openstack.org/template/os#"; '
         'class="mixin"')
     cats.append(
         'foo; '
-        'scheme="http://schemas.openstack.org/template/resource"; '
+        'scheme="http://schemas.openstack.org/template/resource#"; '
         'class="mixin"')
     cats.append(
         'os_tpl; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
         'class="mixin"')
     cats.append(
         'resource_tpl; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure"; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
         'class="mixin"')
     cats.append(
         'user_data; '
-        'scheme="http://schemas.openstack.org/compute/instance"; '
+        'scheme="http://schemas.openstack.org/compute/instance#"; '
         'class="mixin"')
     cats.append(
         'public_key; '
-        'scheme="http://schemas.openstack.org/instance/credentials"; '
+        'scheme="http://schemas.openstack.org/instance/credentials#"; '
         'class="mixin"')
 
     result = []
