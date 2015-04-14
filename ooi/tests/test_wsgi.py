@@ -113,12 +113,33 @@ class TestMiddleware(base.TestCase):
         result = req.get_response(self.app)
         self.assertEqual(406, result.status_code)
 
-    def test_bad_content_type(self):
+    def test_bad_content_type_post(self):
+        req = webob.Request.blank("/foos",
+                                  method="POST",
+                                  content_type="foo/bazonk")
+        result = req.get_response(self.app)
+        self.assertEqual(406, result.status_code)
+
+    def test_bad_content_type_put(self):
+        req = webob.Request.blank("/foos",
+                                  method="PUT",
+                                  content_type="foo/bazonk")
+        result = req.get_response(self.app)
+        self.assertEqual(404, result.status_code)
+
+    def test_bad_content_type_get(self):
         req = webob.Request.blank("/foos",
                                   method="GET",
                                   content_type="foo/bazonk")
         result = req.get_response(self.app)
-        self.assertEqual(406, result.status_code)
+        self.assertEqual(200, result.status_code)
+
+    def test_bad_content_type_delete(self):
+        req = webob.Request.blank("/foos",
+                                  method="DELETE",
+                                  content_type="foo/bazonk")
+        result = req.get_response(self.app)
+        self.assertEqual(404, result.status_code)
 
 
 class TestOCCIMiddleware(base.TestCase):

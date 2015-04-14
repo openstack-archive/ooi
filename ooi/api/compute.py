@@ -16,7 +16,6 @@
 
 import json
 
-import ooi.api
 import ooi.api.base
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
@@ -67,16 +66,17 @@ class Controller(ooi.api.base.Controller):
 
         return collection.Collection(resources=occi_compute_resources)
 
-    @ooi.api.validate({"kind": compute.ComputeResource.kind,
-                       "mixins": [
-                           templates.OpenStackOSTemplate,
-                           templates.OpenStackResourceTemplate,
-                       ],
-                       "optional_mixins": [
-                           contextualization.user_data,
-                           contextualization.public_key,
-                       ]
-                       })
+    @ooi.api.base.Controller.validate(
+        {"kind": compute.ComputeResource.kind,
+         "mixins": [
+             templates.OpenStackOSTemplate,
+             templates.OpenStackResourceTemplate,
+         ],
+         "optional_mixins": [
+             contextualization.user_data,
+             contextualization.public_key,
+         ]
+         })
     def create(self, obj, req, body):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         name = obj.get("occi.core.title", "OCCI VM")
@@ -89,15 +89,13 @@ class Controller(ooi.api.base.Controller):
         }}
         if contextualization.user_data.scheme in obj["schemes"]:
             req_body["user_data"] = obj.get("org.openstack.compute.user_data")
+        # TODO(enolfc): add here the correct metadata info
+        # if contextualization.public_key.scheme in obj["schemes"]:
+        #     req_body["metadata"] = XXX
         req = self._get_req(req,
                             path="/%s/servers" % tenant_id,
                             content_type="application/json",
-                            body=json.dumps({
-                                "server": {
-                                    "name": name,
-                                    "imageRef": image,
-                                    "flavorRef": flavor,
-                                }}))
+                            body=json.dumps(req_body))
         response = req.get_response(self.app)
         # We only get one server
         server = self.get_from_response(response, "server", {})

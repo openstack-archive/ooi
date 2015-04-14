@@ -31,13 +31,17 @@ LOG = logging.getLogger(__name__)
 
 
 class Request(webob.Request):
+    def should_have_body(self):
+        return self.method in ("POST", "PUT")
+
     def get_content_type(self):
         """Determine content type of the request body."""
         if not self.content_type:
             return None
 
-        # FIXME: we should change this, since the content type does not depend
-        # on the serializers, but on the parsers
+        if not self.should_have_body():
+            return None
+
         if self.content_type not in parsers.get_supported_content_types():
             LOG.debug("Unrecognized Content-Type provided in request")
             raise exception.InvalidContentType(content_type=self.content_type)
@@ -53,9 +57,15 @@ class Request(webob.Request):
             raise exception.InvalidAccept(content_type=content_type)
         return content_type
 
-    def parse(self):
-        parser = parsers.HeaderParser()
-        return parser.parse(self.headers, self.body)
+    def get_parser(self):
+        mtype = parsers.get_media_map().get(self.get_content_type,
+                                            "header")
+        return parsers.get_default_parsers()[mtype]
+
+    def validate(self, schema):
+        parser = self.get_parser()(self.headers, self.body)
+        parser.validate(schema)
+        return parser.parsed_obj
 
 
 class OCCIMiddleware(object):
@@ -173,10 +183,6 @@ class Resource(object):
 
         return args
 
-    @staticmethod
-    def _should_have_body(request):
-        return request.method in ("POST", "PUT")
-
     def __call__(self, request, args):
         """Control the method dispatch."""
         action_args = self.get_action_args(args)
@@ -201,7 +207,7 @@ class Resource(object):
             return Fault(webob.exc.HTTPBadRequest(explanation=msg))
 
         contents = {}
-        if self._should_have_body(request):
+        if request.should_have_body():
             # allow empty body with PUT and POST
             if request.content_length == 0:
                 contents = {'body': None}
