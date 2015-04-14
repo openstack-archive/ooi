@@ -91,10 +91,6 @@ class BaseParser(object):
         return True
 
 
-class TextParser(BaseParser):
-    pass
-
-
 def _lexize(s, separator, ignore_whitespace=False):
     lex = shlex.shlex(instream=s, posix=True)
     lex.commenters = ""
@@ -106,16 +102,20 @@ def _lexize(s, separator, ignore_whitespace=False):
     return list(lex)
 
 
-class HeaderParser(BaseParser):
-    def parse_categories(self):
+def _lexise_header(s):
+    return _lexize(s, separator=",", ignore_whitespace=True)
+
+
+class TextParser(BaseParser):
+    def parse_categories(self, headers):
         kind = None
         mixins = collections.Counter()
         schemes = collections.defaultdict(list)
         try:
-            categories = self.headers["Category"]
+            categories = headers["Category"]
         except KeyError:
             raise exception.OCCIInvalidSchema("No categories")
-        for ctg in _lexize(categories, separator=",", ignore_whitespace=True):
+        for ctg in _lexise_header(categories):
             ll = _lexize(ctg, ";")
             d = {"term": ll[0]}  # assumes 1st element => term's value
             d.update(dict([i.split('=') for i in ll[1:]]))
@@ -134,21 +134,37 @@ class HeaderParser(BaseParser):
             "schemes": schemes,
         }
 
-    def parse_attributes(self):
+    def parse_attributes(self, headers):
         attrs = {}
         try:
-            header_attrs = self.headers["X-OCCI-Attribute"]
-            for attr in _lexize(header_attrs, separator=",",
-                                ignore_whitespace=True):
+            header_attrs = headers["X-OCCI-Attribute"]
+            for attr in _lexise_header(header_attrs):
                 n, v = attr.split('=', 1)
                 attrs[n.strip()] = v
         except KeyError:
             pass
         return attrs
 
+    def _convert_to_headers(self):
+        if not self.body:
+            raise exception.OCCIInvalidSchema("No schema found")
+        hdrs = collections.defaultdict(list)
+        for l in self.body.splitlines():
+            hdr, content = l.split(":", 1)
+            hdrs[hdr].append(content)
+        return {hdr: ','.join(hdrs[hdr]) for hdr in hdrs}
+
     def parse(self):
-        obj = self.parse_categories()
-        obj['attributes'] = self.parse_attributes()
+        body_headers = self._convert_to_headers()
+        obj = self.parse_categories(body_headers)
+        obj['attributes'] = self.parse_attributes(body_headers)
+        return obj
+
+
+class HeaderParser(TextParser):
+    def parse(self):
+        obj = self.parse_categories(self.headers)
+        obj['attributes'] = self.parse_attributes(self.headers)
         return obj
 
 
