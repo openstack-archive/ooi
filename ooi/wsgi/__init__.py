@@ -23,6 +23,7 @@ import webob.dec
 
 import ooi
 import ooi.api.compute
+import ooi.api.network
 from ooi.api import query
 import ooi.api.storage
 import ooi.api.storage_link
@@ -178,6 +179,30 @@ class OCCIMiddleware(object):
                             controller=self.resources["storagelink"],
                             action="index",
                             conditions=dict(method=["GET"]))
+
+        # Network is a bit different from other resources
+        # we have /network and below that /network/fixed
+        # and /network/floating/* for the pools
+        self.resources["network"] = self._create_resource(
+            ooi.api.network.NetworkController)
+        self.mapper.connect("network", "/network",
+                            controller=self.resources["network"],
+                            action="general_index",
+                            conditions=dict(method=["GET"]))
+        # OCCI states that paths must end with a "/" when operating on pahts,
+        # that are not location pahts or resource instances, so we should add
+        # this rule manually
+        self.mapper.connect("network", "/network/",
+                            controller=self.resources["network"],
+                            action="general_index",
+                            conditions=dict(method=["GET"]))
+        self.mapper.connect("fixed_network", "/network/fixed",
+                            controller=self.resources["network"],
+                            action="show_fixed",
+                            conditions=dict(method=["GET"]))
+        netpool_name = "network/%s" % ooi.api.network.FLOATING_PREFIX
+        self.mapper.resource("floating_network", netpool_name,
+                             controller=self.resources["network"])
 
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, req):

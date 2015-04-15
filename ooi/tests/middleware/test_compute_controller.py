@@ -299,17 +299,37 @@ class TestComputeController(test_middleware.TestMiddleware):
 
             resp = req.get_response(app)
 
-            vol_id = server["os-extended-volumes:volumes_attached"][0]["id"]
-            link_id = '_'.join([server["id"], vol_id])
-
             self.assertDefaults(resp)
             self.assertContentType(resp)
+            self.assertEqual(200, resp.status_code)
+
             source = utils.join_url(self.application_url + "/",
                                     "compute/%s" % server["id"])
-            target = utils.join_url(self.application_url + "/",
-                                    "storage/%s" % vol_id)
-            self.assertResultIncludesLink(link_id, source, target, resp)
-            self.assertEqual(200, resp.status_code)
+            # volumes
+            vols = server.get("os-extended-volumes:volumes_attached", [])
+            for v in vols:
+                vol_id = v["id"]
+                link_id = '_'.join([server["id"], vol_id])
+
+                target = utils.join_url(self.application_url + "/",
+                                        "storage/%s" % vol_id)
+                self.assertResultIncludesLink(link_id, source, target, resp)
+
+            # network
+            addresses = server.get("addresses", {})
+            for addr_set in addresses.values():
+                for addr in addr_set:
+                    ip = addr["addr"]
+                    link_id = '_'.join([server["id"], ip])
+                    if addr["OS-EXT-IPS:type"] == "fixed":
+                        net_id = "fixed"
+                    else:
+                        name = fakes.pools[tenant["id"]][0]["name"]
+                        net_id = "floating/%s" % name
+                    target = utils.join_url(self.application_url + "/",
+                                            "network/%s" % net_id)
+                    self.assertResultIncludesLink(link_id, source, target,
+                                                  resp)
 
 
 class ComputeControllerTextPlain(test_middleware.TestMiddlewareTextPlain,

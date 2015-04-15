@@ -98,6 +98,49 @@ volumes = {
     ],
 }
 
+pools = {
+    tenants["foo"]["id"]: [
+        {
+            "id": "foo",
+            "name": "foo",
+        },
+        {
+            "id": "bar",
+            "name": "bar",
+        }
+    ],
+    tenants["bar"]["id"]: [],
+    tenants["baz"]["id"]: [
+        {
+            "id": "public",
+            "name": "public",
+        },
+    ],
+}
+
+linked_vm_id = uuid.uuid4().hex
+
+floating_ips = {
+    tenants["foo"]["id"]: [],
+    tenants["bar"]["id"]: [],
+    tenants["baz"]["id"]: [
+        {
+            "fixed_ip": "10.0.0.2",
+            "id": uuid.uuid4().hex,
+            "instance_id": linked_vm_id,
+            "ip": "192.168.253.1",
+            "pool": pools[tenants["baz"]["id"]][0]["name"],
+        },
+        {
+            "fixed_ip": None,
+            "id": uuid.uuid4().hex,
+            "instance_id": None,
+            "ip": "192.168.253.2",
+            "pool": pools[tenants["baz"]["id"]][0]["name"],
+        },
+    ],
+}
+
 servers = {
     tenants["foo"]["id"]: [
         {
@@ -125,15 +168,25 @@ servers = {
     tenants["bar"]["id"]: [],
     tenants["baz"]["id"]: [
         {
-            "id": uuid.uuid4().hex,
+            "id": linked_vm_id,
             "name": "withvolume",
             "flavor": {"id": flavors[1]["id"]},
             "image": {"id": images["bar"]["id"]},
             "status": "ACTIVE",
             "os-extended-volumes:volumes_attached": [
                 {"id": volumes[tenants["baz"]["id"]][0]["id"]}
-            ]
-        },
+            ],
+            "addresses": {
+                "private": [
+                    {"addr": floating_ips[tenants["baz"]["id"]][0]["fixed_ip"],
+                     "OS-EXT-IPS:type": "fixed",
+                     "OS-EXT-IPS-MAC:mac_addr": "1234"},
+                    {"addr": floating_ips[tenants["baz"]["id"]][0]["ip"],
+                     "OS-EXT-IPS:type": "floating",
+                     "OS-EXT-IPS-MAC:mac_addr": "1234"},
+                ]
+            }
+        }
     ],
 }
 
@@ -154,18 +207,7 @@ volumes[tenants["baz"]["id"]][0]["attachments"] = [{
 
 def fake_query_results():
     cats = []
-    cats.append(
-        'storage; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="kind"')
-    cats.append(
-        'storagelink; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="kind"')
-    cats.append(
-        'compute; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="kind"')
+    # OCCI Core
     cats.append(
         'link; '
         'scheme="http://schemas.ogf.org/occi/core#"; '
@@ -177,6 +219,95 @@ def fake_query_results():
     cats.append(
         'entity; '
         'scheme="http://schemas.ogf.org/occi/core#"; '
+        'class="kind"')
+    # OCCI Infrastructure Compute
+    cats.append(
+        'compute; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
+        'class="kind"')
+    cats.append(
+        'start; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
+        'class="action"')
+    cats.append(
+        'stop; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
+        'class="action"')
+    cats.append(
+        'restart; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
+        'class="action"')
+    cats.append(
+        'suspend; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
+        'class="action"')
+    cats.append(
+        'os_tpl; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
+        'class="mixin"')
+    cats.append(
+        'resource_tpl; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
+        'class="mixin"')
+    # OpenStack Templates
+    cats.append(
+        'bar; '
+        'scheme="http://schemas.openstack.org/template/os#"; '
+        'class="mixin"')
+    cats.append(
+        'bar; '
+        'scheme="http://schemas.openstack.org/template/resource#"; '
+        'class="mixin"')
+    cats.append(
+        'foo; '
+        'scheme="http://schemas.openstack.org/template/os#"; '
+        'class="mixin"')
+    cats.append(
+        'foo; '
+        'scheme="http://schemas.openstack.org/template/resource#"; '
+        'class="mixin"')
+    # OpenStack contextualization
+    cats.append(
+        'user_data; '
+        'scheme="http://schemas.openstack.org/compute/instance#"; '
+        'class="mixin"')
+    cats.append(
+        'public_key; '
+        'scheme="http://schemas.openstack.org/instance/credentials#"; '
+        'class="mixin"')
+    # OCCI Infrastructure Network
+    cats.append(
+        'network; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
+        'class="kind"')
+    cats.append(
+        'ipnetwork; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/network#"; '
+        'class="mixin"')
+    cats.append(
+        'up; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/network/action#"; '
+        'class="action"')
+    cats.append(
+        'down; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/network/action#"; '
+        'class="action"')
+    cats.append(
+        'networkinterface; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
+        'class="kind"')
+    cats.append(
+        'ipnetworkinterface; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/'
+        'networkinterface#"; class="mixin"')
+    # OCCI Infrastructure Storage
+    cats.append(
+        'storage; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
+        'class="kind"')
+    cats.append(
+        'storagelink; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
         'class="kind"')
     cats.append(
         'offline; '
@@ -198,55 +329,6 @@ def fake_query_results():
         'snapshot; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
         'class="action"')
-    cats.append(
-        'start; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
-        'class="action"')
-    cats.append(
-        'stop; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
-        'class="action"')
-    cats.append(
-        'restart; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
-        'class="action"')
-    cats.append(
-        'suspend; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
-        'class="action"')
-    cats.append(
-        'bar; '
-        'scheme="http://schemas.openstack.org/template/os#"; '
-        'class="mixin"')
-    cats.append(
-        'bar; '
-        'scheme="http://schemas.openstack.org/template/resource#"; '
-        'class="mixin"')
-    cats.append(
-        'foo; '
-        'scheme="http://schemas.openstack.org/template/os#"; '
-        'class="mixin"')
-    cats.append(
-        'foo; '
-        'scheme="http://schemas.openstack.org/template/resource#"; '
-        'class="mixin"')
-    cats.append(
-        'os_tpl; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="mixin"')
-    cats.append(
-        'resource_tpl; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="mixin"')
-    cats.append(
-        'user_data; '
-        'scheme="http://schemas.openstack.org/compute/instance#"; '
-        'class="mixin"')
-    cats.append(
-        'public_key; '
-        'scheme="http://schemas.openstack.org/instance/credentials#"; '
-        'class="mixin"')
-
     result = []
     for c in cats:
         result.append(("Category", c))
@@ -293,6 +375,10 @@ class FakeApp(object):
 
             self._populate(path, "server", servers[tenant["id"]], actions=True)
             self._populate(path, "volume", volumes[tenant["id"]], "os-volumes")
+            self._populate(path, "floating_ip_pool", pools[tenant["id"]],
+                           "os-floating-ip-pools")
+            self._populate(path, "floating_ip", floating_ips[tenant["id"]],
+                           "os-floating-ips")
             # NOTE(aloga): dict_values un Py3 is not serializable in JSON
             self._populate(path, "image", list(images.values()))
             self._populate(path, "flavor", list(flavors.values()))

@@ -17,15 +17,32 @@
 import json
 
 import ooi.api.base
+import ooi.api.network as network_api
 from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
+from ooi.occi.infrastructure import network
 from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
 from ooi.occi import validator as occi_validator
 from ooi.openstack import contextualization
 from ooi.openstack import helpers
+from ooi.openstack import network as os_network
 from ooi.openstack import templates
+
+
+def _create_network_link(addr, comp, floating_ips):
+    if addr["OS-EXT-IPS:type"] == "floating":
+        for ip in floating_ips:
+            if addr["addr"] == ip["ip"]:
+                net = network.NetworkResource(
+                    title="network",
+                    id="%s/%s" % (network_api.FLOATING_PREFIX, ip["pool"]))
+    else:
+        net = network.NetworkResource(title="network", id="fixed")
+    return os_network.OSNetworkInterface(comp, net,
+                                         addr["OS-EXT-IPS-MAC:mac_addr"],
+                                         addr["addr"])
 
 
 class Controller(ooi.api.base.Controller):
@@ -180,7 +197,6 @@ class Controller(ooi.api.base.Controller):
                                                image["name"])
 
         # build the compute object
-        # TODO(enolfc): link to network + storage
         comp = compute.ComputeResource(title=s["name"], id=s["id"],
                                        cores=flavor["vcpus"],
                                        hostname=s["name"],
@@ -197,6 +213,18 @@ class Controller(ooi.api.base.Controller):
             st = storage.StorageResource(title="storage", id=v["volumeId"])
             comp.add_link(storage_link.StorageLink(comp, st,
                                                    deviceid=v["device"]))
+
+        # network links
+        addresses = s.get("addresses", {})
+        if addresses:
+            req = self._get_req(req, path="/%s/os-floating-ips" % tenant_id)
+            response = req.get_response(self.app)
+            floating_ips = self.get_from_response(response, "floating_ips", [])
+            for addr_type in addresses.values():
+                for addr in addr_type:
+                    comp.add_link(_create_network_link(addr, comp,
+                                                       floating_ips))
+
         return [comp]
 
     def delete(self, req, id):
