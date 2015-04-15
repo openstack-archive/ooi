@@ -21,6 +21,7 @@ from ooi.occi.core import action
 from ooi.occi.core import collection
 from ooi.occi.core import entity
 from ooi.occi.core import kind
+from ooi.occi.core import link
 from ooi.occi.core import mixin
 from ooi.occi.core import resource
 from ooi import utils
@@ -64,8 +65,8 @@ class ActionRenderer(CategoryRenderer):
             url = utils.join_url(url, [term, ass_obj.id, self.obj.location])
             d = {"location": url,
                  "rel": self.obj.type_id}
-            link = "<%(location)s>; rel=%(rel)s" % d
-            return [('Link', link)]
+            l = "<%(location)s>; rel=%(rel)s" % d
+            return [('Link', l)]
         else:
             # Otherwise, render as category
             return super(ActionRenderer, self).render(env=env)
@@ -95,7 +96,9 @@ class AttributeRenderer(HeaderRenderer):
         elif isinstance(self.obj.value, bool):
             value_str = '"%s"' % str(self.obj.value).lower()
         elif isinstance(self.obj.value, entity.Entity):
-            value_str = '"%s"' % self.obj.value.id
+            app_url = env.get("application_url", "")
+            url = utils.join_url(app_url, self.obj.value.location)
+            value_str = '"%s"' % url
         else:
             value_str = "%s" % self.obj.value
         return '%s=%s' % (self.obj.name, value_str)
@@ -113,12 +116,13 @@ class LinkRenderer(HeaderRenderer):
              "scheme": self.obj.target.kind.scheme,
              "term": self.obj.target.kind.term,
              "self": url}
-        link = '<%(location)s>; rel="%(scheme)s#%(term)s"; self="%(self)s"' % d
-        ret.append(link)
+        l = '<%(location)s>; rel="%(scheme)s%(term)s"; self="%(self)s"' % d
+        ret.append(l)
         for a in self.obj.attributes:
             if self.obj.attributes[a].value is None:
                 continue
-            ret.append(AttributeRenderer(self.obj.attributes[a]).render_attr())
+            ret.append(AttributeRenderer(
+                self.obj.attributes[a]).render_attr(env=env))
         return [('Link', '; '.join(ret))]
 
 
@@ -138,7 +142,7 @@ class ResourceRenderer(HeaderRenderer):
             r = ActionRenderer(a)
             ret.extend(r.render(ass_obj=self.obj, env=env))
         for l in self.obj.links:
-            ret.extend(LinkRenderer(l).render())
+            ret.extend(LinkRenderer(l).render(env=env))
         return ret
 
 
@@ -148,6 +152,7 @@ _MAP = {
     "mixin": MixinRenderer,
     "collection": CollectionRenderer,
     "resource": ResourceRenderer,
+    "link": LinkRenderer,
     "exception": ExceptionRenderer,
     None: HeaderRenderer,
 }
@@ -164,6 +169,8 @@ def get_renderer(obj):
         type_ = "kind"
     elif isinstance(obj, resource.Resource):
         type_ = "resource"
+    elif isinstance(obj, link.Link):
+        type_ = "link"
     elif isinstance(obj, webob.exc.HTTPException):
         type_ = "exception"
     else:
