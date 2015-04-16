@@ -37,8 +37,14 @@ class TestMiddleware(base.TestCase):
         self.accept = self.content_type = None
         self.application_url = fakes.application_url
 
+        self.occi_string = "OCCI/1.1"
+
     def get_app(self, resp=None):
         return wsgi.OCCIMiddleware(fakes.FakeApp())
+
+    def assertDefaults(self, result):
+        self.assertContentType(result)
+        self.assertServerHeader(result)
 
     def assertContentType(self, result):
         if self.accept in (None, "*/*"):
@@ -46,6 +52,10 @@ class TestMiddleware(base.TestCase):
         else:
             expected = self.accept
         self.assertEqual(expected, result.content_type)
+
+    def assertServerHeader(self, result):
+        self.assertIn("Server", result.headers)
+        self.assertIn(self.occi_string, result.headers["server"])
 
     def assertExpectedResult(self, expected, result):
         expected = ["%s: %s" % e for e in expected]
@@ -85,6 +95,7 @@ class TestMiddleware(base.TestCase):
     def test_404(self):
         result = self._build_req("/", "tenant").get_response(self.get_app())
         self.assertEqual(404, result.status_code)
+        self.assertDefaults(result)
 
     def test_400_from_openstack(self):
         @webob.dec.wsgify()
@@ -93,8 +104,10 @@ class TestMiddleware(base.TestCase):
             resp = fakes.FakeOpenStackFault(exc)
             return resp
 
-        result = self._build_req("/-/", "tenant").get_response(_fake_app)
+        mdl = wsgi.OCCIMiddleware(_fake_app)
+        result = self._build_req("/-/", "tenant").get_response(mdl)
         self.assertEqual(400, result.status_code)
+        self.assertDefaults(result)
 
 
 class TestMiddlewareTextPlain(TestMiddleware):

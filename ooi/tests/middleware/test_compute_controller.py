@@ -102,7 +102,7 @@ class TestComputeController(test_middleware.TestMiddleware):
         resp = req.get_response(app)
 
         expected_result = ""
-        self.assertContentType(resp)
+        self.assertDefaults(resp)
         self.assertExpectedResult(expected_result, resp)
         self.assertEqual(204, resp.status_code)
 
@@ -121,7 +121,7 @@ class TestComputeController(test_middleware.TestMiddleware):
                 ("X-OCCI-Location", utils.join_url(self.application_url + "/",
                                                    "compute/%s" % s["id"]))
             )
-        self.assertContentType(resp)
+        self.assertDefaults(resp)
         self.assertExpectedResult(expected, resp)
 
     def test_show_vm(self):
@@ -134,7 +134,7 @@ class TestComputeController(test_middleware.TestMiddleware):
 
             resp = req.get_response(app)
             expected = build_occi_server(server)
-            self.assertContentType(resp)
+            self.assertDefaults(resp)
             self.assertExpectedResult(expected, resp)
             self.assertEqual(200, resp.status_code)
 
@@ -172,7 +172,7 @@ class TestComputeController(test_middleware.TestMiddleware):
                                     "compute/%s" % "foo"))]
         self.assertEqual(200, resp.status_code)
         self.assertExpectedResult(expected, resp)
-        self.assertContentType(resp)
+        self.assertDefaults(resp)
 
     def test_create_vm_incomplete(self):
         tenant = fakes.tenants["foo"]
@@ -193,7 +193,7 @@ class TestComputeController(test_middleware.TestMiddleware):
         resp = req.get_response(app)
 
         self.assertEqual(400, resp.status_code)
-        self.assertContentType(resp)
+        self.assertDefaults(resp)
 
     def test_create_with_context(self):
         tenant = fakes.tenants["foo"]
@@ -228,7 +228,7 @@ class TestComputeController(test_middleware.TestMiddleware):
                                     "compute/%s" % "foo"))]
         self.assertEqual(200, resp.status_code)
         self.assertExpectedResult(expected, resp)
-        self.assertContentType(resp)
+        self.assertDefaults(resp)
 
     def test_vm_links(self):
         tenant = fakes.tenants["baz"]
@@ -244,7 +244,7 @@ class TestComputeController(test_middleware.TestMiddleware):
             vol_id = server["os-extended-volumes:volumes_attached"][0]["id"]
             link_id = '_'.join([server["id"], vol_id])
 
-            self.assertContentType(resp)
+            self.assertDefaults(resp)
             self.assertResultIncludesLink(link_id, server["id"], vol_id, resp)
             self.assertEqual(200, resp.status_code)
 

@@ -19,6 +19,7 @@ import routes
 import routes.middleware
 import webob.dec
 
+import ooi
 import ooi.api.compute
 from ooi.api import query
 import ooi.api.storage
@@ -69,6 +70,9 @@ class Request(webob.Request):
 
 
 class OCCIMiddleware(object):
+
+    occi_version = "1.1"
+
     @classmethod
     def factory(cls, global_conf, **local_conf):
         """Factory method for paste.deploy."""
@@ -147,20 +151,30 @@ class OCCIMiddleware(object):
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, req):
         response = self.process_request(req)
-        if response:
-            return response
+        if not response:
+            response = req.get_response(self.application)
 
-        response = req.get_response(self.application)
         return self.process_response(response)
 
     def process_request(self, req):
         match = self.mapper.match(req.path_info, req.environ)
         if not match:
-            return webob.exc.HTTPNotFound()
+            return Fault(webob.exc.HTTPNotFound())
         method = match["controller"]
         return method(req, match)
 
     def process_response(self, response):
+        """Process a response by adding our headers."""
+        server_string = "ooi/%s OCCI/%s" % (ooi.__version__,
+                                            self.occi_version)
+
+        headers = (("server", server_string),)
+        if isinstance(response, Fault):
+            for key, val in headers:
+                response.wrapped_exc.headers.add(key, val)
+        else:
+            for key, val in headers:
+                response.headers.add(key, val)
         return response
 
 
