@@ -14,6 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import re
+
 from oslo_log import log as logging
 import routes
 import routes.middleware
@@ -72,6 +74,7 @@ class Request(webob.Request):
 class OCCIMiddleware(object):
 
     occi_version = "1.1"
+    occi_string = "OCCI/%s" % occi_version
 
     @classmethod
     def factory(cls, global_conf, **local_conf):
@@ -157,6 +160,14 @@ class OCCIMiddleware(object):
         return self.process_response(response)
 
     def process_request(self, req):
+        if req.user_agent:
+            # FIXME(aloga): review the regexp, since it will only match the
+            # first string
+            match = re.search(r"\bOCCI/\d\.\d\b", req.user_agent)
+            if match and self.occi_string != match.group():
+                return Fault(webob.exc.HTTPNotImplemented(
+                             explanation="%s not supported" % match.group()))
+
         match = self.mapper.match(req.path_info, req.environ)
         if not match:
             return Fault(webob.exc.HTTPNotFound())
@@ -165,8 +176,8 @@ class OCCIMiddleware(object):
 
     def process_response(self, response):
         """Process a response by adding our headers."""
-        server_string = "ooi/%s OCCI/%s" % (ooi.__version__,
-                                            self.occi_version)
+        server_string = "ooi/%s %s" % (ooi.__version__,
+                                       self.occi_string)
 
         headers = (("server", server_string),)
         if isinstance(response, Fault):

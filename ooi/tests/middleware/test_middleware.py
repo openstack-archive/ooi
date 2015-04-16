@@ -97,6 +97,27 @@ class TestMiddleware(base.TestCase):
         self.assertEqual(404, result.status_code)
         self.assertDefaults(result)
 
+    def test_good_user_agent(self):
+        req = self._build_req("/", "tenant")
+        req.user_agent = "foo OCCI/1.1 bar"
+        result = req.get_response(self.get_app())
+        self.assertEqual(404, result.status_code)
+        self.assertDefaults(result)
+
+    def test_bad_user_agent(self):
+        req = self._build_req("/", "tenant")
+        req.user_agent = "foo OCCI/2.2 bar"
+        result = req.get_response(self.get_app())
+        self.assertEqual(501, result.status_code)
+        self.assertDefaults(result)
+
+    def test_ugly_user_agent(self):
+        req = self._build_req("/", "tenant")
+        req.user_agent = "fooOCCI/1.1bar"
+        result = req.get_response(self.get_app())
+        self.assertEqual(404, result.status_code)
+        self.assertDefaults(result)
+
     def test_400_from_openstack(self):
         @webob.dec.wsgify()
         def _fake_app(req):
