@@ -23,12 +23,13 @@ class OSNetworkInterface(network_link.NetworkInterface):
                                            "occi.networkinterface.gateway",
                                            "occi.networkinterface.allocation"])
 
-    def __init__(self, source, target, mac, address):
+    def __init__(self, source, target, mac, address, ip_id=None):
         link_id = '_'.join([source.id, address])
         mixins = [network_link.ip_network_interface]
         super(OSNetworkInterface, self).__init__(mixins, source, target,
                                                  link_id, "eth0", mac,
                                                  "active")
+        self.ip_id = ip_id
         self.attributes["occi.networkinterface.address"] = (
             attr.MutableAttribute("occi.networkinterface.address", address))
         self.attributes["occi.networkinterface.gateway"] = (
@@ -36,3 +37,27 @@ class OSNetworkInterface(network_link.NetworkInterface):
         self.attributes["occi.networkinterface.allocation"] = (
             attr.MutableAttribute("occi.networkinterface.allocation",
                                   "dynamic"))
+
+    @property
+    def address(self):
+        return self.attributes["occi.networkinterface.address"].value
+
+    @address.setter
+    def address(self, value):
+        self.attributes["occi.networkinterface.address"].value = value
+
+    @property
+    def gateway(self):
+        return self.attributes["occi.networkinterface.gateway"].value
+
+    @gateway.setter
+    def gateway(self, value):
+        self.attributes["occi.networkinterface.gateway"].value = value
+
+    @property
+    def allocation(self):
+        return self.attributes["occi.networkinterface.allocation"].value
+
+    @allocation.setter
+    def allocation(self, value):
+        self.attributes["occi.networkinterface.allocation"].value = value

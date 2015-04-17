@@ -46,3 +46,5 @@ class Controller(base.Controller):
         st = storage.StorageResource(title=v["displayName"], id=v["id"],
                                      size=v["size"], state=state)
         return [st]
+
+    # TODO(enolfc): delete, create

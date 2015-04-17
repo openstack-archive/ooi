@@ -113,7 +113,6 @@ class TestComputeController(test_middleware.TestMiddleware):
 
         for url in ("/compute/", "/compute"):
             req = self._build_req(url, tenant["id"], method="GET")
-
             resp = req.get_response(app)
 
             self.assertEqual(200, resp.status_code)

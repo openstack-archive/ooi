@@ -220,8 +220,8 @@ class Controller(ooi.api.base.Controller):
             req = self._get_req(req, path="/%s/os-floating-ips" % tenant_id)
             response = req.get_response(self.app)
             floating_ips = self.get_from_response(response, "floating_ips", [])
-            for addr_type in addresses.values():
-                for addr in addr_type:
+            for addr_set in addresses.values():
+                for addr in addr_set:
                     comp.add_link(_create_network_link(addr, comp,
                                                        floating_ips))
 

@@ -120,6 +120,8 @@ pools = {
 
 linked_vm_id = uuid.uuid4().hex
 
+allocated_ip = "192.168.253.23"
+
 floating_ips = {
     tenants["foo"]["id"]: [],
     tenants["bar"]["id"]: [],
@@ -447,21 +449,39 @@ class FakeApp(object):
                                   "device": "/dev/vdb"}}
         return create_fake_json_resp(v, 202)
 
+    def _do_allocate_ip(self, req):
+        body = req.json_body.copy()
+        pool = body.popitem()
+        tenant = req.path_info.split('/')[1]
+        for p in pools[tenant]:
+            if p["name"] == pool[1]:
+                break
+        else:
+            exc = webob.exc.HTTPNotFound()
+            return FakeOpenStackFault(exc)
+        ip = {"floating_ip": {"ip": allocated_ip}}
+        return create_fake_json_resp(ip, 202)
+
     def _do_post(self, req):
         if req.path_info.endswith("servers"):
             return self._do_create_server(req)
         elif req.path_info.endswith("action"):
             body = req.json_body.copy()
             action = body.popitem()
-            if action[0] in ["os-start", "os-stop", "reboot"]:
+            if action[0] in ["os-start", "os-stop", "reboot",
+                             "addFloatingIp", "removeFloatingIp"]:
                 return self._get_from_routes(req)
         elif req.path_info.endswith("os-volume_attachments"):
             return self._do_create_attachment(req)
+        elif req.path_info.endswith("os-floating-ips"):
+            return self._do_allocate_ip(req)
         raise Exception
 
     def _do_delete(self, req):
         self._do_get(req)
         if "os-volume_attachments" in req.path_info:
+            return create_fake_json_resp({}, 202)
+        if "os-floating-ips" in req.path_info:
             return create_fake_json_resp({}, 202)
         raise Exception
 

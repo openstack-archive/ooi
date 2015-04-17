@@ -109,3 +109,4 @@ class Controller(base.Controller):
         response = req.get_response(self.app)
         if response.status_int not in [202]:
             raise base.exception_from_response(response)
+        return []
