@@ -303,7 +303,12 @@ class TestComputeController(test_middleware.TestMiddleware):
             link_id = '_'.join([server["id"], vol_id])
 
             self.assertDefaults(resp)
-            self.assertResultIncludesLink(link_id, server["id"], vol_id, resp)
+            self.assertContentType(resp)
+            source = utils.join_url(self.application_url + "/",
+                                    "compute/%s" % server["id"])
+            target = utils.join_url(self.application_url + "/",
+                                    "storage/%s" % vol_id)
+            self.assertResultIncludesLink(link_id, source, target, resp)
             self.assertEqual(200, resp.status_code)
 
 

@@ -75,7 +75,7 @@ class TestMiddleware(base.TestCase):
                 attrs = set([s.strip() for s in r[1].split(";")])
                 if expected_attrs.issubset(attrs):
                     return
-        self.fail("Failed to find %s in %s." % expected_attrs, result)
+        self.fail("Failed to find %s in %s." % (expected_attrs, result))
 
     def _build_req(self, path, tenant_id, **kwargs):
         if self.accept is not None:
