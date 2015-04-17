@@ -185,11 +185,16 @@ class Controller(ooi.api.base.Controller):
                                        memory=flavor["ram"],
                                        state=helpers.vm_state(s["status"]),
                                        mixins=[os_tpl, res_tpl])
+
         # storage links
-        vols_attached = s.get("os-extended-volumes:volumes_attached", [])
-        for v in vols_attached:
-            st = storage.StorageResource(title="storage", id=v["id"])
-            comp._links.append(storage_link.StorageLink(comp, st))
+        req = self._get_req(req, path=("/%s/servers/%s/os-volume_attachments"
+                                       % (tenant_id, s["id"])))
+        response = req.get_response(self.app)
+        vols = self.get_from_response(response, "volumeAttachments", [])
+        for v in vols:
+            st = storage.StorageResource(title="storage", id=v["volumeId"])
+            comp.add_link(storage_link.StorageLink(comp, st,
+                                                   deviceid=v["device"]))
         return [comp]
 
     def delete(self, req, id):

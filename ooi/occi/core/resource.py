@@ -53,6 +53,9 @@ class Resource(entity.Entity):
         l = link.Link("", mixins, self, target)
         self._links.append(l)
 
+    def add_link(self, link):
+        self._links.append(link)
+
     @property
     def summary(self):
         return self.attributes["occi.core.summary"].value

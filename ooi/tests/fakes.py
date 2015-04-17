@@ -279,6 +279,7 @@ class FakeApp(object):
             # NOTE(aloga): dict_values un Py3 is not serializable in JSON
             self._populate(path, "image", list(images.values()))
             self._populate(path, "flavor", list(flavors.values()))
+            self._populate_attached_volumes(path, servers[tenant["id"]])
 
     def _populate(self, path_base, obj_name, obj_list,
                   objs_path=None, actions=[]):
@@ -299,6 +300,25 @@ class FakeApp(object):
             if actions:
                 action_path = "%s/action" % obj_path
                 self.routes[action_path] = webob.Response(status=202)
+
+    def _populate_attached_volumes(self, path, server_list):
+        for s in server_list:
+            attachments = []
+            if "os-extended-volumes:volumes_attached" in s:
+                for vol in s["os-extended-volumes:volumes_attached"]:
+                    attachments.append({
+                        "volumeId": vol["id"],
+                        "device": "/dev/foo",
+                        "id": uuid.uuid4().hex
+                        })
+            path_base = "%s/servers/%s/os-volume_attachments" % (path, s["id"])
+            self.routes[path_base] = create_fake_json_resp(
+                {"volumeAttachments": attachments}
+            )
+            for attach in attachments:
+                obj_path = "%s/%s" % (path_base, attach["id"])
+                self.routes[obj_path] = create_fake_json_resp(
+                    {"volumeAttachment": attach})
 
     @webob.dec.wsgify()
     def __call__(self, req):
