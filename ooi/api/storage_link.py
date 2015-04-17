@@ -46,7 +46,10 @@ class Controller(base.Controller):
 
     def _get_attachment_from_id(self, req, id):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
-        server_id, vol_id = id.split('_', 1)
+        try:
+            server_id, vol_id = id.split('_', 1)
+        except ValueError:
+            raise webob.exc.HTTPNotFound()
 
         req_path = "/%s/servers/%s/os-volume_attachments" % (tenant_id,
                                                              server_id)
@@ -89,7 +92,8 @@ class Controller(base.Controller):
         attachment = self.get_from_response(response, "volumeAttachment", {})
         c = compute.ComputeResource(title="Compute", id=server_id)
         s = storage.StorageResource(title="Storage", id=vol_id)
-        return [storage_link.StorageLink(c, s, deviceid=attachment["device"])]
+        l = storage_link.StorageLink(c, s, deviceid=attachment["device"])
+        return collection.Collection(resources=[l])
 
     def delete(self, req, id):
         v = self._get_attachment_from_id(req, id)
