@@ -136,6 +136,10 @@ class OCCIMiddleware(object):
         self.mapper.connect("query", "/-/",
                             controller=self.resources["query"],
                             action="index")
+        # RFC5785, OCCI section 3.6.7
+        self.mapper.connect("query", "/.well-known/org/ogf/occi/-/",
+                            controller=self.resources["query"],
+                            action="index")
 
         self.resources["compute"] = self._create_resource(
             ooi.api.compute.Controller)

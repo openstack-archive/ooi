@@ -29,6 +29,24 @@ class TestQueryController(test_middleware.TestMiddleware):
         self.assertExpectedResult(fakes.fake_query_results(), result)
         self.assertEqual(200, result.status_code)
 
+    def test_query_rfc(self):
+        tenant_id = fakes.tenants["bar"]["id"]
+        result = self._build_req("/.well-known/org/ogf/occi/-/",
+                                 tenant_id).get_response(self.get_app())
+        self.assertDefaults(result)
+        self.assertExpectedResult(fakes.fake_query_results(), result)
+        self.assertEqual(200, result.status_code)
+
+    def test_query_rfc_equal(self):
+        tenant_id = fakes.tenants["bar"]["id"]
+        result_rfc = self._build_req("/.well-known/org/ogf/occi/-/",
+                                     tenant_id).get_response(self.get_app())
+        result_query = self._build_req("/-/",
+                                       tenant_id).get_response(self.get_app())
+        self.assertDefaults(result_rfc)
+        self.assertDefaults(result_query)
+        self.assertEqual(result_rfc.text, result_query.text)
+
 
 class QueryControllerTextPlain(test_middleware.TestMiddlewareTextPlain,
                                TestQueryController):
