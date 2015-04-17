@@ -25,6 +25,7 @@ import ooi
 import ooi.api.compute
 from ooi.api import query
 import ooi.api.storage
+import ooi.api.storage_link
 from ooi import exception
 from ooi import utils
 from ooi.wsgi import parsers
@@ -164,6 +165,17 @@ class OCCIMiddleware(object):
         # this rule manually
         self.mapper.connect("storage", "/storage/",
                             controller=self.resources["storage"],
+                            action="index",
+                            conditions=dict(method=["GET"]))
+        self.resources["storagelink"] = self._create_resource(
+            ooi.api.storage_link.Controller)
+        self.mapper.resource("volume", "storagelink",
+                             controller=self.resources["storagelink"])
+        # OCCI states that paths must end with a "/" when operating on pahts,
+        # that are not location pahts or resource instances, so we should add
+        # this rule manually
+        self.mapper.connect("storagelink", "/storagelink/",
+                            controller=self.resources["storagelink"],
                             action="index",
                             conditions=dict(method=["GET"]))
 
