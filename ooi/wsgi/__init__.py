@@ -145,6 +145,13 @@ class OCCIMiddleware(object):
             ooi.api.compute.Controller)
         self.mapper.resource("server", "compute",
                              controller=self.resources["compute"])
+        # OCCI states that paths must end with a "/" when operating on pahts,
+        # that are not location pahts or resource instances, so we should add
+        # this rule manually
+        self.mapper.connect("compute", "/compute/",
+                            controller=self.resources["compute"],
+                            action="index",
+                            conditions=dict(method=["GET"]))
         self.mapper.connect("compute", "/compute/",
                             controller=self.resources["compute"],
                             action="delete_all",
@@ -154,6 +161,13 @@ class OCCIMiddleware(object):
             ooi.api.storage.Controller)
         self.mapper.resource("volume", "storage",
                              controller=self.resources["storage"])
+        # OCCI states that paths must end with a "/" when operating on pahts,
+        # that are not location pahts or resource instances, so we should add
+        # this rule manually
+        self.mapper.connect("storage", "/storage/",
+                            controller=self.resources["storage"],
+                            action="index",
+                            conditions=dict(method=["GET"]))
 
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, req):

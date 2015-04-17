@@ -93,36 +93,39 @@ class TestComputeController(test_middleware.TestMiddleware):
         tenant = fakes.tenants["bar"]
         app = self.get_app()
 
-        req = self._build_req("/compute", tenant["id"], method="GET")
+        for url in ("/compute/", "/compute"):
+            req = self._build_req(url, tenant["id"], method="GET")
 
-        m = mock.MagicMock()
-        m.user.project_id = tenant["id"]
-        req.environ["keystone.token_auth"] = m
+            m = mock.MagicMock()
+            m.user.project_id = tenant["id"]
+            req.environ["keystone.token_auth"] = m
 
-        resp = req.get_response(app)
+            resp = req.get_response(app)
 
-        expected_result = ""
-        self.assertDefaults(resp)
-        self.assertExpectedResult(expected_result, resp)
-        self.assertEqual(204, resp.status_code)
+            expected_result = ""
+            self.assertDefaults(resp)
+            self.assertExpectedResult(expected_result, resp)
+            self.assertEqual(204, resp.status_code)
 
     def test_list_vms(self):
         tenant = fakes.tenants["foo"]
         app = self.get_app()
 
-        req = self._build_req("/compute", tenant["id"], method="GET")
+        for url in ("/compute/", "/compute"):
+            req = self._build_req(url, tenant["id"], method="GET")
 
-        resp = req.get_response(app)
+            resp = req.get_response(app)
 
-        self.assertEqual(200, resp.status_code)
-        expected = []
-        for s in fakes.servers[tenant["id"]]:
-            expected.append(
-                ("X-OCCI-Location", utils.join_url(self.application_url + "/",
-                                                   "compute/%s" % s["id"]))
-            )
-        self.assertDefaults(resp)
-        self.assertExpectedResult(expected, resp)
+            self.assertEqual(200, resp.status_code)
+            expected = []
+            for s in fakes.servers[tenant["id"]]:
+                expected.append(
+                    ("X-OCCI-Location",
+                     utils.join_url(self.application_url + "/",
+                                    "compute/%s" % s["id"]))
+                )
+            self.assertDefaults(resp)
+            self.assertExpectedResult(expected, resp)
 
     def test_show_vm(self):
         tenant = fakes.tenants["foo"]
