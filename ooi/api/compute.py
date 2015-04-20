@@ -17,6 +17,7 @@
 import json
 
 import ooi.api.base
+from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import storage
@@ -28,6 +29,10 @@ from ooi.openstack import templates
 
 
 class Controller(ooi.api.base.Controller):
+    def __init__(self, *args, **kwargs):
+        super(Controller, self).__init__(*args, **kwargs)
+        self.compute_actions = compute.ComputeResource.actions
+
     def _get_compute_resources(self, servers):
         occi_compute_resources = []
         if servers:
@@ -66,6 +71,37 @@ class Controller(ooi.api.base.Controller):
         occi_compute_resources = self._get_compute_resources(servers)
 
         return collection.Collection(resources=occi_compute_resources)
+
+    def run_action(self, req, id, body):
+        action = req.GET.get("action", None)
+        actions = [a.term for a in compute.ComputeResource.actions]
+
+        if action is None or action not in actions:
+            raise exception.InvalidAction(action=action)
+
+        parser = req.get_parser()(req.headers, req.body)
+        obj = parser.parse()
+
+        if action == "stop":
+            scheme = {"category": compute.stop}
+            req_body = {"os-stop": None}
+        elif action == "start":
+            scheme = {"category": compute.start}
+            req_body = {"os-start": None}
+        else:
+            raise exception.NotImplemented
+
+        validator = occi_validator.Validator(obj)
+        validator.validate(scheme)
+
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        path = "/%s/servers/%s/action" % (tenant_id, id)
+        req = self._get_req(req, path=path, body=json.dumps(req_body),
+                            method="POST")
+        response = req.get_response(self.app)
+        if response.status_int != 202:
+            raise ooi.api.base.exception_from_response(response)
+        return []
 
     def create(self, req, body):
         tenant_id = req.environ["keystone.token_auth"].user.project_id

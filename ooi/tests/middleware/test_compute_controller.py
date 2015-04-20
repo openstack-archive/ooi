@@ -150,6 +150,61 @@ class TestComputeController(test_middleware.TestMiddleware):
         resp = req.get_response(app)
         self.assertEqual(404, resp.status_code)
 
+    def test_action_vm(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        for action in ("stop", "start"):
+            headers = {
+                'Category': (
+                    '%s;'
+                    'scheme="http://schemas.ogf.org/occi/infrastructure/'
+                    'compute/action#";'
+                    'class="action"' % action)
+            }
+            for server in fakes.servers[tenant["id"]]:
+                req = self._build_req("/compute/%s?action=%s" % (server["id"],
+                                                                 action),
+                                      tenant["id"], method="POST",
+                                      headers=headers)
+                resp = req.get_response(app)
+                self.assertDefaults(resp)
+                self.assertEqual(204, resp.status_code)
+
+    def test_invalid_action(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        action = "foo"
+        for server in fakes.servers[tenant["id"]]:
+            req = self._build_req("/compute/%s?action=%s" % (server["id"],
+                                                             action),
+                                  tenant["id"], method="POST")
+            resp = req.get_response(app)
+            self.assertDefaults(resp)
+            self.assertEqual(400, resp.status_code)
+
+    def test_action_body_mismatch(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        action = "stop"
+        headers = {
+            'Category': (
+                'start;'
+                'scheme="http://schemas.ogf.org/occi/infrastructure/'
+                'compute/action#";'
+                'class="action"')
+        }
+        for server in fakes.servers[tenant["id"]]:
+            req = self._build_req("/compute/%s?action=%s" % (server["id"],
+                                                             action),
+                                  tenant["id"], method="POST",
+                                  headers=headers)
+            resp = req.get_response(app)
+            self.assertDefaults(resp)
+            self.assertEqual(400, resp.status_code)
+
     def test_create_vm(self):
         tenant = fakes.tenants["foo"]
 

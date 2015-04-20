@@ -31,9 +31,10 @@ class Controller(object):
 
     def _get_req(self, req,
                  path=None,
-                 content_type=None,
+                 content_type="application/json",
                  body=None,
-                 method=None):
+                 method=None,
+                 query_string=""):
         """Return a new Request object to interact with OpenStack.
 
         This method will create a new request starting with the same WSGI
@@ -44,12 +45,16 @@ class Controller(object):
 
         :param req: the original request
         :param path: new path for the request
-        :param content_type: new content type for the request
+        :param content_type: new content type for the request, defaults to
+                             "application/json" if not specified
         :param body: new body for the request
+        :param query_string: query string for the request, defaults to an empty
+                             query if not specified
         :returns: a Request object
         """
         new_req = webob.Request(copy.copy(req.environ))
         new_req.script_name = self.openstack_version
+        new_req.query_string = query_string
         if path is not None:
             new_req.path_info = path
         if content_type is not None:

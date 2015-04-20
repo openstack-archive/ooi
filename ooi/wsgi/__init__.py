@@ -150,6 +150,10 @@ class OCCIMiddleware(object):
                             controller=self.resources["compute"],
                             action="delete_all",
                             conditions=dict(method=["DELETE"]))
+        self.mapper.connect("/compute/{id}",
+                            controller=self.resources["compute"],
+                            action="run_action",
+                            conditions=dict(method=["POST"]))
 
         self.resources["storage"] = self._create_resource(
             ooi.api.storage.Controller)

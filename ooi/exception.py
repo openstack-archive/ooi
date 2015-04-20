@@ -76,6 +76,10 @@ class Invalid(OCCIException):
     code = 400
 
 
+class InvalidAction(Invalid):
+    msg_fmt = "Invalid action %(action)s provided."
+
+
 class InvalidContentType(Invalid):
     msg_fmt = "Invalid Content-type %(content_type)s."
     code = 406

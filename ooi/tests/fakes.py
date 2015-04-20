@@ -274,13 +274,14 @@ class FakeApp(object):
         for tenant in tenants.values():
             path = "/%s" % tenant["id"]
 
-            self._populate(path, "server", servers[tenant["id"]])
+            self._populate(path, "server", servers[tenant["id"]], actions=True)
             self._populate(path, "volume", volumes[tenant["id"]], "os-volumes")
             # NOTE(aloga): dict_values un Py3 is not serializable in JSON
             self._populate(path, "image", list(images.values()))
             self._populate(path, "flavor", list(flavors.values()))
 
-    def _populate(self, path_base, obj_name, obj_list, objs_path=None):
+    def _populate(self, path_base, obj_name, obj_list,
+                  objs_path=None, actions=[]):
         objs_name = "%ss" % obj_name
         if objs_path:
             path = "%s/%s" % (path_base, objs_path)
@@ -294,6 +295,10 @@ class FakeApp(object):
         for o in obj_list:
             obj_path = "%s/%s" % (path, o["id"])
             self.routes[obj_path] = create_fake_json_resp({obj_name: o})
+
+            if actions:
+                action_path = "%s/action" % obj_path
+                self.routes[action_path] = webob.Response(status=202)
 
     @webob.dec.wsgify()
     def __call__(self, req):
@@ -315,9 +320,17 @@ class FakeApp(object):
     def _do_post(self, req):
         if req.path_info.endswith("servers"):
             return self._do_create(req)
+        elif req.path_info.endswith("action"):
+            body = req.json_body.copy()
+            action = body.popitem()
+            if action[0] in ["os-start", "os-stop"]:
+                return self._get_from_routes(req)
         raise Exception
 
     def _do_get(self, req):
+        return self._get_from_routes(req)
+
+    def _get_from_routes(self, req):
         try:
             ret = self.routes[req.path_info]
         except KeyError:
