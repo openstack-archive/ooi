@@ -52,7 +52,7 @@ def _lexise_header(s):
 
 class TextParser(BaseParser):
     def parse_categories(self, headers):
-        kind = None
+        kind = action = None
         mixins = collections.Counter()
         schemes = collections.defaultdict(list)
         try:
@@ -69,11 +69,17 @@ class TextParser(BaseParser):
                 if kind is not None:
                     raise exception.OCCIInvalidSchema("Duplicated Kind")
                 kind = ctg_type
+            elif ctg_class == "action":
+                if action is not None:
+                    raise exception.OCCIInvalidSchema("Duplicated action")
+                action = ctg_type
             elif ctg_class == "mixin":
                 mixins[ctg_type] += 1
             schemes[d["scheme"]].append(d["term"])
+        if action and kind:
+            raise exception.OCCIInvalidSchema("Action and kind together?")
         return {
-            "kind": kind,
+            "category": kind or action,
             "mixins": mixins,
             "schemes": schemes,
         }

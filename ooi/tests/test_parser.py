@@ -29,7 +29,7 @@ class TestTextParser(base.TestCase):
                 'class="kind"')
         parser = parsers.TextParser({}, body)
         res = parser.parse()
-        self.assertEqual("http://example.com/scheme#foo", res["kind"])
+        self.assertEqual("http://example.com/scheme#foo", res["category"])
         self.assertItemsEqual(["foo"],
                               res["schemes"]["http://example.com/scheme#"])
         self.assertEqual({}, res["mixins"])
@@ -91,7 +91,7 @@ class TestHeaderParser(base.TestCase):
         }
         parser = parsers.HeaderParser(headers, None)
         res = parser.parse()
-        self.assertEqual("http://example.com/scheme#foo", res["kind"])
+        self.assertEqual("http://example.com/scheme#foo", res["category"])
         self.assertItemsEqual(["foo"],
                               res["schemes"]["http://example.com/scheme#"])
         self.assertEqual({}, res["mixins"])
@@ -142,9 +142,9 @@ class TestHeaderParser(base.TestCase):
             'Category': ('foo; '
                          'scheme="http://example.com/scheme#"; '
                          'class="kind"'),
-            'X-OCCI-Attribute': ('foo="bar", baz=1234'),
+            'X-OCCI-Attribute': 'foo="bar", baz=1234, bazonk="foo=123"',
         }
         parser = parsers.HeaderParser(headers, None)
         res = parser.parse()
-        expected_attrs = {"foo": "bar", "baz": "1234"}
+        expected_attrs = {"foo": "bar", "baz": "1234", "bazonk": "foo=123"}
         self.assertEqual(expected_attrs, res["attributes"])

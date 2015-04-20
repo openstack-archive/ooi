@@ -24,14 +24,16 @@ class Validator(object):
     def __init__(self, obj):
         self.parsed_obj = obj
 
-    def _validate_kind(self, kind):
+    def _validate_category(self, category):
         try:
-            if kind.type_id != self.parsed_obj["kind"]:
+            if category.type_id != self.parsed_obj["category"]:
                 raise exception.OCCISchemaMismatch(
-                    expected=kind.type_id, found=self.parsed_obj["kind"])
+                    expected=category.type_id,
+                    found=self.parsed_obj["category"]
+                )
         except KeyError:
             raise exception.OCCIMissingType(
-                type_id=kind.type_id)
+                type_id=category.type_id)
 
     def _compare_schemes(self, expected_type, actual):
         actual_scheme, actual_term = helpers.decompose_type(actual)
@@ -64,8 +66,8 @@ class Validator(object):
         return unmatched
 
     def validate(self, schema):
-        if "kind" in schema:
-            self._validate_kind(schema["kind"])
+        if "category" in schema:
+            self._validate_category(schema["category"])
         unmatched = copy.copy(self.parsed_obj["mixins"])
         unmatched = self._validate_mandatory_mixins(
             schema.get("mixins", []), unmatched)

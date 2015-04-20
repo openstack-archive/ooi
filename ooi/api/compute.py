@@ -71,7 +71,7 @@ class Controller(ooi.api.base.Controller):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         parser = req.get_parser()(req.headers, req.body)
         scheme = {
-            "kind": compute.ComputeResource.kind,
+            "category": compute.ComputeResource.kind,
             "mixins": [
                 templates.OpenStackOSTemplate,
                 templates.OpenStackResourceTemplate,
