@@ -18,7 +18,10 @@ import copy
 
 from ooi import utils
 
+from oslo_log import log as logging
 import webob.exc
+
+LOG = logging.getLogger(__name__)
 
 
 class Controller(object):
@@ -102,7 +105,12 @@ def exception_from_response(response):
         503: webob.exc.HTTPServiceUnavailable,
     }
     code = response.status_int
-    message = response.json_body.popitem()[1].get("message")
+    try:
+        message = response.json_body.popitem()[1].get("message")
+    except Exception:
+        LOG.exception("Unknown error happenened processing response %s"
+                      % response)
+        return webob.exc.HTTPInternalServerError
 
     exc = exceptions.get(code, webob.exc.HTTPInternalServerError)
     return exc(explanation=message)
