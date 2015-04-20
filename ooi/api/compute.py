@@ -21,10 +21,10 @@ from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
+from ooi.occi import validator as occi_validator
 from ooi.openstack import contextualization
 from ooi.openstack import helpers
 from ooi.openstack import templates
-from ooi.wsgi import parsers
 
 
 class Controller(ooi.api.base.Controller):
@@ -82,7 +82,7 @@ class Controller(ooi.api.base.Controller):
             ]
         }
         obj = parser.parse()
-        validator = parsers.Validator(obj)
+        validator = occi_validator.Validator(obj)
         validator.validate(scheme)
 
         name = obj.get("occi.core.title", "OCCI VM")

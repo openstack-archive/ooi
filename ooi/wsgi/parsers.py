@@ -15,11 +15,9 @@
 # under the License.
 
 import collections
-import copy
 import shlex
 
 from ooi import exception
-from ooi.occi import helpers
 
 
 _MEDIA_TYPE_MAP = collections.OrderedDict([
@@ -35,64 +33,6 @@ class BaseParser(object):
 
     def parse(self):
         raise NotImplemented
-
-
-class Validator(object):
-    def __init__(self, obj):
-        self.parsed_obj = obj
-
-    def _validate_kind(self, kind):
-        try:
-            if kind.type_id != self.parsed_obj["kind"]:
-                raise exception.OCCISchemaMismatch(
-                    expected=kind.type_id, found=self.parsed_obj["kind"])
-        except KeyError:
-            raise exception.OCCIMissingType(
-                type_id=kind.type_id)
-
-    def _compare_schemes(self, expected_type, actual):
-        actual_scheme, actual_term = helpers.decompose_type(actual)
-        if expected_type.scheme != actual_scheme:
-            return False
-        try:
-            if expected_type.term != actual_term:
-                return False
-        except AttributeError:
-            # ignore the fact the type does not have a term
-            pass
-        return True
-
-    def _validate_mandatory_mixins(self, mixins, unmatched):
-        for m in mixins:
-            for um in unmatched:
-                if self._compare_schemes(m, um):
-                    unmatched[um] -= 1
-                    break
-            else:
-                raise exception.OCCIMissingType(type_id=m.scheme)
-        return unmatched
-
-    def _validate_optional_mixins(self, mixins, unmatched):
-        for m in mixins:
-            for um in unmatched:
-                if self._compare_schemes(m, um):
-                    unmatched[um] -= 1
-                    break
-        return unmatched
-
-    def validate(self, schema):
-        if "kind" in schema:
-            self._validate_kind(schema["kind"])
-        unmatched = copy.copy(self.parsed_obj["mixins"])
-        unmatched = self._validate_mandatory_mixins(
-            schema.get("mixins", []), unmatched)
-        unmatched = self._validate_optional_mixins(
-            schema.get("optional_mixins", []), unmatched)
-        unexpected = [m for m in unmatched if unmatched[m]]
-        if unexpected:
-            raise exception.OCCISchemaMismatch(expected="",
-                                               found=unexpected)
-        return True
 
 
 def _lexize(s, separator, ignore_whitespace=False):
