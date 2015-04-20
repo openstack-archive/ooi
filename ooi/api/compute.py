@@ -24,6 +24,7 @@ from ooi.occi.infrastructure import storage_link
 from ooi.openstack import contextualization
 from ooi.openstack import helpers
 from ooi.openstack import templates
+from ooi.wsgi import parsers
 
 
 class Controller(ooi.api.base.Controller):
@@ -66,19 +67,24 @@ class Controller(ooi.api.base.Controller):
 
         return collection.Collection(resources=occi_compute_resources)
 
-    @ooi.api.base.Controller.validate(
-        {"kind": compute.ComputeResource.kind,
-         "mixins": [
-             templates.OpenStackOSTemplate,
-             templates.OpenStackResourceTemplate,
-         ],
-         "optional_mixins": [
-             contextualization.user_data,
-             contextualization.public_key,
-         ]
-         })
-    def create(self, obj, req, body):
+    def create(self, req, body):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
+        parser = req.get_parser()(req.headers, req.body)
+        scheme = {
+            "kind": compute.ComputeResource.kind,
+            "mixins": [
+                templates.OpenStackOSTemplate,
+                templates.OpenStackResourceTemplate,
+            ],
+            "optional_mixins": [
+                contextualization.user_data,
+                contextualization.public_key,
+            ]
+        }
+        obj = parser.parse()
+        validator = parsers.Validator(obj)
+        validator.validate(scheme)
+
         name = obj.get("occi.core.title", "OCCI VM")
         image = obj["schemes"][templates.OpenStackOSTemplate.scheme][0]
         flavor = obj["schemes"][templates.OpenStackResourceTemplate.scheme][0]

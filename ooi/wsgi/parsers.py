@@ -36,6 +36,11 @@ class BaseParser(object):
     def parse(self):
         raise NotImplemented
 
+
+class Validator(object):
+    def __init__(self, obj):
+        self.parsed_obj = obj
+
     def _validate_kind(self, kind):
         try:
             if kind.type_id != self.parsed_obj["kind"]:
@@ -76,7 +81,6 @@ class BaseParser(object):
         return unmatched
 
     def validate(self, schema):
-        self.parsed_obj = self.parse()
         if "kind" in schema:
             self._validate_kind(schema["kind"])
         unmatched = copy.copy(self.parsed_obj["mixins"])

@@ -61,14 +61,8 @@ class Request(webob.Request):
         return content_type
 
     def get_parser(self):
-        mtype = parsers.get_media_map().get(self.get_content_type,
-                                            "header")
+        mtype = parsers.get_media_map().get(self.get_content_type(), "header")
         return parsers.get_default_parsers()[mtype]
-
-    def validate(self, schema):
-        parser = self.get_parser()(self.headers, self.body)
-        parser.validate(schema)
-        return parser.parsed_obj
 
 
 class OCCIMiddleware(object):

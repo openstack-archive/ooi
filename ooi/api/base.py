@@ -74,15 +74,6 @@ class Controller(object):
         else:
             raise exception_from_response(response)
 
-    @staticmethod
-    def validate(schema):
-        def accepts(f):
-            def _validate(obj, req, body, *args, **kwargs):
-                parsed_obj = req.validate(schema)
-                return f(obj, parsed_obj, req, body, *args, **kwargs)
-            return _validate
-        return accepts
-
 
 def exception_from_response(response):
     """Convert an OpenStack V2 Fault into a webob exception.
