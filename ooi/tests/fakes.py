@@ -323,7 +323,7 @@ class FakeApp(object):
         elif req.path_info.endswith("action"):
             body = req.json_body.copy()
             action = body.popitem()
-            if action[0] in ["os-start", "os-stop"]:
+            if action[0] in ["os-start", "os-stop", "reboot"]:
                 return self._get_from_routes(req)
         raise Exception
 

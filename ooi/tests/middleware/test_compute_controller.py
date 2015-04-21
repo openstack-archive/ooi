@@ -154,7 +154,7 @@ class TestComputeController(test_middleware.TestMiddleware):
         tenant = fakes.tenants["foo"]
         app = self.get_app()
 
-        for action in ("stop", "start"):
+        for action in ("stop", "start", "restart"):
             headers = {
                 'Category': (
                     '%s;'

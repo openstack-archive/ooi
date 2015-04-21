@@ -88,6 +88,9 @@ class Controller(ooi.api.base.Controller):
         elif action == "start":
             scheme = {"category": compute.start}
             req_body = {"os-start": None}
+        elif action == "restart":
+            scheme = {"category": compute.restart}
+            req_body = {"reboot": {"type": "SOFT"}}
         else:
             raise exception.NotImplemented
 
