@@ -54,7 +54,11 @@ class Validator(object):
                     unmatched[um] -= 1
                     break
             else:
-                raise exception.OCCIMissingType(type_id=m.scheme)
+                # NOTE(aloga): I am not sure of this...
+                expected = m.scheme
+                if hasattr(m, "term"):
+                    expected += m.term
+                raise exception.OCCIMissingType(type_id=expected)
         return unmatched
 
     def _validate_optional_mixins(self, mixins, unmatched):
