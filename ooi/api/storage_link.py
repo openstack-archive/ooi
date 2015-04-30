@@ -23,6 +23,7 @@ from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
+from ooi.occi import validator as occi_validator
 
 
 class Controller(base.Controller):
@@ -67,21 +68,25 @@ class Controller(base.Controller):
         s = storage.StorageResource(title="Storage", id=v["volumeId"])
         return [storage_link.StorageLink(c, s, deviceid=v["device"])]
 
-    @base.Controller.validate({"kind": storage_link.StorageLink.kind})
-    def create(self, obj, req, body):
+    def create(self, req, body):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
-        vol_id = obj["attributes"]["occi.core.target"]
-        server_id = obj["attributes"]["occi.core.source"]
+        parser = req.get_parser()(req.headers, req.body)
+        scheme = {"category": storage_link.StorageLink.kind}
+        obj = parser.parse()
+        validator = occi_validator.Validator(obj)
+        validator.validate(scheme)
+
+        attrs = obj.get("attributes", {})
+        vol_id = attrs.get("occi.core.target")
+        server_id = attrs.get("occi.core.source")
         req_body = {
             "volumeAttachment": {
                 "volumeId": vol_id
             }
         }
-        try:
-            device = obj["attributes"]["occi.storagelink.deviceid"]
+        device = attrs.get("occi.storagelink.deviceid", None)
+        if device is not None:
             req_body["volumeAttachment"]["device"] = device
-        except KeyError:
-            pass
         req_path = "/%s/servers/%s/os-volume_attachments" % (tenant_id,
                                                              server_id)
         req = self._get_req(req,
