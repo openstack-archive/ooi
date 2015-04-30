@@ -124,7 +124,8 @@ class Controller(ooi.api.base.Controller):
         validator = occi_validator.Validator(obj)
         validator.validate(scheme)
 
-        name = obj.get("occi.core.title", "OCCI VM")
+        attrs = obj.get("attributes", {})
+        name = attrs.get("occi.core.title", "OCCI VM")
         image = obj["schemes"][templates.OpenStackOSTemplate.scheme][0]
         flavor = obj["schemes"][templates.OpenStackResourceTemplate.scheme][0]
         req_body = {"server": {
@@ -133,7 +134,8 @@ class Controller(ooi.api.base.Controller):
             "flavorRef": flavor,
         }}
         if contextualization.user_data.scheme in obj["schemes"]:
-            req_body["user_data"] = obj.get("org.openstack.compute.user_data")
+            req_body["user_data"] = attrs.get(
+                "org.openstack.compute.user_data")
         # TODO(enolfc): add here the correct metadata info
         # if contextualization.public_key.scheme in obj["schemes"]:
         #     req_body["metadata"] = XXX
