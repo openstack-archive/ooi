@@ -16,9 +16,13 @@
 
 import uuid
 
+from ooi.occi.infrastructure import compute
+from ooi.occi.infrastructure import network
+from ooi.occi.infrastructure import network_link
 from ooi.occi.infrastructure import templates as occi_templates
 from ooi.openstack import contextualization
 from ooi.openstack import helpers
+from ooi.openstack import network as os_network
 from ooi.openstack import templates
 from ooi.tests import base
 
@@ -97,3 +101,63 @@ class TestOpenStackPublicKey(base.TestCase):
         self.assertTrue(mxn.scheme.startswith(helpers._PREFIX))
         self.assertEqual(key_name, mxn.name)
         self.assertEqual(key_data, mxn.data)
+
+
+class TestOSNetworkInterface(base.TestCase):
+    def test_osnetwork_interface(self):
+        c = compute.ComputeResource("foo",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        n = network.NetworkResource("bar",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        i = os_network.OSNetworkInterface(c, n, "00:01:02:03:04:05",
+                                          "127.0.0.1")
+        self.assertEqual('_'.join([c.id, "127.0.0.1"]), i.id)
+        self.assertEqual(i.address, "127.0.0.1")
+        self.assertEqual(i.interface, "eth0")
+        self.assertEqual(i.mac, "00:01:02:03:04:05")
+        self.assertEqual(i.state, "active")
+        self.assertIsNone(i.gateway)
+        self.assertEqual(network_link.NetworkInterface.kind, i.kind)
+        self.assertIn(network_link.ip_network_interface, i.mixins)
+        # contains kind and mixins attributes
+        for att in network_link.NetworkInterface.kind.attributes:
+            self.assertIn(att, i.attributes)
+        for att in network_link.ip_network_interface.attributes:
+            self.assertIn(att, i.attributes)
+
+    def test_setters(self):
+        c = compute.ComputeResource("foo",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        n = network.NetworkResource("bar",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        i = os_network.OSNetworkInterface(c, n, "00:01:02:03:04:05",
+                                          "127.0.0.1")
+        i.address = "192.163.1.2"
+        self.assertEqual(
+            "192.163.1.2", i.attributes["occi.networkinterface.address"].value)
+        i.gateway = "192.163.1.1"
+        self.assertEqual(
+            "192.163.1.1", i.attributes["occi.networkinterface.gateway"].value)
+        i.allocation = "static"
+        self.assertEqual(
+            "static", i.attributes["occi.networkinterface.allocation"].value)
+
+    def test_getters(self):
+        c = compute.ComputeResource("foo",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        n = network.NetworkResource("bar",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        i = os_network.OSNetworkInterface(c, n, "00:01:02:03:04:05",
+                                          "127.0.0.1")
+        i.attributes["occi.networkinterface.address"].value = "192.163.1.2"
+        self.assertEqual("192.163.1.2", i.address)
+        i.attributes["occi.networkinterface.gateway"].value = "192.163.1.1"
+        self.assertEqual("192.163.1.1", i.gateway)
+        i.attributes["occi.networkinterface.allocation"].value = "static"
+        self.assertEqual("static", i.allocation)
