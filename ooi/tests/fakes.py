@@ -443,6 +443,15 @@ class FakeApp(object):
                         "status": "ACTIVE"}}
         return create_fake_json_resp(s)
 
+    def _do_create_volume(self, req):
+        # TODO(enolfc): this should check the json is
+        # semantically correct
+        s = {"volume": {"id": "foo",
+                        "displayName": "foo",
+                        "size": 1,
+                        "status": "on-line"}}
+        return create_fake_json_resp(s)
+
     def _do_create_attachment(self, req):
         v = {"volumeAttachment": {"serverId": "foo",
                                   "volumeId": "bar",
@@ -465,6 +474,8 @@ class FakeApp(object):
     def _do_post(self, req):
         if req.path_info.endswith("servers"):
             return self._do_create_server(req)
+        if req.path_info.endswith("os-volumes"):
+            return self._do_create_volume(req)
         elif req.path_info.endswith("action"):
             body = req.json_body.copy()
             action = body.popitem()
@@ -479,10 +490,12 @@ class FakeApp(object):
 
     def _do_delete(self, req):
         self._do_get(req)
-        if "os-volume_attachments" in req.path_info:
-            return create_fake_json_resp({}, 202)
-        if "os-floating-ips" in req.path_info:
-            return create_fake_json_resp({}, 202)
+        tested_paths = {"os-volume_attachments": 202,
+                        "os-floating-ips": 202,
+                        "os-volumes": 204}
+        for p in tested_paths:
+            if p in req.path_info:
+                return create_fake_json_resp({}, tested_paths[p])
         raise Exception
 
     def _do_get(self, req):

@@ -135,6 +135,69 @@ class TestStorageController(test_middleware.TestMiddleware):
         resp = req.get_response(app)
         self.assertEqual(404, resp.status_code)
 
+    def test_create_vol_no_size(self):
+        tenant = fakes.tenants["foo"]
+
+        app = self.get_app()
+        headers = {
+            'Category': (
+                'storage;'
+                'scheme="http://schemas.ogf.org/occi/infrastructure#";'
+                'class="kind"')
+        }
+        req = self._build_req("/storage", tenant["id"], method="POST",
+                              headers=headers)
+        resp = req.get_response(app)
+
+        self.assertEqual(400, resp.status_code)
+        self.assertDefaults(resp)
+
+    def test_create_vol(self):
+        tenant = fakes.tenants["foo"]
+
+        app = self.get_app()
+        headers = {
+            'Category': (
+                'storage;'
+                'scheme="http://schemas.ogf.org/occi/infrastructure#";'
+                'class="kind"'),
+            'X-OCCI-Attribute': (
+                'occi.storage.size=1'
+            )
+        }
+        req = self._build_req("/storage", tenant["id"], method="POST",
+                              headers=headers)
+        resp = req.get_response(app)
+
+        expected = [("X-OCCI-Location",
+                     utils.join_url(self.application_url + "/",
+                                    "storage/%s" % "foo"))]
+        self.assertEqual(200, resp.status_code)
+        self.assertExpectedResult(expected, resp)
+        self.assertDefaults(resp)
+
+    def test_delete_vol(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        for volume in fakes.volumes[tenant["id"]]:
+            req = self._build_req("/storage/%s" % volume["id"],
+                                  tenant["id"], method="DELETE")
+            resp = req.get_response(app)
+            self.assertContentType(resp)
+            self.assertEqual(204, resp.status_code)
+
+    # TODO(enolfc): find a way to be sure that all volumes
+    #               are in fact deleted.
+    def test_delete_all_vols(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        req = self._build_req("/storage/", tenant["id"], method="DELETE")
+        resp = req.get_response(app)
+        self.assertContentType(resp)
+        self.assertEqual(204, resp.status_code)
+
 
 class StorageControllerTextPlain(test_middleware.TestMiddlewareTextPlain,
                                  TestStorageController):
