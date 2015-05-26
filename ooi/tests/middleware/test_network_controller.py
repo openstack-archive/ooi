@@ -44,12 +44,12 @@ def build_occi_network(pool, floating=True):
     ]
     links = []
     links.append('<%s/network/%s?action=up>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/network/action#up' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/network/action#up"' %
                  (fakes.application_url, pool_id))
     links.append('<%s/network/%s?action=down>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/network/action#down' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/network/action#down"' %
                  (fakes.application_url, pool_id))
     result = []
     for c in cats:

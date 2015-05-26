@@ -72,7 +72,7 @@ class ActionRenderer(CategoryRenderer):
             url = utils.join_url(url, [term, ass_obj.id, self.obj.location])
             d = {"location": url,
                  "rel": self.obj.type_id}
-            l = "<%(location)s>; rel=%(rel)s" % d
+            l = '<%(location)s>; rel="%(rel)s"' % d
             return [('Link', l)]
         else:
             # Otherwise, render as category

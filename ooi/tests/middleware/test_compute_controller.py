@@ -66,20 +66,20 @@ def build_occi_server(server):
     ]
     links = []
     links.append('<%s/compute/%s?action=restart>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/compute/action#restart' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#restart"' %
                  (fakes.application_url, server_id))
     links.append('<%s/compute/%s?action=start>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/compute/action#start' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#start"' %
                  (fakes.application_url, server_id))
     links.append('<%s/compute/%s?action=stop>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/compute/action#stop' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#stop"' %
                  (fakes.application_url, server_id))
     links.append('<%s/compute/%s?action=suspend>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/compute/action#suspend' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#suspend"' %
                  (fakes.application_url, server_id))
 
     result = []

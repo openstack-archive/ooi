@@ -44,24 +44,24 @@ def build_occi_volume(vol):
     ]
     links = []
     links.append('<%s/storage/%s?action=backup>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#backup' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#backup"' %
                  (fakes.application_url, vol_id))
     links.append('<%s/storage/%s?action=resize>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#resize' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#resize"' %
                  (fakes.application_url, vol_id))
     links.append('<%s/storage/%s?action=online>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#online' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#online"' %
                  (fakes.application_url, vol_id))
     links.append('<%s/storage/%s?action=snapshot>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#snapshot' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#snapshot"' %
                  (fakes.application_url, vol_id))
     links.append('<%s/storage/%s?action=offline>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#offline' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#offline"' %
                  (fakes.application_url, vol_id))
 
     result = []
