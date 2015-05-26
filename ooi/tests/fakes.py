@@ -257,7 +257,7 @@ def fake_query_results():
         'scheme="http://schemas.openstack.org/template/os#"; '
         'class="mixin"')
     cats.append(
-        'bar; '
+        '1; '
         'scheme="http://schemas.openstack.org/template/resource#"; '
         'class="mixin"')
     cats.append(
@@ -265,7 +265,7 @@ def fake_query_results():
         'scheme="http://schemas.openstack.org/template/os#"; '
         'class="mixin"')
     cats.append(
-        'foo; '
+        '2; '
         'scheme="http://schemas.openstack.org/template/resource#"; '
         'class="mixin"')
     # OpenStack contextualization

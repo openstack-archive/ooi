@@ -183,7 +183,8 @@ class Controller(ooi.api.base.Controller):
                                                           s["flavor"]["id"]))
         response = req.get_response(self.app)
         flavor = self.get_from_response(response, "flavor", {})
-        res_tpl = templates.OpenStackResourceTemplate(flavor["name"],
+        res_tpl = templates.OpenStackResourceTemplate(flavor["id"],
+                                                      flavor["name"],
                                                       flavor["vcpus"],
                                                       flavor["ram"],
                                                       flavor["disk"])

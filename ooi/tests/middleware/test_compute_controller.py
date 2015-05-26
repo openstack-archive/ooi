@@ -26,7 +26,7 @@ from ooi import utils
 def build_occi_server(server):
     name = server["name"]
     server_id = server["id"]
-    flavor_name = fakes.flavors[server["flavor"]["id"]]["name"]
+    flavor_id = fakes.flavors[server["flavor"]["id"]]["id"]
     ram = fakes.flavors[server["flavor"]["id"]]["ram"]
     cores = fakes.flavors[server["flavor"]["id"]]["vcpus"]
     image_id = server["image"]["id"]
@@ -48,7 +48,7 @@ def build_occi_server(server):
                 'class="mixin"' % image_id),
     cats.append('%s; '
                 'scheme="http://schemas.openstack.org/template/resource#"; '
-                'class="mixin"' % flavor_name),
+                'class="mixin"' % flavor_id),
 
     attrs = [
         'occi.core.title="%s"' % name,
