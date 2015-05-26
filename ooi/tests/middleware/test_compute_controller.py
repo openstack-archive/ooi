@@ -27,6 +27,7 @@ def build_occi_server(server):
     name = server["name"]
     server_id = server["id"]
     flavor_id = fakes.flavors[server["flavor"]["id"]]["id"]
+    flavor_name = fakes.flavors[server["flavor"]["id"]]["name"]
     ram = fakes.flavors[server["flavor"]["id"]]["ram"]
     cores = fakes.flavors[server["flavor"]["id"]]["vcpus"]
     image_id = server["image"]["id"]
@@ -42,13 +43,18 @@ def build_occi_server(server):
     cats = []
     cats.append('compute; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-                'class="kind"'),
+                'class="kind"; title="compute resource"; '
+                'rel="http://schemas.ogf.org/occi/core#resource"'),
     cats.append('%s; '
                 'scheme="http://schemas.openstack.org/template/os#"; '
-                'class="mixin"' % image_id),
+                'class="mixin"; title="%s"; '
+                'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"'
+                % (image_id, image_id)),
     cats.append('%s; '
                 'scheme="http://schemas.openstack.org/template/resource#"; '
-                'class="mixin"' % flavor_id),
+                'class="mixin"; title="Flavor: %s"; '
+                'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"'
+                % (flavor_id, flavor_name)),
 
     attrs = [
         'occi.core.title="%s"' % name,

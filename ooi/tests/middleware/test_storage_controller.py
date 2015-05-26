@@ -33,7 +33,9 @@ def build_occi_volume(vol):
     cats = []
     cats.append('storage; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-                'class="kind"'),
+                'class="kind"; '
+                'title="storage resource"; '
+                'rel="http://schemas.ogf.org/occi/core#resource"')
     attrs = [
         'occi.core.title="%s"' % name,
         'occi.storage.size=%s' % size,
