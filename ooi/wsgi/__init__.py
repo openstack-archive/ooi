@@ -96,14 +96,16 @@ class OCCIMiddleware(object):
 
     def _setup_resource_routes(self, resource, controller):
         path = "/" + resource
-        # This could be removed for total OCCI compliance
+        # These two could be removed for total OCCI compliance
         self.mapper.connect(resource, path, controller=controller,
                             action="index", conditions=dict(method=["GET"]))
+        self.mapper.connect(resource, path, controller=controller,
+                            action="create", conditions=dict(method=["POST"]))
         # OCCI states that paths must end with a "/" when operating on pahts,
         # that are not location pahts or resource instances
         self.mapper.connect(resource, path + "/", controller=controller,
                             action="index", conditions=dict(method=["GET"]))
-        self.mapper.connect(resource, path, controller=controller,
+        self.mapper.connect(resource, path + "/", controller=controller,
                             action="create", conditions=dict(method=["POST"]))
         self.mapper.connect(resource, path + "/{id}", controller=controller,
                             action="update", conditions=dict(method=["PUT"]))
