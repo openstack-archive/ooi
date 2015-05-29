@@ -26,6 +26,44 @@ _MEDIA_TYPE_MAP = collections.OrderedDict([
 ])
 
 
+def _quoted_split(s, separator=',', quotes='"'):
+    """Splits a string considering quotes.
+
+    e.g. _quoted_split('a,"b,c",d') -> ['a', '"b,c"', 'd']
+    """
+    splits = []
+    partial = []
+    in_quote = None
+    for c in s:
+        if in_quote:
+            if c == in_quote:
+                in_quote = None
+        else:
+            if c in quotes:
+                in_quote = c
+        if not in_quote and c in separator:
+            if partial:
+                splits.append(''.join(partial))
+            partial = []
+        else:
+            partial.append(c)
+    if partial:
+        splits.append(''.join(partial))
+    return splits
+
+
+def _split_unquote(s, separator="="):
+    """Splits a string considering quotes and removing them in the result.
+
+    e.g. _split_unquote('a="b=d"') -> ['a', 'b=d']
+    """
+    lex = shlex.shlex(s, posix=True)
+    lex.commenters = ""
+    lex.whitespace = separator
+    lex.whitespace_split = True
+    return list(lex)
+
+
 class BaseParser(object):
     def __init__(self, headers, body):
         self.headers = headers
@@ -33,21 +71,6 @@ class BaseParser(object):
 
     def parse(self):
         raise NotImplemented
-
-
-def _lexize(s, separator, ignore_whitespace=False):
-    lex = shlex.shlex(instream=s, posix=True)
-    lex.commenters = ""
-    if ignore_whitespace:
-        lex.whitespace = separator
-    else:
-        lex.whitespace += separator
-    lex.whitespace_split = True
-    return list(lex)
-
-
-def _lexise_header(s):
-    return _lexize(s, separator=",", ignore_whitespace=True)
 
 
 class TextParser(BaseParser):
@@ -59,10 +82,13 @@ class TextParser(BaseParser):
             categories = headers["Category"]
         except KeyError:
             raise exception.OCCIInvalidSchema("No categories")
-        for ctg in _lexise_header(categories):
-            ll = _lexize(ctg, ";")
+        for ctg in _quoted_split(categories):
+            ll = _quoted_split(ctg, "; ")
             d = {"term": ll[0]}  # assumes 1st element => term's value
-            d.update(dict([i.split('=') for i in ll[1:]]))
+            try:
+                d.update(dict([_split_unquote(i) for i in ll[1:]]))
+            except ValueError:
+                raise exception.OCCIInvalidSchema("Unable to parse category")
             ctg_class = d.get("class", None)
             ctg_type = '%(scheme)s%(term)s' % d
             if ctg_class == "kind":
@@ -88,9 +114,9 @@ class TextParser(BaseParser):
         attrs = {}
         try:
             header_attrs = headers["X-OCCI-Attribute"]
-            for attr in _lexise_header(header_attrs):
-                n, v = attr.split('=', 1)
-                attrs[n.strip()] = v
+            for attr in _quoted_split(header_attrs):
+                l = _split_unquote(attr)
+                attrs[l[0].strip()] = l[1]
         except KeyError:
             pass
         return attrs

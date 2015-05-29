@@ -37,7 +37,8 @@ class Controller(base.Controller):
         occi_resource_templates = []
         if flavors:
             for f in flavors:
-                tpl = templates.OpenStackResourceTemplate(f["name"],
+                tpl = templates.OpenStackResourceTemplate(f["id"],
+                                                          f["name"],
                                                           f["vcpus"],
                                                           f["ram"],
                                                           f["disk"])

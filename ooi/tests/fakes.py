@@ -15,6 +15,7 @@
 # under the License.
 
 import json
+import re
 import uuid
 
 import webob.dec
@@ -213,124 +214,145 @@ def fake_query_results():
     cats.append(
         'link; '
         'scheme="http://schemas.ogf.org/occi/core#"; '
-        'class="kind"')
+        'class="kind"; title="link"')
     cats.append(
         'resource; '
         'scheme="http://schemas.ogf.org/occi/core#"; '
-        'class="kind"')
+        'class="kind"; title="resource"; '
+        'rel="http://schemas.ogf.org/occi/core#entity"')
     cats.append(
         'entity; '
         'scheme="http://schemas.ogf.org/occi/core#"; '
-        'class="kind"')
+        'class="kind"; title="entity"')
+
     # OCCI Infrastructure Compute
     cats.append(
         'compute; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="kind"')
+        'class="kind"; title="compute resource"; '
+        'rel="http://schemas.ogf.org/occi/core#resource"')
     cats.append(
         'start; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
-        'class="action"')
+        'class="action"; title="start compute instance"')
     cats.append(
         'stop; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
-        'class="action"')
+        'class="action"; title="stop compute instance"')
     cats.append(
         'restart; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
-        'class="action"')
+        'class="action"; title="restart compute instance"')
     cats.append(
         'suspend; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
-        'class="action"')
+        'class="action"; title="suspend compute instance"')
+
+    # OCCI Templates
     cats.append(
         'os_tpl; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="mixin"')
+        'class="mixin"; title="OCCI OS Template"')
     cats.append(
         'resource_tpl; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="mixin"')
-    # OpenStack Templates
+        'class="mixin"; title="OCCI Resource Template"')
+
+    # OpenStack Images
     cats.append(
         'bar; '
         'scheme="http://schemas.openstack.org/template/os#"; '
-        'class="mixin"')
-    cats.append(
-        'bar; '
-        'scheme="http://schemas.openstack.org/template/resource#"; '
-        'class="mixin"')
+        'class="mixin"; title="bar"; '
+        'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"')
     cats.append(
         'foo; '
         'scheme="http://schemas.openstack.org/template/os#"; '
-        'class="mixin"')
+        'class="mixin"; title="foo"; '
+        'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"')
+
+    # OpenStack Flavors
     cats.append(
-        'foo; '
+        '1; '
         'scheme="http://schemas.openstack.org/template/resource#"; '
-        'class="mixin"')
-    # OpenStack contextualization
+        'class="mixin"; title="Flavor: foo"; '
+        'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"')
     cats.append(
-        'user_data; '
-        'scheme="http://schemas.openstack.org/compute/instance#"; '
-        'class="mixin"')
-    cats.append(
-        'public_key; '
-        'scheme="http://schemas.openstack.org/instance/credentials#"; '
-        'class="mixin"')
+        '2; '
+        'scheme="http://schemas.openstack.org/template/resource#"; '
+        'class="mixin"; title="Flavor: bar"; '
+        'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"')
+
     # OCCI Infrastructure Network
     cats.append(
         'network; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="kind"')
+        'class="kind"; title="network resource"; '
+        'rel="http://schemas.ogf.org/occi/core#resource"')
     cats.append(
         'ipnetwork; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/network#"; '
-        'class="mixin"')
+        'class="mixin"; title="IP Networking Mixin"')
     cats.append(
         'up; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/network/action#"; '
-        'class="action"')
+        'class="action"; title="up network instance"')
     cats.append(
         'down; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/network/action#"; '
-        'class="action"')
+        'class="action"; title="down network instance"')
     cats.append(
         'networkinterface; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="kind"')
+        'class="kind"; title="network link resource"; '
+        'rel="http://schemas.ogf.org/occi/core#link"')
     cats.append(
         'ipnetworkinterface; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/'
-        'networkinterface#"; class="mixin"')
+        'networkinterface#"; '
+        'class="mixin"; title="IP Network interface Mixin"')
+
     # OCCI Infrastructure Storage
     cats.append(
         'storage; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="kind"')
+        'class="kind"; title="storage resource"; '
+        'rel="http://schemas.ogf.org/occi/core#resource"')
     cats.append(
         'storagelink; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="kind"')
+        'class="kind"; title="storage link resource"; '
+        'rel="http://schemas.ogf.org/occi/core#link"')
     cats.append(
         'offline; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
-        'class="action"')
+        'class="action"; title="offline storage instance"')
     cats.append(
         'online; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
-        'class="action"')
+        'class="action"; title="online storage instance"')
     cats.append(
         'backup; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
-        'class="action"')
+        'class="action"; title="backup storage instance"')
     cats.append(
         'resize; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
-        'class="action"')
+        'class="action"; title="resize storage instance"')
     cats.append(
         'snapshot; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
-        'class="action"')
+        'class="action"; title="snapshot storage instance"')
+
+    # OpenStack contextualization
+    cats.append(
+        'user_data; '
+        'scheme="http://schemas.openstack.org/compute/instance#"; '
+        'class="mixin"; title="Contextualization extension - user_data"')
+    cats.append(
+        'public_key; '
+        'scheme="http://schemas.openstack.org/instance/credentials#"; '
+        'class="mixin"; title="Contextualization extension - public_key"')
+
     result = []
     for c in cats:
         result.append(("Category", c))
@@ -490,12 +512,15 @@ class FakeApp(object):
 
     def _do_delete(self, req):
         self._do_get(req)
-        tested_paths = {"os-volume_attachments": 202,
-                        "os-floating-ips": 202,
-                        "os-volumes": 204}
-        for p in tested_paths:
-            if p in req.path_info:
-                return create_fake_json_resp({}, tested_paths[p])
+        tested_paths = {
+            r"/[^/]+/servers/[^/]+/os-volume_attachments/[^/]+$": 202,
+            r"/[^/]+/os-floating-ips/[^/]+$": 202,
+            r"/[^/]+/servers/[^/]+$": 204,
+            r"/[^/]+/os-volumes/[^/]+$": 204,
+        }
+        for p, st in tested_paths.items():
+            if re.match(p, req.path_info):
+                return create_fake_json_resp({}, st)
         raise Exception
 
     def _do_get(self, req):

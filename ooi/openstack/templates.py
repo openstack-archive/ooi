@@ -34,20 +34,21 @@ class OpenStackOSTemplate(mixin.Mixin):
 class OpenStackResourceTemplate(mixin.Mixin):
     scheme = helpers.build_scheme("template/resource")
 
-    def __init__(self, name, cores, memory, disk, ephemeral=0, swap=0):
+    def __init__(self, id, name, cores, memory, disk, ephemeral=0, swap=0):
         attrs = [
             attribute.InmutableAttribute("occi.compute.cores", cores),
             attribute.InmutableAttribute("occi.compute.memory", memory),
             attribute.InmutableAttribute("occi.compute.disk", disk),
             attribute.InmutableAttribute("occi.compute.ephemeral", ephemeral),
-            attribute.InmutableAttribute("occi.compute.swap", swap)
+            attribute.InmutableAttribute("occi.compute.swap", swap),
+            attribute.InmutableAttribute("org.openstack.flavor.name", name)
         ]
 
         attrs = attribute.AttributeCollection({a.name: a for a in attrs})
 
         super(OpenStackResourceTemplate, self).__init__(
             OpenStackResourceTemplate.scheme,
-            name,
+            id,
             "Flavor: %s" % name,
             related=[templates.resource_tpl],
             attributes=attrs)
@@ -71,3 +72,7 @@ class OpenStackResourceTemplate(mixin.Mixin):
     @property
     def swap(self):
         return self.attributes["occi.compute.swap"].value
+
+    @property
+    def name(self):
+        return self.attributes["org.openstack.flavor.name"].value

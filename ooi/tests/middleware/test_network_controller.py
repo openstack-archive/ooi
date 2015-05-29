@@ -27,10 +27,11 @@ def build_occi_network(pool, floating=True):
     cats = []
     cats.append('network; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-                'class="kind"')
+                'class="kind"; title="network resource"; '
+                'rel="http://schemas.ogf.org/occi/core#resource"')
     cats.append('ipnetwork; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure/'
-                'network#"; class="mixin"')
+                'network#"; class="mixin"; title="IP Networking Mixin"')
 
     if floating:
         pool_id = "floating/%s" % pool["name"]
@@ -43,12 +44,12 @@ def build_occi_network(pool, floating=True):
     ]
     links = []
     links.append('<%s/network/%s?action=up>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/network/action#up' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/network/action#up"' %
                  (fakes.application_url, pool_id))
     links.append('<%s/network/%s?action=down>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/network/action#down' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/network/action#down"' %
                  (fakes.application_url, pool_id))
     result = []
     for c in cats:

@@ -22,74 +22,19 @@ from ooi.tests import base
 from ooi.wsgi import parsers
 
 
-class TestTextParser(base.TestCase):
-    def test_kind(self):
-        body = ('Category: foo; '
-                'scheme="http://example.com/scheme#"; '
-                'class="kind"')
-        parser = parsers.TextParser({}, body)
-        res = parser.parse()
-        self.assertEqual("http://example.com/scheme#foo", res["category"])
-        self.assertItemsEqual(["foo"],
-                              res["schemes"]["http://example.com/scheme#"])
-        self.assertEqual({}, res["mixins"])
-        self.assertEqual({}, res["attributes"])
+class TestParserBase(base.TestCase):
+    """Base parser tests, uses the header Parser."""
 
-    def test_missing_categories(self):
-        parser = parsers.TextParser({}, None)
-        self.assertRaises(exception.OCCIInvalidSchema,
-                          parser.parse)
+    def _get_parser(self, headers, body):
+        return parsers.HeaderParser(headers, body)
 
-    def test_multiple_kinds(self):
-        body = ('Category: foo; '
-                'scheme="http://example.com/scheme#"; '
-                'class="kind", '
-                'bar; '
-                'scheme="http://example.com/scheme#"; '
-                'class="kind"')
-        parser = parsers.TextParser({}, body)
-        self.assertRaises(exception.OCCIInvalidSchema,
-                          parser.parse)
-
-    def test_mixins(self):
-        body = ('Category: foo; '
-                'scheme="http://example.com/scheme#"; '
-                'class="kind", '
-                'bar; '
-                'scheme="http://example.com/scheme#"; '
-                'class="mixin", '
-                'baz; '
-                'scheme="http://example.com/scheme#"; '
-                'class="mixin"')
-        parser = parsers.TextParser({}, body)
-        res = parser.parse()
-        expected_mixins = collections.Counter(
-            ["http://example.com/scheme#bar", "http://example.com/scheme#baz"])
-        expected_terms = ["bar", "baz", "foo"]
-        self.assertEqual(expected_mixins, res["mixins"])
-        self.assertItemsEqual(expected_terms,
-                              res["schemes"]["http://example.com/scheme#"])
-        self.assertEqual({}, res["attributes"])
-
-    def test_attributes(self):
-        body = ('Category: foo; '
-                'scheme="http://example.com/scheme#"; '
-                'class="kind"\n'
-                'X-OCCI-Attribute: foo="bar", baz=1234')
-        parser = parsers.TextParser({}, body)
-        res = parser.parse()
-        expected_attrs = {"foo": "bar", "baz": "1234"}
-        self.assertEqual(expected_attrs, res["attributes"])
-
-
-class TestHeaderParser(base.TestCase):
     def test_kind(self):
         headers = {
             'Category': ('foo; '
                          'scheme="http://example.com/scheme#"; '
                          'class="kind"')
         }
-        parser = parsers.HeaderParser(headers, None)
+        parser = self._get_parser(headers, None)
         res = parser.parse()
         self.assertEqual("http://example.com/scheme#foo", res["category"])
         self.assertItemsEqual(["foo"],
@@ -98,7 +43,15 @@ class TestHeaderParser(base.TestCase):
         self.assertEqual({}, res["attributes"])
 
     def test_missing_categories(self):
-        parser = parsers.HeaderParser({}, None)
+        parser = self._get_parser({}, None)
+        self.assertRaises(exception.OCCIInvalidSchema,
+                          parser.parse)
+
+    def test_bad_category(self):
+        headers = {
+            'Category': 'foo; scheme;'
+        }
+        parser = self._get_parser(headers, None)
         self.assertRaises(exception.OCCIInvalidSchema,
                           parser.parse)
 
@@ -111,7 +64,7 @@ class TestHeaderParser(base.TestCase):
                          'scheme="http://example.com/scheme#"; '
                          'class="kind"')
         }
-        parser = parsers.HeaderParser(headers, None)
+        parser = self._get_parser(headers, None)
         self.assertRaises(exception.OCCIInvalidSchema,
                           parser.parse)
 
@@ -127,7 +80,7 @@ class TestHeaderParser(base.TestCase):
                          'scheme="http://example.com/scheme#"; '
                          'class="mixin"')
         }
-        parser = parsers.HeaderParser(headers, None)
+        parser = self._get_parser(headers, None)
         res = parser.parse()
         expected_mixins = collections.Counter(
             ["http://example.com/scheme#bar", "http://example.com/scheme#baz"])
@@ -144,7 +97,13 @@ class TestHeaderParser(base.TestCase):
                          'class="kind"'),
             'X-OCCI-Attribute': 'foo="bar", baz=1234, bazonk="foo=123"',
         }
-        parser = parsers.HeaderParser(headers, None)
+        parser = self._get_parser(headers, None)
         res = parser.parse()
         expected_attrs = {"foo": "bar", "baz": "1234", "bazonk": "foo=123"}
         self.assertEqual(expected_attrs, res["attributes"])
+
+
+class TestTextParser(TestParserBase):
+    def _get_parser(self, headers, body):
+        new_body = [': '.join([hdr, headers[hdr]]) for hdr in headers]
+        return parsers.TextParser({}, '\n'.join(new_body))

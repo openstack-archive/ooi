@@ -33,7 +33,9 @@ def build_occi_volume(vol):
     cats = []
     cats.append('storage; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-                'class="kind"'),
+                'class="kind"; '
+                'title="storage resource"; '
+                'rel="http://schemas.ogf.org/occi/core#resource"')
     attrs = [
         'occi.core.title="%s"' % name,
         'occi.storage.size=%s' % size,
@@ -42,24 +44,24 @@ def build_occi_volume(vol):
     ]
     links = []
     links.append('<%s/storage/%s?action=backup>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#backup' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#backup"' %
                  (fakes.application_url, vol_id))
     links.append('<%s/storage/%s?action=resize>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#resize' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#resize"' %
                  (fakes.application_url, vol_id))
     links.append('<%s/storage/%s?action=online>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#online' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#online"' %
                  (fakes.application_url, vol_id))
     links.append('<%s/storage/%s?action=snapshot>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#snapshot' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#snapshot"' %
                  (fakes.application_url, vol_id))
     links.append('<%s/storage/%s?action=offline>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#offline' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#offline"' %
                  (fakes.application_url, vol_id))
 
     result = []
@@ -197,6 +199,27 @@ class TestStorageController(test_middleware.TestMiddleware):
         resp = req.get_response(app)
         self.assertContentType(resp)
         self.assertEqual(204, resp.status_code)
+
+    def test_action_vol(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        for action in ("online", "offline", "backup", "snapshot", "resize"):
+            headers = {
+                'Category': (
+                    '%s;'
+                    'scheme="http://schemas.ogf.org/occi/infrastructure/'
+                    'storage/action#";'
+                    'class="action"' % action)
+            }
+            for vol in fakes.volumes[tenant["id"]]:
+                req = self._build_req("/storage/%s?action=%s" % (vol["id"],
+                                                                 action),
+                                      tenant["id"], method="POST",
+                                      headers=headers)
+                resp = req.get_response(app)
+                self.assertDefaults(resp)
+                self.assertEqual(501, resp.status_code)
 
 
 class StorageControllerTextPlain(test_middleware.TestMiddlewareTextPlain,
