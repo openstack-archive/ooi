@@ -200,6 +200,27 @@ class TestStorageController(test_middleware.TestMiddleware):
         self.assertContentType(resp)
         self.assertEqual(204, resp.status_code)
 
+    def test_action_vol(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        for action in ("online", "offline", "backup", "snapshot", "resize"):
+            headers = {
+                'Category': (
+                    '%s;'
+                    'scheme="http://schemas.ogf.org/occi/infrastructure/'
+                    'storage/action#";'
+                    'class="action"' % action)
+            }
+            for vol in fakes.volumes[tenant["id"]]:
+                req = self._build_req("/storage/%s?action=%s" % (vol["id"],
+                                                                 action),
+                                      tenant["id"], method="POST",
+                                      headers=headers)
+                resp = req.get_response(app)
+                self.assertDefaults(resp)
+                self.assertEqual(501, resp.status_code)
+
 
 class StorageControllerTextPlain(test_middleware.TestMiddlewareTextPlain,
                                  TestStorageController):

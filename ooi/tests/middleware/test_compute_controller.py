@@ -336,6 +336,28 @@ class TestComputeController(test_middleware.TestMiddleware):
                     self.assertResultIncludesLink(link_id, source, target,
                                                   resp)
 
+    def test_delete_vm(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        for s in fakes.servers[tenant["id"]]:
+            req = self._build_req("/compute/%s" % s["id"],
+                                  tenant["id"], method="DELETE")
+            resp = req.get_response(app)
+            self.assertContentType(resp)
+            self.assertEqual(204, resp.status_code)
+
+    # TODO(enolfc): find a way to be sure that all servers
+    #               are in fact deleted.
+    def test_delete_all_vms(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        req = self._build_req("/compute/", tenant["id"], method="DELETE")
+        resp = req.get_response(app)
+        self.assertContentType(resp)
+        self.assertEqual(204, resp.status_code)
+
 
 class ComputeControllerTextPlain(test_middleware.TestMiddlewareTextPlain,
                                  TestComputeController):

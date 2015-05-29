@@ -15,6 +15,7 @@
 # under the License.
 
 import json
+import re
 import uuid
 
 import webob.dec
@@ -511,12 +512,15 @@ class FakeApp(object):
 
     def _do_delete(self, req):
         self._do_get(req)
-        tested_paths = {"os-volume_attachments": 202,
-                        "os-floating-ips": 202,
-                        "os-volumes": 204}
-        for p in tested_paths:
-            if p in req.path_info:
-                return create_fake_json_resp({}, tested_paths[p])
+        tested_paths = {
+            r"/[^/]+/servers/[^/]+/os-volume_attachments/[^/]+$": 202,
+            r"/[^/]+/os-floating-ips/[^/]+$": 202,
+            r"/[^/]+/servers/[^/]+$": 204,
+            r"/[^/]+/os-volumes/[^/]+$": 204,
+        }
+        for p, st in tested_paths.items():
+            if re.match(p, req.path_info):
+                return create_fake_json_resp({}, st)
         raise Exception
 
     def _do_get(self, req):
