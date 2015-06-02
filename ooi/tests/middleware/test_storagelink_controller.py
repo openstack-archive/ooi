@@ -200,8 +200,7 @@ class TestStorageLinkController(test_middleware.TestMiddleware):
                                       tenant["id"], method="DELETE")
                 resp = req.get_response(app)
                 self.assertContentType(resp)
-                # TODO(enolfc): should this be 204?
-                self.assertEqual(200, resp.status_code)
+                self.assertEqual(204, resp.status_code)
 
 
 class StorageLinkControllerTextPlain(test_middleware.TestMiddlewareTextPlain,

@@ -168,4 +168,4 @@ class TestMiddlewareTextOcci(TestMiddleware):
             attrs = set([s.strip() for s in val.split(";")])
             if expected_attrs.issubset(attrs):
                 return
-        self.fail("Failed to find %s in %s." % expected_attrs, result)
+        self.fail("Failed to find %s in %s." % (expected_attrs, result))

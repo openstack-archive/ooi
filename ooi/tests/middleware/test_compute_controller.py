@@ -26,6 +26,7 @@ from ooi import utils
 def build_occi_server(server):
     name = server["name"]
     server_id = server["id"]
+    flavor_id = fakes.flavors[server["flavor"]["id"]]["id"]
     flavor_name = fakes.flavors[server["flavor"]["id"]]["name"]
     ram = fakes.flavors[server["flavor"]["id"]]["ram"]
     cores = fakes.flavors[server["flavor"]["id"]]["vcpus"]
@@ -42,13 +43,18 @@ def build_occi_server(server):
     cats = []
     cats.append('compute; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-                'class="kind"'),
+                'class="kind"; title="compute resource"; '
+                'rel="http://schemas.ogf.org/occi/core#resource"'),
     cats.append('%s; '
                 'scheme="http://schemas.openstack.org/template/os#"; '
-                'class="mixin"' % image_id),
+                'class="mixin"; title="%s"; '
+                'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"'
+                % (image_id, image_id)),
     cats.append('%s; '
                 'scheme="http://schemas.openstack.org/template/resource#"; '
-                'class="mixin"' % flavor_name),
+                'class="mixin"; title="Flavor: %s"; '
+                'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"'
+                % (flavor_id, flavor_name)),
 
     attrs = [
         'occi.core.title="%s"' % name,
@@ -60,20 +66,20 @@ def build_occi_server(server):
     ]
     links = []
     links.append('<%s/compute/%s?action=restart>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/compute/action#restart' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#restart"' %
                  (fakes.application_url, server_id))
     links.append('<%s/compute/%s?action=start>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/compute/action#start' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#start"' %
                  (fakes.application_url, server_id))
     links.append('<%s/compute/%s?action=stop>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/compute/action#stop' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#stop"' %
                  (fakes.application_url, server_id))
     links.append('<%s/compute/%s?action=suspend>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/compute/action#suspend' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#suspend"' %
                  (fakes.application_url, server_id))
 
     result = []
@@ -113,7 +119,6 @@ class TestComputeController(test_middleware.TestMiddleware):
 
         for url in ("/compute/", "/compute"):
             req = self._build_req(url, tenant["id"], method="GET")
-
             resp = req.get_response(app)
 
             self.assertEqual(200, resp.status_code)
@@ -299,17 +304,59 @@ class TestComputeController(test_middleware.TestMiddleware):
 
             resp = req.get_response(app)
 
-            vol_id = server["os-extended-volumes:volumes_attached"][0]["id"]
-            link_id = '_'.join([server["id"], vol_id])
-
             self.assertDefaults(resp)
             self.assertContentType(resp)
+            self.assertEqual(200, resp.status_code)
+
             source = utils.join_url(self.application_url + "/",
                                     "compute/%s" % server["id"])
-            target = utils.join_url(self.application_url + "/",
-                                    "storage/%s" % vol_id)
-            self.assertResultIncludesLink(link_id, source, target, resp)
-            self.assertEqual(200, resp.status_code)
+            # volumes
+            vols = server.get("os-extended-volumes:volumes_attached", [])
+            for v in vols:
+                vol_id = v["id"]
+                link_id = '_'.join([server["id"], vol_id])
+
+                target = utils.join_url(self.application_url + "/",
+                                        "storage/%s" % vol_id)
+                self.assertResultIncludesLink(link_id, source, target, resp)
+
+            # network
+            addresses = server.get("addresses", {})
+            for addr_set in addresses.values():
+                for addr in addr_set:
+                    ip = addr["addr"]
+                    link_id = '_'.join([server["id"], ip])
+                    if addr["OS-EXT-IPS:type"] == "fixed":
+                        net_id = "fixed"
+                    else:
+                        name = fakes.pools[tenant["id"]][0]["name"]
+                        net_id = "floating/%s" % name
+                    target = utils.join_url(self.application_url + "/",
+                                            "network/%s" % net_id)
+                    self.assertResultIncludesLink(link_id, source, target,
+                                                  resp)
+
+    def test_delete_vm(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        for s in fakes.servers[tenant["id"]]:
+            req = self._build_req("/compute/%s" % s["id"],
+                                  tenant["id"], method="DELETE")
+            resp = req.get_response(app)
+            self.assertContentType(resp)
+            self.assertEqual(204, resp.status_code)
+
+    # TODO(enolfc): find a way to be sure that all servers
+    #               are in fact deleted.
+    def test_delete_all_vms(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        req = self._build_req("/compute/", tenant["id"], method="DELETE")
+        resp = req.get_response(app)
+        self.assertContentType(resp)
+        self.assertEqual(204, resp.status_code)
 
 
 class ComputeControllerTextPlain(test_middleware.TestMiddlewareTextPlain,

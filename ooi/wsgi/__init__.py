@@ -23,6 +23,8 @@ import webob.dec
 
 import ooi
 import ooi.api.compute
+import ooi.api.network
+import ooi.api.network_link
 from ooi.api import query
 import ooi.api.storage
 import ooi.api.storage_link
@@ -92,6 +94,35 @@ class OCCIMiddleware(object):
     def _create_resource(self, controller):
         return Resource(controller(self.application, self.openstack_version))
 
+    def _setup_resource_routes(self, resource, controller):
+        path = "/" + resource
+        # These two could be removed for total OCCI compliance
+        self.mapper.connect(resource, path, controller=controller,
+                            action="index", conditions=dict(method=["GET"]))
+        self.mapper.connect(resource, path, controller=controller,
+                            action="create", conditions=dict(method=["POST"]))
+        # OCCI states that paths must end with a "/" when operating on pahts,
+        # that are not location pahts or resource instances
+        self.mapper.connect(resource, path + "/", controller=controller,
+                            action="index", conditions=dict(method=["GET"]))
+        self.mapper.connect(resource, path + "/", controller=controller,
+                            action="create", conditions=dict(method=["POST"]))
+        self.mapper.connect(resource, path + "/{id}", controller=controller,
+                            action="update", conditions=dict(method=["PUT"]))
+        self.mapper.connect(resource, path + "/{id}", controller=controller,
+                            action="delete",
+                            conditions=dict(method=["DELETE"]))
+        self.mapper.connect(resource, path + "/{id}", controller=controller,
+                            action="show", conditions=dict(method=["GET"]))
+        # OCCI specific, delete all resources
+        self.mapper.connect(path + "/", controller=controller,
+                            action="delete_all",
+                            conditions=dict(method=["DELETE"]))
+        # Actions
+        self.mapper.connect(path + "/{id}", controller=controller,
+                            action="run_action",
+                            conditions=dict(method=["POST"]))
+
     def _setup_routes(self):
         """Setup the mapper routes.
 
@@ -138,46 +169,46 @@ class OCCIMiddleware(object):
 
         self.resources["compute"] = self._create_resource(
             ooi.api.compute.Controller)
-        self.mapper.resource("server", "compute",
-                             controller=self.resources["compute"])
-        # OCCI states that paths must end with a "/" when operating on pahts,
-        # that are not location pahts or resource instances, so we should add
-        # this rule manually
-        self.mapper.connect("compute", "/compute/",
-                            controller=self.resources["compute"],
-                            action="index",
-                            conditions=dict(method=["GET"]))
-        self.mapper.connect("compute", "/compute/",
-                            controller=self.resources["compute"],
-                            action="delete_all",
-                            conditions=dict(method=["DELETE"]))
-        self.mapper.connect("/compute/{id}",
-                            controller=self.resources["compute"],
-                            action="run_action",
-                            conditions=dict(method=["POST"]))
+        self._setup_resource_routes("compute", self.resources["compute"])
 
         self.resources["storage"] = self._create_resource(
             ooi.api.storage.Controller)
-        self.mapper.resource("volume", "storage",
-                             controller=self.resources["storage"])
-        # OCCI states that paths must end with a "/" when operating on pahts,
-        # that are not location pahts or resource instances, so we should add
-        # this rule manually
-        self.mapper.connect("storage", "/storage/",
-                            controller=self.resources["storage"],
-                            action="index",
-                            conditions=dict(method=["GET"]))
+        self._setup_resource_routes("storage", self.resources["storage"])
+
         self.resources["storagelink"] = self._create_resource(
             ooi.api.storage_link.Controller)
-        self.mapper.resource("volume", "storagelink",
-                             controller=self.resources["storagelink"])
+        self._setup_resource_routes("storagelink",
+                                    self.resources["storagelink"])
+
+        self.resources["networklink"] = self._create_resource(
+            ooi.api.network_link.Controller)
+        self._setup_resource_routes("networklink",
+                                    self.resources["networklink"])
+
+        # TODO(enolfc): move to _setup_resource_routes or similar
+        # Network is a bit different from other resources
+        # we have /network and below that /network/fixed
+        # and /network/floating/* for the pools
+        self.resources["network"] = self._create_resource(
+            ooi.api.network.NetworkController)
+        self.mapper.connect("network", "/network",
+                            controller=self.resources["network"],
+                            action="general_index",
+                            conditions=dict(method=["GET"]))
         # OCCI states that paths must end with a "/" when operating on pahts,
         # that are not location pahts or resource instances, so we should add
         # this rule manually
-        self.mapper.connect("storagelink", "/storagelink/",
-                            controller=self.resources["storagelink"],
-                            action="index",
+        self.mapper.connect("network", "/network/",
+                            controller=self.resources["network"],
+                            action="general_index",
                             conditions=dict(method=["GET"]))
+        self.mapper.connect("fixed_network", "/network/fixed",
+                            controller=self.resources["network"],
+                            action="show_fixed",
+                            conditions=dict(method=["GET"]))
+        netpool_name = "network/%s" % ooi.api.network.FLOATING_PREFIX
+        self.mapper.resource("floating_network", netpool_name,
+                             controller=self.resources["network"])
 
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, req):

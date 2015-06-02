@@ -46,10 +46,17 @@ class CategoryRenderer(HeaderRenderer):
         d = {
             "term": self.obj.term,
             "scheme": self.obj.scheme,
-            "class": self.obj.occi_class
+            "class": self.obj.occi_class,
+            "title": self.obj.title
         }
-        return [('Category',
-                 '%(term)s; scheme="%(scheme)s"; class="%(class)s"' % d)]
+        ret = []
+        ret.append(('%(term)s; scheme="%(scheme)s"; class="%(class)s"; '
+                    'title="%(title)s"') % d)
+        for rel in getattr(self.obj, 'related', []):
+            d = {"scheme": rel.scheme, "term": rel.term}
+            ret.append('rel="%(scheme)s%(term)s"' % d)
+        # FIXME(enolfc): missing location, attributes and actions
+        return [('Category', "; ".join(ret))]
 
 
 class KindRenderer(CategoryRenderer):
@@ -65,7 +72,7 @@ class ActionRenderer(CategoryRenderer):
             url = utils.join_url(url, [term, ass_obj.id, self.obj.location])
             d = {"location": url,
                  "rel": self.obj.type_id}
-            l = "<%(location)s>; rel=%(rel)s" % d
+            l = '<%(location)s>; rel="%(rel)s"' % d
             return [('Link', l)]
         else:
             # Otherwise, render as category

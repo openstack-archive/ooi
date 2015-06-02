@@ -20,6 +20,8 @@ from ooi.occi.core import link
 from ooi.occi.core import mixin
 from ooi.occi.core import resource
 from ooi.occi.infrastructure import compute
+from ooi.occi.infrastructure import network
+from ooi.occi.infrastructure import network_link
 from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
 from ooi.occi.infrastructure import templates
@@ -76,7 +78,8 @@ class TestOCCICompute(base.TestCase):
         self.assertEqual(4, c.attributes["occi.compute.memory"].value)
 
     def test_getters(self):
-        c = compute.ComputeResource("foo")
+        c = compute.ComputeResource("foo", state="baz")
+        self.assertEqual("baz", c.state)
         c.attributes["occi.compute.architecture"].value = "bar"
         self.assertEqual("bar", c.architecture)
         c.attributes["occi.compute.cores"].value = 5
@@ -198,3 +201,121 @@ class TestTemplates(base.TestCase):
                               mixin.Mixin)
         self.assertEqual("resource_tpl",
                          templates.resource_tpl.term)
+
+
+class TestOCCINetwork(base.TestCase):
+    def test_network_class(self):
+        n = network.NetworkResource
+        self.assertIn(network.up, n.actions)
+        self.assertIn(network.down, n.actions)
+        self.assertIn("occi.core.id", n.attributes)
+        self.assertIn("occi.core.summary", n.attributes)
+        self.assertIn("occi.core.title", n.attributes)
+        self.assertIn("occi.network.vlan", n.attributes)
+        self.assertIn("occi.network.label", n.attributes)
+        self.assertIn("occi.network.state", n.attributes)
+        self.assertIn(resource.Resource.kind, n.kind.related)
+        # TODO(aloga): We need to check that the attributes are actually set
+        # after we get an object (we have to check this for this but also for
+        # the other resources)
+
+    def test_network(self):
+        id = uuid.uuid4().hex
+        n = network.NetworkResource("foo",
+                                    summary="This is a summary",
+                                    id=id)
+        self.assertEqual("foo", n.title)
+        self.assertEqual(id, n.id)
+        self.assertEqual("This is a summary", n.summary)
+        self.assertIsNone(n.vlan)
+        self.assertIsNone(n.label)
+        self.assertIsNone(n.state)
+
+    def test_setters(self):
+        n = network.NetworkResource("foo")
+        n.vlan = "bar"
+        self.assertEqual("bar", n.attributes["occi.network.vlan"].value)
+        n.label = "baz"
+        self.assertEqual("baz", n.attributes["occi.network.label"].value)
+
+    def test_getters(self):
+        n = network.NetworkResource("foo", vlan="bar", label="baz",
+                                    state="foobar")
+        self.assertEqual("bar", n.vlan)
+        self.assertEqual("baz", n.label)
+        self.assertEqual("foobar", n.state)
+
+
+class TestNetworkMixins(base.TestCase):
+    def test_ip_network(self):
+        self.assertIsInstance(network.ip_network,
+                              mixin.Mixin)
+        self.assertEqual("ipnetwork",
+                         network.ip_network.term)
+        self.assertIn("occi.network.address", network.ip_network.attributes)
+        self.assertIn("occi.network.gateway", network.ip_network.attributes)
+        self.assertIn("occi.network.allocation", network.ip_network.attributes)
+
+    def test_ip_network_interface(self):
+        self.assertIsInstance(network_link.ip_network_interface,
+                              mixin.Mixin)
+        self.assertEqual("ipnetworkinterface",
+                         network_link.ip_network_interface.term)
+        self.assertIn("occi.networkinterface.address",
+                      network_link.ip_network_interface.attributes)
+        self.assertIn("occi.networkinterface.gateway",
+                      network_link.ip_network_interface.attributes)
+        self.assertIn("occi.networkinterface.allocation",
+                      network_link.ip_network_interface.attributes)
+
+
+class TestOCCINetworkInterface(base.TestCase):
+    def test_networkinterface_class(self):
+        l = network_link.NetworkInterface
+        self.assertIn("occi.core.id", l.attributes)
+        self.assertIn("occi.core.title", l.attributes)
+        self.assertIn("occi.core.source", l.attributes)
+        self.assertIn("occi.core.target", l.attributes)
+        self.assertIn("occi.networkinterface.interface", l.attributes)
+        self.assertIn("occi.networkinterface.mac", l.attributes)
+        self.assertIn("occi.networkinterface.state", l.attributes)
+        self.assertIn(link.Link.kind, l.kind.related)
+
+    def test_networkinterface(self):
+        c = compute.ComputeResource("foo",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        n = network.NetworkResource("bar",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        l = network_link.NetworkInterface([], c, n)
+        self.assertEqual(c, l.source)
+        self.assertEqual(n, l.target)
+        self.assertIsNone(l.interface)
+        self.assertIsNone(l.mac)
+        self.assertIsNone(l.state)
+
+    def test_setters(self):
+        c = compute.ComputeResource("foo",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        n = network.NetworkResource("bar",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        l = network_link.NetworkInterface([], c, n)
+        l.mac = "00:00:00:00:00:00"
+        self.assertEqual("00:00:00:00:00:00",
+                         l.attributes["occi.networkinterface.mac"].value)
+
+    def test_getters(self):
+        c = compute.ComputeResource("foo",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        n = network.NetworkResource("bar",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        l = network_link.NetworkInterface([], c, n, interface="eth1",
+                                          mac="00:01:02:03:04:05", state="foo")
+        self.assertEqual("eth1", l.interface)
+        self.assertEqual("00:01:02:03:04:05", l.mac)
+        self.assertEqual("foo", l.state)

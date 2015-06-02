@@ -15,6 +15,7 @@
 # under the License.
 
 import json
+import re
 import uuid
 
 import webob.dec
@@ -98,6 +99,51 @@ volumes = {
     ],
 }
 
+pools = {
+    tenants["foo"]["id"]: [
+        {
+            "id": "foo",
+            "name": "foo",
+        },
+        {
+            "id": "bar",
+            "name": "bar",
+        }
+    ],
+    tenants["bar"]["id"]: [],
+    tenants["baz"]["id"]: [
+        {
+            "id": "public",
+            "name": "public",
+        },
+    ],
+}
+
+linked_vm_id = uuid.uuid4().hex
+
+allocated_ip = "192.168.253.23"
+
+floating_ips = {
+    tenants["foo"]["id"]: [],
+    tenants["bar"]["id"]: [],
+    tenants["baz"]["id"]: [
+        {
+            "fixed_ip": "10.0.0.2",
+            "id": uuid.uuid4().hex,
+            "instance_id": linked_vm_id,
+            "ip": "192.168.253.1",
+            "pool": pools[tenants["baz"]["id"]][0]["name"],
+        },
+        {
+            "fixed_ip": None,
+            "id": uuid.uuid4().hex,
+            "instance_id": None,
+            "ip": "192.168.253.2",
+            "pool": pools[tenants["baz"]["id"]][0]["name"],
+        },
+    ],
+}
+
 servers = {
     tenants["foo"]["id"]: [
         {
@@ -125,15 +171,25 @@ servers = {
     tenants["bar"]["id"]: [],
     tenants["baz"]["id"]: [
         {
-            "id": uuid.uuid4().hex,
+            "id": linked_vm_id,
             "name": "withvolume",
             "flavor": {"id": flavors[1]["id"]},
             "image": {"id": images["bar"]["id"]},
             "status": "ACTIVE",
             "os-extended-volumes:volumes_attached": [
                 {"id": volumes[tenants["baz"]["id"]][0]["id"]}
-            ]
-        },
+            ],
+            "addresses": {
+                "private": [
+                    {"addr": floating_ips[tenants["baz"]["id"]][0]["fixed_ip"],
+                     "OS-EXT-IPS:type": "fixed",
+                     "OS-EXT-IPS-MAC:mac_addr": "1234"},
+                    {"addr": floating_ips[tenants["baz"]["id"]][0]["ip"],
+                     "OS-EXT-IPS:type": "floating",
+                     "OS-EXT-IPS-MAC:mac_addr": "1234"},
+                ]
+            }
+        }
     ],
 }
 
@@ -154,98 +210,148 @@ volumes[tenants["baz"]["id"]][0]["attachments"] = [{
 
 def fake_query_results():
     cats = []
-    cats.append(
-        'storage; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="kind"')
-    cats.append(
-        'storagelink; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="kind"')
-    cats.append(
-        'compute; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="kind"')
+    # OCCI Core
     cats.append(
         'link; '
         'scheme="http://schemas.ogf.org/occi/core#"; '
-        'class="kind"')
+        'class="kind"; title="link"')
     cats.append(
         'resource; '
         'scheme="http://schemas.ogf.org/occi/core#"; '
-        'class="kind"')
+        'class="kind"; title="resource"; '
+        'rel="http://schemas.ogf.org/occi/core#entity"')
     cats.append(
         'entity; '
         'scheme="http://schemas.ogf.org/occi/core#"; '
-        'class="kind"')
+        'class="kind"; title="entity"')
+
+    # OCCI Infrastructure Compute
     cats.append(
-        'offline; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
-        'class="action"')
-    cats.append(
-        'online; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
-        'class="action"')
-    cats.append(
-        'backup; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
-        'class="action"')
-    cats.append(
-        'resize; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
-        'class="action"')
-    cats.append(
-        'snapshot; '
-        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
-        'class="action"')
+        'compute; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
+        'class="kind"; title="compute resource"; '
+        'rel="http://schemas.ogf.org/occi/core#resource"')
     cats.append(
         'start; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
-        'class="action"')
+        'class="action"; title="start compute instance"')
     cats.append(
         'stop; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
-        'class="action"')
+        'class="action"; title="stop compute instance"')
     cats.append(
         'restart; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
-        'class="action"')
+        'class="action"; title="restart compute instance"')
     cats.append(
         'suspend; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
-        'class="action"')
-    cats.append(
-        'bar; '
-        'scheme="http://schemas.openstack.org/template/os#"; '
-        'class="mixin"')
-    cats.append(
-        'bar; '
-        'scheme="http://schemas.openstack.org/template/resource#"; '
-        'class="mixin"')
-    cats.append(
-        'foo; '
-        'scheme="http://schemas.openstack.org/template/os#"; '
-        'class="mixin"')
-    cats.append(
-        'foo; '
-        'scheme="http://schemas.openstack.org/template/resource#"; '
-        'class="mixin"')
+        'class="action"; title="suspend compute instance"')
+
+    # OCCI Templates
     cats.append(
         'os_tpl; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="mixin"')
+        'class="mixin"; title="OCCI OS Template"')
     cats.append(
         'resource_tpl; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="mixin"')
+        'class="mixin"; title="OCCI Resource Template"')
+
+    # OpenStack Images
+    cats.append(
+        'bar; '
+        'scheme="http://schemas.openstack.org/template/os#"; '
+        'class="mixin"; title="bar"; '
+        'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"')
+    cats.append(
+        'foo; '
+        'scheme="http://schemas.openstack.org/template/os#"; '
+        'class="mixin"; title="foo"; '
+        'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"')
+
+    # OpenStack Flavors
+    cats.append(
+        '1; '
+        'scheme="http://schemas.openstack.org/template/resource#"; '
+        'class="mixin"; title="Flavor: foo"; '
+        'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"')
+    cats.append(
+        '2; '
+        'scheme="http://schemas.openstack.org/template/resource#"; '
+        'class="mixin"; title="Flavor: bar"; '
+        'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"')
+
+    # OCCI Infrastructure Network
+    cats.append(
+        'network; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
+        'class="kind"; title="network resource"; '
+        'rel="http://schemas.ogf.org/occi/core#resource"')
+    cats.append(
+        'ipnetwork; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/network#"; '
+        'class="mixin"; title="IP Networking Mixin"')
+    cats.append(
+        'up; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/network/action#"; '
+        'class="action"; title="up network instance"')
+    cats.append(
+        'down; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/network/action#"; '
+        'class="action"; title="down network instance"')
+    cats.append(
+        'networkinterface; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
+        'class="kind"; title="network link resource"; '
+        'rel="http://schemas.ogf.org/occi/core#link"')
+    cats.append(
+        'ipnetworkinterface; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/'
+        'networkinterface#"; '
+        'class="mixin"; title="IP Network interface Mixin"')
+
+    # OCCI Infrastructure Storage
+    cats.append(
+        'storage; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
+        'class="kind"; title="storage resource"; '
+        'rel="http://schemas.ogf.org/occi/core#resource"')
+    cats.append(
+        'storagelink; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
+        'class="kind"; title="storage link resource"; '
+        'rel="http://schemas.ogf.org/occi/core#link"')
+    cats.append(
+        'offline; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
+        'class="action"; title="offline storage instance"')
+    cats.append(
+        'online; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
+        'class="action"; title="online storage instance"')
+    cats.append(
+        'backup; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
+        'class="action"; title="backup storage instance"')
+    cats.append(
+        'resize; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
+        'class="action"; title="resize storage instance"')
+    cats.append(
+        'snapshot; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
+        'class="action"; title="snapshot storage instance"')
+
+    # OpenStack contextualization
     cats.append(
         'user_data; '
         'scheme="http://schemas.openstack.org/compute/instance#"; '
-        'class="mixin"')
+        'class="mixin"; title="Contextualization extension - user_data"')
     cats.append(
         'public_key; '
         'scheme="http://schemas.openstack.org/instance/credentials#"; '
-        'class="mixin"')
+        'class="mixin"; title="Contextualization extension - public_key"')
 
     result = []
     for c in cats:
@@ -293,6 +399,10 @@ class FakeApp(object):
 
             self._populate(path, "server", servers[tenant["id"]], actions=True)
             self._populate(path, "volume", volumes[tenant["id"]], "os-volumes")
+            self._populate(path, "floating_ip_pool", pools[tenant["id"]],
+                           "os-floating-ip-pools")
+            self._populate(path, "floating_ip", floating_ips[tenant["id"]],
+                           "os-floating-ips")
             # NOTE(aloga): dict_values un Py3 is not serializable in JSON
             self._populate(path, "image", list(images.values()))
             self._populate(path, "flavor", list(flavors.values()))
@@ -355,28 +465,62 @@ class FakeApp(object):
                         "status": "ACTIVE"}}
         return create_fake_json_resp(s)
 
+    def _do_create_volume(self, req):
+        # TODO(enolfc): this should check the json is
+        # semantically correct
+        s = {"volume": {"id": "foo",
+                        "displayName": "foo",
+                        "size": 1,
+                        "status": "on-line"}}
+        return create_fake_json_resp(s)
+
     def _do_create_attachment(self, req):
         v = {"volumeAttachment": {"serverId": "foo",
                                   "volumeId": "bar",
                                   "device": "/dev/vdb"}}
         return create_fake_json_resp(v, 202)
 
+    def _do_allocate_ip(self, req):
+        body = req.json_body.copy()
+        pool = body.popitem()
+        tenant = req.path_info.split('/')[1]
+        for p in pools[tenant]:
+            if p["name"] == pool[1]:
+                break
+        else:
+            exc = webob.exc.HTTPNotFound()
+            return FakeOpenStackFault(exc)
+        ip = {"floating_ip": {"ip": allocated_ip}}
+        return create_fake_json_resp(ip, 202)
+
     def _do_post(self, req):
         if req.path_info.endswith("servers"):
             return self._do_create_server(req)
+        if req.path_info.endswith("os-volumes"):
+            return self._do_create_volume(req)
         elif req.path_info.endswith("action"):
             body = req.json_body.copy()
             action = body.popitem()
-            if action[0] in ["os-start", "os-stop", "reboot"]:
+            if action[0] in ["os-start", "os-stop", "reboot",
+                             "addFloatingIp", "removeFloatingIp"]:
                 return self._get_from_routes(req)
         elif req.path_info.endswith("os-volume_attachments"):
             return self._do_create_attachment(req)
+        elif req.path_info.endswith("os-floating-ips"):
+            return self._do_allocate_ip(req)
         raise Exception
 
     def _do_delete(self, req):
         self._do_get(req)
-        if "os-volume_attachments" in req.path_info:
-            return create_fake_json_resp({}, 202)
+        tested_paths = {
+            r"/[^/]+/servers/[^/]+/os-volume_attachments/[^/]+$": 202,
+            r"/[^/]+/os-floating-ips/[^/]+$": 202,
+            r"/[^/]+/servers/[^/]+$": 204,
+            r"/[^/]+/os-volumes/[^/]+$": 204,
+        }
+        for p, st in tested_paths.items():
+            if re.match(p, req.path_info):
+                return create_fake_json_resp({}, st)
         raise Exception
 
     def _do_get(self, req):

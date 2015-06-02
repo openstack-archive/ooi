@@ -33,7 +33,9 @@ def build_occi_volume(vol):
     cats = []
     cats.append('storage; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-                'class="kind"'),
+                'class="kind"; '
+                'title="storage resource"; '
+                'rel="http://schemas.ogf.org/occi/core#resource"')
     attrs = [
         'occi.core.title="%s"' % name,
         'occi.storage.size=%s' % size,
@@ -42,24 +44,24 @@ def build_occi_volume(vol):
     ]
     links = []
     links.append('<%s/storage/%s?action=backup>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#backup' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#backup"' %
                  (fakes.application_url, vol_id))
     links.append('<%s/storage/%s?action=resize>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#resize' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#resize"' %
                  (fakes.application_url, vol_id))
     links.append('<%s/storage/%s?action=online>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#online' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#online"' %
                  (fakes.application_url, vol_id))
     links.append('<%s/storage/%s?action=snapshot>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#snapshot' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#snapshot"' %
                  (fakes.application_url, vol_id))
     links.append('<%s/storage/%s?action=offline>; '
-                 'rel=http://schemas.ogf.org/occi/'
-                 'infrastructure/storage/action#offline' %
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/storage/action#offline"' %
                  (fakes.application_url, vol_id))
 
     result = []
@@ -134,6 +136,90 @@ class TestStorageController(test_middleware.TestMiddleware):
                               tenant["id"], method="GET")
         resp = req.get_response(app)
         self.assertEqual(404, resp.status_code)
+
+    def test_create_vol_no_size(self):
+        tenant = fakes.tenants["foo"]
+
+        app = self.get_app()
+        headers = {
+            'Category': (
+                'storage;'
+                'scheme="http://schemas.ogf.org/occi/infrastructure#";'
+                'class="kind"')
+        }
+        req = self._build_req("/storage", tenant["id"], method="POST",
+                              headers=headers)
+        resp = req.get_response(app)
+
+        self.assertEqual(400, resp.status_code)
+        self.assertDefaults(resp)
+
+    def test_create_vol(self):
+        tenant = fakes.tenants["foo"]
+
+        app = self.get_app()
+        headers = {
+            'Category': (
+                'storage;'
+                'scheme="http://schemas.ogf.org/occi/infrastructure#";'
+                'class="kind"'),
+            'X-OCCI-Attribute': (
+                'occi.storage.size=1'
+            )
+        }
+        req = self._build_req("/storage", tenant["id"], method="POST",
+                              headers=headers)
+        resp = req.get_response(app)
+
+        expected = [("X-OCCI-Location",
+                     utils.join_url(self.application_url + "/",
+                                    "storage/%s" % "foo"))]
+        self.assertEqual(200, resp.status_code)
+        self.assertExpectedResult(expected, resp)
+        self.assertDefaults(resp)
+
+    def test_delete_vol(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        for volume in fakes.volumes[tenant["id"]]:
+            req = self._build_req("/storage/%s" % volume["id"],
+                                  tenant["id"], method="DELETE")
+            resp = req.get_response(app)
+            self.assertContentType(resp)
+            self.assertEqual(204, resp.status_code)
+
+    # TODO(enolfc): find a way to be sure that all volumes
+    #               are in fact deleted.
+    def test_delete_all_vols(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        req = self._build_req("/storage/", tenant["id"], method="DELETE")
+        resp = req.get_response(app)
+        self.assertContentType(resp)
+        self.assertEqual(204, resp.status_code)
+
+    def test_action_vol(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        for action in ("online", "offline", "backup", "snapshot", "resize"):
+            headers = {
+                'Category': (
+                    '%s;'
+                    'scheme="http://schemas.ogf.org/occi/infrastructure/'
+                    'storage/action#";'
+                    'class="action"' % action)
+            }
+            for vol in fakes.volumes[tenant["id"]]:
+                req = self._build_req("/storage/%s?action=%s" % (vol["id"],
+                                                                 action),
+                                      tenant["id"], method="POST",
+                                      headers=headers)
+                resp = req.get_response(app)
+                self.assertDefaults(resp)
+                self.assertEqual(501, resp.status_code)
 
 
 class StorageControllerTextPlain(test_middleware.TestMiddlewareTextPlain,
