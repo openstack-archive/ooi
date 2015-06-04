@@ -38,7 +38,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'ooi'
-copyright = u'2014, Alvaro Lopez Garcia
+copyright = u'2014-present, Spanish National Research Council - CSIC'
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
@@ -68,7 +68,7 @@ latex_documents = [
     ('index',
      '%s.tex' % project,
      u'%s Documentation' % project,
-     u'Alvaro Lopez Garcia', 'manual'),
+     u'Spanish National Research Council - CSIC', 'manual'),
 ]
 
 # Example configuration for intersphinx: refer to the Python standard library.
