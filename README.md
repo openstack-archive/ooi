@@ -1,8 +1,17 @@
 ooi: OpenStack OCCI Interface
 =============================
 
-[![Build Status](https://secure.travis-ci.org/alvarolopez/ooi.svg)](http://travis-ci.org/alvarolopez/ooi)
-[![Coverage Status](https://coveralls.io/repos/alvarolopez/ooi/badge.svg?branch=master)](https://coveralls.io/r/alvarolopez/ooi?branch=master)
+ooi is an implementation the Open Grid Forum's
+[Open Cloud Computing Interface (OCCI)](http://www.occi-wg.org)
+for [OpenStack](http://www.openstack.org).
 
-OOI is an implementation the [Open Cloud Computing Interface
-(OCCI)](http://www.occi-wg.org) for [OpenStack](http://www .openstack.org).
+In the unfortunate event that bugs are discovered, they should
+be reported to the bug tracker available at:
+
+   http://bugs.launchpad.net/ooi
+
+Developers wishing to work on the ooi project should always base their work on
+the latest ooi code, available from the master GIT repository at:
+
+   https://git.openstack.org/cgit/stackforge/ooi
+
