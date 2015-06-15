@@ -45,6 +45,10 @@ class Resource(entity.Entity):
             "occi.core.summary", summary)
         self._links = []
 
+    def __eq__(self, other):
+        return all([self.attributes[i].value == other.attributes[i].value
+                    for i in self.attributes])
+
     @property
     def links(self):
         return self._links
