@@ -22,10 +22,7 @@ import webob
 from ooi.api import compute
 from ooi.api import helpers
 from ooi.tests.controllers import base
-
-
-class FakeException(Exception):
-    pass
+from ooi.tests import fakes
 
 
 class TestComputeController(base.TestController):
@@ -41,6 +38,20 @@ class TestComputeController(base.TestController):
         kwargs["base_url"] = self.application_url
 
         return webob.Request.blank("/whatever", environ=environ, **kwargs)
+
+    @mock.patch.object(helpers.OpenStackHelper, "index")
+    def test_index(self, m_index):
+        test_servers = [
+            [],
+            fakes.servers[fakes.tenants["foo"]["id"]]
+        ]
+
+        for servers in test_servers:
+            m_index.return_value = servers
+            result = self.controller.index(None)
+            expected = self.controller._get_compute_resources(servers)
+            self.assertEqual(expected, result.resources)
+            m_index.assert_called_with(None)
 
     @mock.patch.object(compute.Controller, "_delete")
     def test_delete(self, mock_delete):
