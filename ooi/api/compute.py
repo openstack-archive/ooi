@@ -68,14 +68,16 @@ class Controller(ooi.api.base.Controller):
         return [s["id"] for s in self.get_from_response(response,
                                                         "servers", [])]
 
-    def _delete(self, req, ids):
+    def _get_os_delete_req(self, req, server_id):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
-        for id in ids:
-            req = self._get_req(req,
-                                path="/%s/servers/%s" % (tenant_id,
-                                                         id),
-                                method="DELETE")
-            response = req.get_response(self.app)
+        path = "/%s/servers/%s" % (tenant_id, server_id)
+        req = self._get_req(req, path=path, method="DELETE")
+        return req
+
+    def _delete(self, req, server_ids):
+        for server_id in server_ids:
+            os_req = self._get_os_delete_req(req, server_id)
+            response = os_req.get_response(self.app)
             if response.status_int not in [204]:
                 raise ooi.api.base.exception_from_response(response)
         return []
