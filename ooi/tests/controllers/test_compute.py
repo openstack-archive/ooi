@@ -20,6 +20,7 @@ import mock
 import webob
 
 from ooi.api import compute
+from ooi.api import helpers
 from ooi.tests.controllers import base
 from ooi.tests import fakes
 
@@ -69,7 +70,7 @@ class TestComputeController(base.TestController):
             m_get_response.return_value = response
             self.controller._delete(req, server_uuids)
 
-    @mock.patch("ooi.api.base.exception_from_response")
+    @mock.patch("ooi.api.helpers.exception_from_response")
     @mock.patch("webob.Request.get_response")
     def test_delete_ids_with_failure(self, m_get_response, m_exc):
         tenant = fakes.tenants["foo"]
@@ -94,7 +95,7 @@ class TestComputeController(base.TestController):
         m_delete.assert_called_with(req, [server_uuid])
         self.assertEqual([], ret)
 
-    @mock.patch.object(compute.OpenStackHelper, "index")
+    @mock.patch.object(helpers.OpenStackHelper, "index")
     @mock.patch.object(compute.Controller, "_delete")
     def test_delete_all(self, m_delete, m_helper_index):
         tenant = fakes.tenants["foo"]
