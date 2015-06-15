@@ -257,6 +257,12 @@ class TestCoreOCCIResource(base.TestCase):
         r.summary = "bazonk"
         self.assertEqual("bazonk", r.summary)
 
+    def test_resources_equal(self):
+        id = uuid.uuid4().hex
+        r = resource.Resource("bar", [], summary="baz", id=id)
+        s = resource.Resource("bar", [], summary="baz", id=id)
+        self.assertEqual(r, s)
+
     def test_valid_link(self):
         r1 = resource.Resource(None, [])
         r2 = resource.Resource(None, [])
