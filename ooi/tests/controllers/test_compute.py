@@ -14,6 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import uuid
 
 import mock
 import webob
@@ -35,6 +36,10 @@ class TestController(base.TestCase):
         self.assertEqual(method, request.method)
         self.assertEqual(path, request.path_info)
         self.assertEqual(body, request.text)
+
+
+class FakeException(Exception):
+    pass
 
 
 class TestComputeController(TestController):
@@ -76,3 +81,54 @@ class TestComputeController(TestController):
         path = "/%s/servers" % tenant["id"]
 
         self.assertExpectedReq("GET", path, "", os_req)
+
+    def test_os_delete_req(self):
+        tenant = fakes.tenants["foo"]
+        server_uuid = uuid.uuid4().hex
+        req = self._build_req(tenant["id"])
+        os_req = self.controller._get_os_delete_req(req, server_uuid)
+        path = "/%s/servers/%s" % (tenant["id"], server_uuid)
+
+        self.assertExpectedReq("DELETE", path, "", os_req)
+
+    def test_delete_ids(self):
+        tenant = fakes.tenants["foo"]
+        server_uuids = [uuid.uuid4().hex, uuid.uuid4().hex]
+        req = self._build_req(tenant["id"])
+        response = fakes.create_fake_json_resp({}, 204)
+        with mock.patch("webob.Request.get_response") as m_get_response:
+            m_get_response.return_value = response
+            self.controller._delete(req, server_uuids)
+
+    @mock.patch("ooi.api.base.exception_from_response")
+    @mock.patch("webob.Request.get_response")
+    def test_delete_ids_with_failure(self, m_get_response, m_exc):
+        tenant = fakes.tenants["foo"]
+        server_uuids = [uuid.uuid4().hex, uuid.uuid4().hex]
+        req = self._build_req(tenant["id"])
+        response = fakes.create_fake_json_resp({}, 500)
+
+        m_get_response.return_value = response
+        m_exc.return_value = FakeException()
+        self.assertRaises(FakeException,
+                          self.controller._delete,
+                          req,
+                          server_uuids)
+
+    @mock.patch.object(compute.Controller, "_delete")
+    def test_delete(self, m_delete):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        server_uuid = uuid.uuid4().hex
+        self.controller.delete(req, server_uuid)
+        m_delete.assert_called_with(req, [server_uuid])
+
+    @mock.patch.object(compute.Controller, "_get_compute_ids")
+    @mock.patch.object(compute.Controller, "_delete")
+    def test_delete_all(self, m_delete, m_get_compute_ids):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        server_uuids = [uuid.uuid4().hex, uuid.uuid4().hex]
+        m_get_compute_ids.return_value = server_uuids
+        self.controller.delete_all(req)
+        m_delete.assert_called_with(req, server_uuids)
