@@ -80,10 +80,14 @@ class Controller(ooi.api.base.Controller):
                 raise ooi.api.base.exception_from_response(response)
         return []
 
-    def index(self, req):
+    def _get_os_index_req(self, req):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         req = self._get_req(req, path="/%s/servers" % tenant_id)
-        response = req.get_response(self.app)
+        return req
+
+    def index(self, req):
+        os_req = self._get_os_index_req(req)
+        response = os_req.get_response(self.app)
         servers = self.get_from_response(response, "servers", [])
         occi_compute_resources = self._get_compute_resources(servers)
 
