@@ -50,6 +50,10 @@ class Controller(ooi.api.base.Controller):
     def __init__(self, *args, **kwargs):
         super(Controller, self).__init__(*args, **kwargs)
         self.compute_actions = compute.ComputeResource.actions
+        self.os_helper = ooi.api.helpers.OpenStackHelper(
+            self.app,
+            self.openstack_version
+        )
 
     def _get_compute_resources(self, servers):
         occi_compute_resources = []
@@ -60,32 +64,8 @@ class Controller(ooi.api.base.Controller):
 
         return occi_compute_resources
 
-    def _get_compute_ids(self, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req = self._get_req(req,
-                            path="/%s/servers" % tenant_id,
-                            method="GET")
-        response = req.get_response(self.app)
-        return [s["id"] for s in self.get_from_response(response,
-                                                        "servers", [])]
-
-    def _delete(self, req, ids):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        for id in ids:
-            req = self._get_req(req,
-                                path="/%s/servers/%s" % (tenant_id,
-                                                         id),
-                                method="DELETE")
-            response = req.get_response(self.app)
-            if response.status_int not in [204]:
-                raise ooi.api.helpers.exception_from_response(response)
-        return []
-
     def index(self, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req = self._get_req(req, path="/%s/servers" % tenant_id)
-        response = req.get_response(self.app)
-        servers = self.get_from_response(response, "servers", [])
+        servers = self.os_helper.index(req)
         occi_compute_resources = self._get_compute_resources(servers)
 
         return collection.Collection(resources=occi_compute_resources)
@@ -229,8 +209,14 @@ class Controller(ooi.api.base.Controller):
 
         return [comp]
 
+    def _delete(self, req, server_ids):
+        for server_id in server_ids:
+            self.os_helper.delete(req, server_id)
+        return []
+
     def delete(self, req, id):
         return self._delete(req, [id])
 
     def delete_all(self, req):
-        return self._delete(req, self._get_compute_ids(req))
+        ids = [s["id"] for s in self.os_helper.index(req)]
+        return self._delete(req, ids)
