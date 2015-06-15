@@ -65,10 +65,7 @@ class Controller(ooi.api.base.Controller):
         return occi_compute_resources
 
     def index(self, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req = self._get_req(req, path="/%s/servers" % tenant_id)
-        response = req.get_response(self.app)
-        servers = self.get_from_response(response, "servers", [])
+        servers = self.os_helper.index(req)
         occi_compute_resources = self._get_compute_resources(servers)
 
         return collection.Collection(resources=occi_compute_resources)
