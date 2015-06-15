@@ -60,6 +60,7 @@ class Controller(ooi.api.base.Controller):
 
         return occi_compute_resources
 
+<<<<<<< HEAD
     def _get_compute_ids(self, req):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         req = self._get_req(req,
@@ -81,6 +82,8 @@ class Controller(ooi.api.base.Controller):
                 raise ooi.api.helpers.exception_from_response(response)
         return []
 
+=======
+>>>>>>> d081ccb... refactor 'delete' method for compute controller
     def index(self, req):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
         req = self._get_req(req, path="/%s/servers" % tenant_id)
@@ -229,8 +232,14 @@ class Controller(ooi.api.base.Controller):
 
         return [comp]
 
+    def _delete(self, req, server_ids):
+        for server_id in server_ids:
+            self.os_helper.delete(req, server_id)
+        return []
+
     def delete(self, req, id):
         return self._delete(req, [id])
 
     def delete_all(self, req):
-        return self._delete(req, self._get_compute_ids(req))
+        ids = [s["id"] for s in self.os_helper.index(req)]
+        return self._delete(req, ids)
