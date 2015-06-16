@@ -21,6 +21,7 @@ import webob
 
 from ooi.api import compute
 from ooi.api import helpers
+from ooi import exception
 from ooi.tests.controllers import base
 from ooi.tests import fakes
 
@@ -30,14 +31,14 @@ class TestComputeController(base.TestController):
         super(TestComputeController, self).setUp()
         self.controller = compute.Controller(mock.MagicMock(), None)
 
-    def _build_req(self, tenant_id, **kwargs):
+    def _build_req(self, tenant_id, path="/whatever", **kwargs):
         m = mock.MagicMock()
         m.user.project_id = tenant_id
         environ = {"keystone.token_auth": m}
 
         kwargs["base_url"] = self.application_url
 
-        return webob.Request.blank("/whatever", environ=environ, **kwargs)
+        return webob.Request.blank(path, environ=environ, **kwargs)
 
     @mock.patch.object(helpers.OpenStackHelper, "index")
     def test_index(self, m_index):
@@ -77,3 +78,46 @@ class TestComputeController(base.TestController):
         ret = self.controller.delete_all(None)
         self.assertEqual([], ret)
         mock_delete.assert_called_with(None, [s["id"] for s in servers])
+
+    def test_run_action_none(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        self.assertRaises(exception.InvalidAction,
+                          self.controller.run_action,
+                          req,
+                          None,
+                          None)
+
+    def test_run_action_invalid(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"], path="/foo?action=foo")
+        server_uuid = uuid.uuid4().hex
+        self.assertRaises(exception.InvalidAction,
+                          self.controller.run_action,
+                          req,
+                          server_uuid,
+                          None)
+
+    def test_run_action_not_implemented(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"], path="/foo?action=suspend")
+        req.get_parser = mock.MagicMock()
+        server_uuid = uuid.uuid4().hex
+        self.assertRaises(exception.NotImplemented,
+                          self.controller.run_action,
+                          req,
+                          server_uuid,
+                          None)
+
+    @mock.patch.object(helpers.OpenStackHelper, "run_action")
+    @mock.patch("ooi.occi.validator.Validator")
+    def test_run_action_start(self, m_validator, m_run_action):
+        tenant = fakes.tenants["foo"]
+        for action in ("stop", "start", "restart"):
+            req = self._build_req(tenant["id"], path="/foo?action=%s" % action)
+            req.get_parser = mock.MagicMock()
+            server_uuid = uuid.uuid4().hex
+            m_run_action.return_value = None
+            ret = self.controller.run_action(req, server_uuid, None)
+            self.assertEqual([], ret)
+            m_run_action.assert_called_with(mock.ANY, action, server_uuid)
