@@ -95,11 +95,26 @@ class Controller(ooi.api.base.Controller):
 
         return collection.Collection(resources=occi_compute_resources)
 
+    def _get_os_run_action(self, req, action, server_id):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        path = "/%s/servers/%s/action" % (tenant_id, server_id)
+
+        actions_map = {
+            "stop": {"os-stop": None},
+            "start": {"os-start": None},
+            "restart": {"reboot": {"type": "SOFT"}},
+        }
+        action = actions_map[action]
+
+        body = json.dumps(action)
+        req = self._get_req(req, path=path, body=body, method="POST")
+        return req
+
     def run_action(self, req, id, body):
         action = req.GET.get("action", None)
-        actions = [a.term for a in compute.ComputeResource.actions]
+        occi_actions = [a.term for a in compute.ComputeResource.actions]
 
-        if action is None or action not in actions:
+        if action is None or action not in occi_actions:
             raise exception.InvalidAction(action=action)
 
         parser = req.get_parser()(req.headers, req.body)
@@ -107,24 +122,18 @@ class Controller(ooi.api.base.Controller):
 
         if action == "stop":
             scheme = {"category": compute.stop}
-            req_body = {"os-stop": None}
         elif action == "start":
             scheme = {"category": compute.start}
-            req_body = {"os-start": None}
         elif action == "restart":
             scheme = {"category": compute.restart}
-            req_body = {"reboot": {"type": "SOFT"}}
         else:
             raise exception.NotImplemented
 
         validator = occi_validator.Validator(obj)
         validator.validate(scheme)
 
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        path = "/%s/servers/%s/action" % (tenant_id, id)
-        req = self._get_req(req, path=path, body=json.dumps(req_body),
-                            method="POST")
-        response = req.get_response(self.app)
+        os_req = self._get_os_run_action(req, action, id)
+        response = os_req.get_response(self.app)
         if response.status_int != 202:
             raise ooi.api.base.exception_from_response(response)
         return []

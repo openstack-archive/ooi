@@ -14,12 +14,15 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import json
 import uuid
 
 import mock
+import six
 import webob
 
 from ooi.api import compute
+from ooi import exception
 from ooi.tests.controllers import base
 from ooi.tests import fakes
 
@@ -33,14 +36,14 @@ class TestComputeController(base.TestController):
         super(TestComputeController, self).setUp()
         self.controller = compute.Controller(mock.MagicMock(), None)
 
-    def _build_req(self, tenant_id, **kwargs):
+    def _build_req(self, tenant_id, path="/whatever", **kwargs):
         m = mock.MagicMock()
         m.user.project_id = tenant_id
         environ = {"keystone.token_auth": m}
 
         kwargs["base_url"] = self.application_url
 
-        return webob.Request.blank("/whatever", environ=environ, **kwargs)
+        return webob.Request.blank(path, environ=environ, **kwargs)
 
     @mock.patch("webob.Request.get_response")
     def test_index(self, m_get_response):
@@ -122,3 +125,79 @@ class TestComputeController(base.TestController):
         ret = self.controller.delete_all(req)
         m_delete.assert_called_with(req, server_uuids)
         self.assertEqual([], ret)
+
+    def test_os_action_req(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        server_uuid = uuid.uuid4().hex
+
+        actions_map = {
+            "stop": json.dumps({"os-stop": None}),
+            "start": json.dumps({"os-start": None}),
+            "restart": json.dumps({"reboot": {"type": "SOFT"}}),
+        }
+
+        path = "/%s/servers/%s/action" % (tenant["id"], server_uuid)
+
+        for act, body in six.iteritems(actions_map):
+            os_req = self.controller._get_os_run_action(req, act, server_uuid)
+            self.assertExpectedReq("POST", path, body, os_req)
+
+    def test_run_action_none(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        self.assertRaises(exception.InvalidAction,
+                          self.controller.run_action,
+                          req,
+                          None,
+                          None)
+
+    def test_run_action_invalid(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"], path="/foo?action=foo")
+        server_uuid = uuid.uuid4().hex
+        self.assertRaises(exception.InvalidAction,
+                          self.controller.run_action,
+                          req,
+                          server_uuid,
+                          None)
+
+    def test_run_action_not_implemented(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"], path="/foo?action=suspend")
+        req.get_parser = mock.MagicMock()
+        server_uuid = uuid.uuid4().hex
+        self.assertRaises(exception.NotImplemented,
+                          self.controller.run_action,
+                          req,
+                          server_uuid,
+                          None)
+
+    @mock.patch("webob.Request.get_response")
+    @mock.patch("ooi.occi.validator.Validator")
+    def test_run_action_start(self, m_validator, m_get_response):
+        tenant = fakes.tenants["foo"]
+        for action in ("stop", "start", "restart"):
+            req = self._build_req(tenant["id"], path="/foo?action=%s" % action)
+            req.get_parser = mock.MagicMock()
+            server_uuid = uuid.uuid4().hex
+            m_get_response.return_value = fakes.create_fake_json_resp({}, 202)
+            ret = self.controller.run_action(req, server_uuid, None)
+            m_get_response.assert_called()
+            self.assertEqual([], ret)
+
+    @mock.patch("ooi.api.base.exception_from_response")
+    @mock.patch("webob.Request.get_response")
+    @mock.patch("ooi.occi.validator.Validator")
+    def test_run_action_with_failure(self, m_validator, m_get_response, m_exc):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"], path="/foo?action=start")
+        req.get_parser = mock.MagicMock()
+        server_uuid = uuid.uuid4().hex
+        m_get_response.return_value = fakes.create_fake_json_resp({}, 500)
+        m_exc.return_value = FakeException()
+        self.assertRaises(FakeException,
+                          self.controller.run_action,
+                          req,
+                          server_uuid,
+                          None)
