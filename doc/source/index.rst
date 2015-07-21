@@ -6,14 +6,18 @@
 Welcome to ooi's documentation!
 ========================================================
 
+ooi is an implementation the Open Grid Forum's `Open Cloud Computing Interface
+(OCCI)`_ for `OpenStack`_.
+
+.. _Open Cloud Computing Interface (OCCI): http://www.occi-wg.org
+.. _OpenStack: http://www.openstack.org
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-   readme
    installation
-   usage
 
 Indices and tables
 ==================
