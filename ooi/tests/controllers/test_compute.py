@@ -22,6 +22,7 @@ import webob
 from ooi.api import compute
 from ooi.api import helpers
 from ooi import exception
+from ooi.occi.infrastructure import compute as occi_compute
 from ooi.tests.controllers import base
 from ooi.tests import fakes
 
@@ -166,3 +167,29 @@ class TestComputeController(base.TestController):
                           req,
                           server_uuid,
                           None)
+
+    @mock.patch("webob.Request.get_response")
+    def test_show(self, m_get_response):
+        for tenant in fakes.tenants.values():
+            servers = fakes.servers[tenant["id"]]
+            for server in servers:
+                flavor = fakes.flavors[server["flavor"]["id"]]
+                image = fakes.images[server["image"]["id"]]
+                volumes = fakes.volumes.get(tenant["id"], [])
+                if volumes:
+                    volumes = volumes[0]["attachments"]
+                floating_ips = fakes.floating_ips[tenant["id"]]
+                m_get_response.side_effect = [
+                    fakes.create_fake_json_resp({"server": server}, 200),
+                    fakes.create_fake_json_resp({"flavor": flavor}, 200),
+                    fakes.create_fake_json_resp({"image": image}, 200),
+                    fakes.create_fake_json_resp({"volumeAttachments": volumes},
+                                                200),
+                    fakes.create_fake_json_resp({"floating_ips": floating_ips},
+                                                200),
+                ]
+                req = self._build_req(tenant["id"])
+                ret = self.controller.show(req, server["id"])[0]
+                # FIXME(aloga): Should we test the resource?
+                self.assertIsInstance(ret,
+                                      occi_compute.ComputeResource)

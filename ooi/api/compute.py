@@ -143,18 +143,11 @@ class Controller(ooi.api.base.Controller):
         return collection.Collection(resources=occi_compute_resources)
 
     def show(self, req, id):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-
         # get info from server
-        req = self._get_req(req, path="/%s/servers/%s" % (tenant_id, id))
-        response = req.get_response(self.app)
-        s = self.get_from_response(response, "server", {})
+        s = self.os_helper.get_server(req, id)
 
         # get info from flavor
-        req = self._get_req(req, path="/%s/flavors/%s" % (tenant_id,
-                                                          s["flavor"]["id"]))
-        response = req.get_response(self.app)
-        flavor = self.get_from_response(response, "flavor", {})
+        flavor = self.os_helper.get_flavor(req, s["flavor"]["id"])
         res_tpl = templates.OpenStackResourceTemplate(flavor["id"],
                                                       flavor["name"],
                                                       flavor["vcpus"],
@@ -162,10 +155,7 @@ class Controller(ooi.api.base.Controller):
                                                       flavor["disk"])
 
         # get info from image
-        req = self._get_req(req, path="/%s/images/%s" % (tenant_id,
-                                                         s["image"]["id"]))
-        response = req.get_response(self.app)
-        image = self.get_from_response(response, "image", {})
+        image = self.os_helper.get_image(req, s["image"]["id"])
         os_tpl = templates.OpenStackOSTemplate(image["id"],
                                                image["name"])
 
@@ -178,10 +168,7 @@ class Controller(ooi.api.base.Controller):
                                        mixins=[os_tpl, res_tpl])
 
         # storage links
-        req = self._get_req(req, path=("/%s/servers/%s/os-volume_attachments"
-                                       % (tenant_id, s["id"])))
-        response = req.get_response(self.app)
-        vols = self.get_from_response(response, "volumeAttachments", [])
+        vols = self.os_helper.get_volumes(req, s["id"])
         for v in vols:
             st = storage.StorageResource(title="storage", id=v["volumeId"])
             comp.add_link(storage_link.StorageLink(comp, st,
@@ -190,9 +177,7 @@ class Controller(ooi.api.base.Controller):
         # network links
         addresses = s.get("addresses", {})
         if addresses:
-            req = self._get_req(req, path="/%s/os-floating-ips" % tenant_id)
-            response = req.get_response(self.app)
-            floating_ips = self.get_from_response(response, "floating_ips", [])
+            floating_ips = self.os_helper.get_floating_ips(req)
             for addr_set in addresses.values():
                 for addr in addr_set:
                     comp.add_link(_create_network_link(addr, comp,
