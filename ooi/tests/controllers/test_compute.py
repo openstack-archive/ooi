@@ -22,6 +22,7 @@ import webob
 from ooi.api import compute
 from ooi.api import helpers
 from ooi import exception
+from ooi.occi.infrastructure import compute as occi_compute
 from ooi.tests.controllers import base
 from ooi.tests import fakes
 
@@ -121,3 +122,35 @@ class TestComputeController(base.TestController):
             ret = self.controller.run_action(req, server_uuid, None)
             self.assertEqual([], ret)
             m_run_action.assert_called_with(mock.ANY, action, server_uuid)
+
+    @mock.patch.object(helpers.OpenStackHelper, "get_floating_ips")
+    @mock.patch.object(helpers.OpenStackHelper, "get_server_volumes_link")
+    @mock.patch.object(helpers.OpenStackHelper, "get_image")
+    @mock.patch.object(helpers.OpenStackHelper, "get_flavor")
+    @mock.patch.object(helpers.OpenStackHelper, "get_server")
+    def test_show(self, m_server, m_flavor, m_image, m_vol, m_ips):
+        for tenant in fakes.tenants.values():
+            servers = fakes.servers[tenant["id"]]
+            for server in servers:
+                flavor = fakes.flavors[server["flavor"]["id"]]
+                image = fakes.images[server["image"]["id"]]
+                volumes = fakes.volumes.get(tenant["id"], [])
+                if volumes:
+                    volumes = volumes[0]["attachments"]
+                floating_ips = fakes.floating_ips[tenant["id"]]
+
+                m_server.return_value = server
+                m_flavor.return_value = flavor
+                m_image.return_value = image
+                m_vol.return_value = volumes
+                m_ips.return_value = floating_ips
+
+                ret = self.controller.show(None, server["id"])
+                # FIXME(aloga): Should we test the resource?
+                self.assertIsInstance(ret[0], occi_compute.ComputeResource)
+                m_server.assert_called_with(None, server["id"])
+                m_flavor.assert_called_with(None, flavor["id"])
+                m_image.assert_called_with(None, image["id"])
+                m_vol.assert_called_with(None, server["id"])
+                if server.get("addresses"):
+                    m_ips.assert_called_with(None)
