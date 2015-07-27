@@ -14,8 +14,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import json
-
 import ooi.api.base
 import ooi.api.helpers
 import ooi.api.network as network_api
@@ -96,7 +94,6 @@ class Controller(ooi.api.base.Controller):
         return []
 
     def create(self, req, body):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
         parser = req.get_parser()(req.headers, req.body)
         scheme = {
             "category": compute.ComputeResource.kind,
@@ -117,25 +114,13 @@ class Controller(ooi.api.base.Controller):
         name = attrs.get("occi.core.title", "OCCI VM")
         image = obj["schemes"][templates.OpenStackOSTemplate.scheme][0]
         flavor = obj["schemes"][templates.OpenStackResourceTemplate.scheme][0]
-        req_body = {"server": {
-            "name": name,
-            "imageRef": image,
-            "flavorRef": flavor,
-        }}
+        user_data = None
         if contextualization.user_data.scheme in obj["schemes"]:
-            req_body["user_data"] = attrs.get(
-                "org.openstack.compute.user_data")
-        # TODO(enolfc): add here the correct metadata info
-        # if contextualization.public_key.scheme in obj["schemes"]:
-        #     req_body["metadata"] = XXX
-        req = self._get_req(req,
-                            path="/%s/servers" % tenant_id,
-                            content_type="application/json",
-                            body=json.dumps(req_body))
-        response = req.get_response(self.app)
-        # We only get one server
-        server = self.get_from_response(response, "server", {})
+            print(attrs)
+            user_data = attrs.get("org.openstack.compute.user_data")
 
+        server = self.os_helper.create_server(req, name, image, flavor,
+                                              user_data=user_data)
         # The returned JSON does not contain the server name
         server["name"] = name
         occi_compute_resources = self._get_compute_resources([server])
@@ -143,18 +128,11 @@ class Controller(ooi.api.base.Controller):
         return collection.Collection(resources=occi_compute_resources)
 
     def show(self, req, id):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-
         # get info from server
-        req = self._get_req(req, path="/%s/servers/%s" % (tenant_id, id))
-        response = req.get_response(self.app)
-        s = self.get_from_response(response, "server", {})
+        s = self.os_helper.get_server(req, id)
 
         # get info from flavor
-        req = self._get_req(req, path="/%s/flavors/%s" % (tenant_id,
-                                                          s["flavor"]["id"]))
-        response = req.get_response(self.app)
-        flavor = self.get_from_response(response, "flavor", {})
+        flavor = self.os_helper.get_flavor(req, s["flavor"]["id"])
         res_tpl = templates.OpenStackResourceTemplate(flavor["id"],
                                                       flavor["name"],
                                                       flavor["vcpus"],
@@ -162,10 +140,7 @@ class Controller(ooi.api.base.Controller):
                                                       flavor["disk"])
 
         # get info from image
-        req = self._get_req(req, path="/%s/images/%s" % (tenant_id,
-                                                         s["image"]["id"]))
-        response = req.get_response(self.app)
-        image = self.get_from_response(response, "image", {})
+        image = self.os_helper.get_image(req, s["image"]["id"])
         os_tpl = templates.OpenStackOSTemplate(image["id"],
                                                image["name"])
 
@@ -178,10 +153,7 @@ class Controller(ooi.api.base.Controller):
                                        mixins=[os_tpl, res_tpl])
 
         # storage links
-        req = self._get_req(req, path=("/%s/servers/%s/os-volume_attachments"
-                                       % (tenant_id, s["id"])))
-        response = req.get_response(self.app)
-        vols = self.get_from_response(response, "volumeAttachments", [])
+        vols = self.os_helper.get_server_volumes_link(req, s["id"])
         for v in vols:
             st = storage.StorageResource(title="storage", id=v["volumeId"])
             comp.add_link(storage_link.StorageLink(comp, st,
@@ -190,9 +162,7 @@ class Controller(ooi.api.base.Controller):
         # network links
         addresses = s.get("addresses", {})
         if addresses:
-            req = self._get_req(req, path="/%s/os-floating-ips" % tenant_id)
-            response = req.get_response(self.app)
-            floating_ips = self.get_from_response(response, "floating_ips", [])
+            floating_ips = self.os_helper.get_floating_ips(req)
             for addr_set in addresses.values():
                 for addr in addr_set:
                     comp.add_link(_create_network_link(addr, comp,

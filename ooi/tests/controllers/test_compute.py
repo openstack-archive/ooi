@@ -22,6 +22,10 @@ import webob
 from ooi.api import compute
 from ooi.api import helpers
 from ooi import exception
+from ooi.occi.core import collection
+from ooi.occi.infrastructure import compute as occi_compute
+from ooi.openstack import contextualization
+from ooi.openstack import templates
 from ooi.tests.controllers import base
 from ooi.tests import fakes
 
@@ -124,3 +128,91 @@ class TestComputeController(base.TestController):
             ret = self.controller.run_action(req, server_uuid, None)
             self.assertEqual([], ret)
             m_run_action.assert_called_with(mock.ANY, action, server_uuid)
+
+    @mock.patch.object(helpers.OpenStackHelper, "get_floating_ips")
+    @mock.patch.object(helpers.OpenStackHelper, "get_server_volumes_link")
+    @mock.patch.object(helpers.OpenStackHelper, "get_image")
+    @mock.patch.object(helpers.OpenStackHelper, "get_flavor")
+    @mock.patch.object(helpers.OpenStackHelper, "get_server")
+    def test_show(self, m_server, m_flavor, m_image, m_vol, m_ips):
+        for tenant in fakes.tenants.values():
+            servers = fakes.servers[tenant["id"]]
+            for server in servers:
+                flavor = fakes.flavors[server["flavor"]["id"]]
+                image = fakes.images[server["image"]["id"]]
+                volumes = fakes.volumes.get(tenant["id"], [])
+                if volumes:
+                    volumes = volumes[0]["attachments"]
+                floating_ips = fakes.floating_ips[tenant["id"]]
+
+                m_server.return_value = server
+                m_flavor.return_value = flavor
+                m_image.return_value = image
+                m_vol.return_value = volumes
+                m_ips.return_value = floating_ips
+
+                ret = self.controller.show(None, server["id"])
+                # FIXME(aloga): Should we test the resource?
+                self.assertIsInstance(ret[0], occi_compute.ComputeResource)
+                m_server.assert_called_with(None, server["id"])
+                m_flavor.assert_called_with(None, flavor["id"])
+                m_image.assert_called_with(None, image["id"])
+                m_vol.assert_called_with(None, server["id"])
+                if server.get("addresses"):
+                    m_ips.assert_called_with(None)
+
+    @mock.patch.object(helpers.OpenStackHelper, "create_server")
+    @mock.patch("ooi.occi.validator.Validator")
+    def test_create_server(self, m_validator, m_create):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        obj = {
+            "attributes": {
+                "occi.core.title": "foo instance",
+            },
+            "schemes": {
+                templates.OpenStackOSTemplate.scheme: ["foo"],
+                templates.OpenStackResourceTemplate.scheme: ["bar"],
+            },
+        }
+        # NOTE(aloga): the mocked call is
+        # "parser = req.get_parser()(req.headers, req.body)"
+        req.get_parser = mock.MagicMock()
+        # NOTE(aloga): MOG!
+        req.get_parser.return_value.return_value.parse.return_value = obj
+        m_validator.validate.return_value = True
+        server = {"id": uuid.uuid4().hex}
+        m_create.return_value = server
+        ret = self.controller.create(req, None)  # noqa
+        self.assertIsInstance(ret, collection.Collection)
+        m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
+                                    user_data=None)
+
+    @mock.patch.object(helpers.OpenStackHelper, "create_server")
+    @mock.patch("ooi.occi.validator.Validator")
+    def test_create_server_with_context(self, m_validator, m_create):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        obj = {
+            "attributes": {
+                "occi.core.title": "foo instance",
+                "org.openstack.compute.user_data": "bazonk"
+            },
+            "schemes": {
+                templates.OpenStackOSTemplate.scheme: ["foo"],
+                templates.OpenStackResourceTemplate.scheme: ["bar"],
+                contextualization.user_data.scheme: None,
+            },
+        }
+        # NOTE(aloga): the mocked call is
+        # "parser = req.get_parser()(req.headers, req.body)"
+        req.get_parser = mock.MagicMock()
+        # NOTE(aloga): MOG!
+        req.get_parser.return_value.return_value.parse.return_value = obj
+        m_validator.validate.return_value = True
+        server = {"id": uuid.uuid4().hex}
+        m_create.return_value = server
+        ret = self.controller.create(req, None)  # noqa
+        self.assertIsInstance(ret, collection.Collection)
+        m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
+                                    user_data="bazonk")
