@@ -185,17 +185,45 @@ class Controller(ooi.api.base.Controller):
 
         return collection.Collection(resources=occi_compute_resources)
 
-    def show(self, req, id):
+    def _get_os_server_req(self, req, server_id):
         tenant_id = req.environ["keystone.token_auth"].user.project_id
+        path = "/%s/servers/%s" % (tenant_id, server_id)
+        req = self._get_req(req, path=path)
+        return req
+
+    def _get_os_flavor_req(self, req, flavor_id):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        path = "/%s/flavors/%s" % (tenant_id, flavor_id)
+        req = self._get_req(req, path=path)
+        return req
+
+    def _get_os_image_req(self, req, image_id):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        path = "/%s/images/%s" % (tenant_id, image_id)
+        req = self._get_req(req, path=path)
+        return req
+
+    def _get_os_volumes_req(self, req, server_id):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        path = "/%s/servers/%s/os-volume_attachments" % (tenant_id, server_id)
+        req = self._get_req(req, path=path)
+        return req
+
+    def _get_os_floating_ips(self, req):
+        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        path = "/%s/os-floating-ips" % tenant_id
+        req = self._get_req(req, path=path)
+        return req
+
+    def show(self, req, id):
 
         # get info from server
-        req = self._get_req(req, path="/%s/servers/%s" % (tenant_id, id))
+        req = self._get_os_server_req(req, id)
         response = req.get_response(self.app)
         s = self.get_from_response(response, "server", {})
 
         # get info from flavor
-        req = self._get_req(req, path="/%s/flavors/%s" % (tenant_id,
-                                                          s["flavor"]["id"]))
+        req = self._get_os_flavor_req(req, s["flavor"]["id"])
         response = req.get_response(self.app)
         flavor = self.get_from_response(response, "flavor", {})
         res_tpl = templates.OpenStackResourceTemplate(flavor["id"],
@@ -205,8 +233,7 @@ class Controller(ooi.api.base.Controller):
                                                       flavor["disk"])
 
         # get info from image
-        req = self._get_req(req, path="/%s/images/%s" % (tenant_id,
-                                                         s["image"]["id"]))
+        req = self._get_os_image_req(req, s["image"]["id"])
         response = req.get_response(self.app)
         image = self.get_from_response(response, "image", {})
         os_tpl = templates.OpenStackOSTemplate(image["id"],
@@ -221,8 +248,7 @@ class Controller(ooi.api.base.Controller):
                                        mixins=[os_tpl, res_tpl])
 
         # storage links
-        req = self._get_req(req, path=("/%s/servers/%s/os-volume_attachments"
-                                       % (tenant_id, s["id"])))
+        req = self._get_os_volumes_req(req, s["id"])
         response = req.get_response(self.app)
         vols = self.get_from_response(response, "volumeAttachments", [])
         for v in vols:
@@ -233,7 +259,7 @@ class Controller(ooi.api.base.Controller):
         # network links
         addresses = s.get("addresses", {})
         if addresses:
-            req = self._get_req(req, path="/%s/os-floating-ips" % tenant_id)
+            req = self._get_os_floating_ips(req)
             response = req.get_response(self.app)
             floating_ips = self.get_from_response(response, "floating_ips", [])
             for addr_set in addresses.values():

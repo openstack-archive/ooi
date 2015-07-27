@@ -23,6 +23,7 @@ import webob
 
 from ooi.api import compute
 from ooi import exception
+from ooi.occi.infrastructure import compute as occi_compute
 from ooi.tests.controllers import base
 from ooi.tests import fakes
 
@@ -201,3 +202,74 @@ class TestComputeController(base.TestController):
                           req,
                           server_uuid,
                           None)
+
+    def test_get_os_server_req(self):
+        tenant = fakes.tenants["foo"]
+        server_uuid = uuid.uuid4().hex
+        req = self._build_req(tenant["id"])
+        os_req = self.controller._get_os_server_req(req, server_uuid)
+        path = "/%s/servers/%s" % (tenant["id"], server_uuid)
+
+        self.assertExpectedReq("GET", path, "", os_req)
+
+    def test_get_os_flavor_req(self):
+        tenant = fakes.tenants["foo"]
+        flavor_uuid = uuid.uuid4().hex
+        req = self._build_req(tenant["id"])
+        os_req = self.controller._get_os_flavor_req(req, flavor_uuid)
+        path = "/%s/flavors/%s" % (tenant["id"], flavor_uuid)
+
+        self.assertExpectedReq("GET", path, "", os_req)
+
+    def test_get_os_image_req(self):
+        tenant = fakes.tenants["foo"]
+        image_uuid = uuid.uuid4().hex
+        req = self._build_req(tenant["id"])
+        os_req = self.controller._get_os_image_req(req, image_uuid)
+        path = "/%s/images/%s" % (tenant["id"], image_uuid)
+
+        self.assertExpectedReq("GET", path, "", os_req)
+
+    def test_get_os_volumes_req(self):
+        tenant = fakes.tenants["foo"]
+        server_uuid = uuid.uuid4().hex
+        req = self._build_req(tenant["id"])
+        os_req = self.controller._get_os_volumes_req(req, server_uuid)
+        path = "/%s/servers/%s/os-volume_attachments" % (tenant["id"],
+                                                         server_uuid)
+
+        self.assertExpectedReq("GET", path, "", os_req)
+
+    def test_get_os_floating_ips(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        os_req = self.controller._get_os_floating_ips(req)
+        path = "/%s/os-floating-ips" % tenant["id"]
+
+        self.assertExpectedReq("GET", path, "", os_req)
+
+    @mock.patch("webob.Request.get_response")
+    def test_create(self, m_get_response):
+        for tenant in fakes.tenants.values():
+            servers = fakes.servers[tenant["id"]]
+            for server in servers:
+                flavor = fakes.flavors[server["flavor"]["id"]]
+                image = fakes.images[server["image"]["id"]]
+                volumes = fakes.volumes.get(tenant["id"], [])
+                if volumes:
+                    volumes = volumes[0]["attachments"]
+                floating_ips = fakes.floating_ips[tenant["id"]]
+                m_get_response.side_effect = [
+                    fakes.create_fake_json_resp({"server": server}, 200),
+                    fakes.create_fake_json_resp({"flavor": flavor}, 200),
+                    fakes.create_fake_json_resp({"image": image}, 200),
+                    fakes.create_fake_json_resp({"volumeAttachments": volumes},
+                                                200),
+                    fakes.create_fake_json_resp({"floating_ips": floating_ips},
+                                                200),
+                ]
+                req = self._build_req(tenant["id"])
+                ret = self.controller.show(req, server["id"])[0]
+                # FIXME(aloga): Should we test the resource?
+                self.assertIsInstance(ret,
+                                      occi_compute.ComputeResource)
