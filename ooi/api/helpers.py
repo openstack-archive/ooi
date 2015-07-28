@@ -235,6 +235,20 @@ class OpenStackHelper(BaseHelper):
         # We only get one server
         return self.get_from_response(response, "server", {})
 
+    def _get_flavors_req(self, req):
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/flavors/detail" % tenant_id
+        return self._get_req(req, path=path, method="GET")
+
+    def get_flavors(self, req):
+        """Get information from all flavors.
+
+        :param req: the incoming request
+        """
+        req = self._get_flavors_req(req)
+        response = req.get_response(self.app)
+        return self.get_from_response(response, "flavors", [])
+
     def _get_flavor_req(self, req, flavor_id):
         tenant_id = self.tenant_from_req(req)
         path = "/%s/flavors/%s" % (tenant_id, flavor_id)
@@ -249,6 +263,20 @@ class OpenStackHelper(BaseHelper):
         req = self._get_flavor_req(req, flavor_id)
         response = req.get_response(self.app)
         return self.get_from_response(response, "flavor", {})
+
+    def _get_images_req(self, req):
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/images/detail" % tenant_id
+        return self._get_req(req, path=path, method="GET")
+
+    def get_images(self, req):
+        """Get information from all images.
+
+        :param req: the incoming request
+        """
+        req = self._get_images_req(req)
+        response = req.get_response(self.app)
+        return self.get_from_response(response, "images", [])
 
     def _get_image_req(self, req, image_id):
         tenant_id = self.tenant_from_req(req)

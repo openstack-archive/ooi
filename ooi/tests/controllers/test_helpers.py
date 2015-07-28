@@ -79,12 +79,28 @@ class TestOpenStackHelper(base.TestController):
 
         self.assertExpectedReq("GET", path, "", os_req)
 
+    def test_get_os_flavors_req(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        os_req = self.helper._get_flavors_req(req)
+        path = "/%s/flavors/detail" % tenant["id"]
+
+        self.assertExpectedReq("GET", path, "", os_req)
+
     def test_get_os_flavor_req(self):
         tenant = fakes.tenants["foo"]
         flavor_uuid = uuid.uuid4().hex
         req = self._build_req(tenant["id"])
         os_req = self.helper._get_flavor_req(req, flavor_uuid)
         path = "/%s/flavors/%s" % (tenant["id"], flavor_uuid)
+
+        self.assertExpectedReq("GET", path, "", os_req)
+
+    def test_get_os_images_req(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        os_req = self.helper._get_images_req(req)
+        path = "/%s/images/detail" % tenant["id"]
 
         self.assertExpectedReq("GET", path, "", os_req)
 
