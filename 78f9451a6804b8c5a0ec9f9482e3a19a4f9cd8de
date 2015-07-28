@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Workflow+1: Pablo Orviz <orviz@ifca.unican.es>
+Code-Review+2: Enol Fernández <enolfc@ifca.unican.es>
+Submitted-by: Jenkins
+Submitted-at: Tue, 28 Jul 2015 12:10:35 +0000
+Reviewed-on: https://review.openstack.org/191867
+Project: stackforge/ooi
+Branch: refs/heads/master
