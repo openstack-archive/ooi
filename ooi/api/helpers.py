@@ -321,3 +321,18 @@ class OpenStackHelper(BaseHelper):
         req = self._get_floating_ips(req)
         response = req.get_response(self.app)
         return self.get_from_response(response, "floating_ips", [])
+
+    def _get_floating_ip_pools_req(self, req):
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/os-floating-ip-pools" % tenant_id
+        return self._get_req(req, path=path, method="GET")
+
+    def get_floating_ip_pools(self, req):
+        """Get floating IP pools for the tenant.
+
+        :param req: the incoming request
+        """
+        req = self._get_floating_ip_pools_req(req)
+
+        response = req.get_response(self.app)
+        return self.get_from_response(response, "floating_ip_pools", [])
