@@ -15,6 +15,7 @@
 # under the License.
 
 from ooi.api import base
+import ooi.api.helpers
 from ooi.occi.core import entity
 from ooi.occi.core import link
 from ooi.occi.core import resource
@@ -29,11 +30,15 @@ from ooi.openstack import templates
 
 
 class Controller(base.Controller):
+    def __init__(self, *args, **kwargs):
+        super(Controller, self).__init__(*args, **kwargs)
+        self.os_helper = ooi.api.helpers.OpenStackHelper(
+            self.app,
+            self.openstack_version
+        )
+
     def _resource_tpls(self, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req = self._get_req(req, path="/%s/flavors/detail" % tenant_id)
-        response = req.get_response(self.app)
-        flavors = self.get_from_response(response, "flavors", [])
+        flavors = self.os_helper.get_flavors(req)
         occi_resource_templates = []
         if flavors:
             for f in flavors:
@@ -46,10 +51,7 @@ class Controller(base.Controller):
         return occi_resource_templates
 
     def _os_tpls(self, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req = self._get_req(req, path="/%s/images/detail" % tenant_id)
-        response = req.get_response(self.app)
-        images = self.get_from_response(response, "images", [])
+        images = self.os_helper.get_images(req)
         occi_os_templates = []
         if images:
             for i in images:
