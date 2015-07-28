@@ -17,6 +17,7 @@
 import json
 
 import ooi.api.base
+import ooi.api.helpers
 import ooi.api.network as network_api
 from ooi import exception
 from ooi.occi.core import collection
@@ -77,7 +78,7 @@ class Controller(ooi.api.base.Controller):
                                 method="DELETE")
             response = req.get_response(self.app)
             if response.status_int not in [204]:
-                raise ooi.api.base.exception_from_response(response)
+                raise ooi.api.helpers.exception_from_response(response)
         return []
 
     def index(self, req):
@@ -120,7 +121,7 @@ class Controller(ooi.api.base.Controller):
                             method="POST")
         response = req.get_response(self.app)
         if response.status_int != 202:
-            raise ooi.api.base.exception_from_response(response)
+            raise ooi.api.helpers.exception_from_response(response)
         return []
 
     def create(self, req, body):
