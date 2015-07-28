@@ -22,7 +22,10 @@ import webob
 from ooi.api import compute
 from ooi.api import helpers
 from ooi import exception
+from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute as occi_compute
+from ooi.openstack import contextualization
+from ooi.openstack import templates
 from ooi.tests.controllers import base
 from ooi.tests import fakes
 
@@ -193,3 +196,54 @@ class TestComputeController(base.TestController):
                 # FIXME(aloga): Should we test the resource?
                 self.assertIsInstance(ret,
                                       occi_compute.ComputeResource)
+
+    @mock.patch("webob.Request.get_response")
+    @mock.patch("ooi.occi.validator.Validator")
+    def test_create_server(self, m_validator, m_get_response):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        obj = {
+            "attributes": {
+                "occi.core.title": "foo instance",
+            },
+            "schemes": {
+                templates.OpenStackOSTemplate.scheme: ["foo"],
+                templates.OpenStackResourceTemplate.scheme: ["bar"],
+            },
+        }
+        # NOTE(aloga): the mocked call is
+        # "parser = req.get_parser()(req.headers, req.body)"
+        req.get_parser = mock.MagicMock()
+        # NOTE(aloga): MOG!
+        req.get_parser.return_value.return_value.parse.return_value = obj
+        m_validator.validate.return_value = True
+        resp = {"server": {"id": uuid.uuid4().hex}}
+        m_get_response.return_value = fakes.create_fake_json_resp(resp, 200)
+        ret = self.controller.create(req, None)  # noqa
+        self.assertIsInstance(ret, collection.Collection)
+
+    @mock.patch("webob.Request.get_response")
+    @mock.patch("ooi.occi.validator.Validator")
+    def test_create_server_with_context(self, m_validator, m_get_response):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        obj = {
+            "attributes": {
+                "occi.core.title": "foo instance",
+            },
+            "schemes": {
+                templates.OpenStackOSTemplate.scheme: ["foo"],
+                templates.OpenStackResourceTemplate.scheme: ["bar"],
+                contextualization.user_data.scheme: ["bazonk"],
+            },
+        }
+        # NOTE(aloga): the mocked call is
+        # "parser = req.get_parser()(req.headers, req.body)"
+        req.get_parser = mock.MagicMock()
+        # NOTE(aloga): MOG!
+        req.get_parser.return_value.return_value.parse.return_value = obj
+        m_validator.validate.return_value = True
+        resp = {"server": {"id": uuid.uuid4().hex}}
+        m_get_response.return_value = fakes.create_fake_json_resp(resp, 200)
+        ret = self.controller.create(req, None)  # noqa
+        self.assertIsInstance(ret, collection.Collection)
