@@ -29,4 +29,7 @@ class TestController(base.TestCase):
     def assertExpectedReq(self, method, path, body, request):
         self.assertEqual(method, request.method)
         self.assertEqual(path, request.path_info)
-        self.assertEqual(body, request.text)
+        if body and request.content_type == "application/json":
+            self.assertDictEqual(body, request.json_body)
+        else:
+            self.assertEqual(body, request.text)
