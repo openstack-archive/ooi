@@ -14,8 +14,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import json
-
 import ooi.api.base
 import ooi.api.helpers
 import ooi.api.network as network_api
@@ -96,7 +94,6 @@ class Controller(ooi.api.base.Controller):
         return []
 
     def create(self, req, body):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
         parser = req.get_parser()(req.headers, req.body)
         scheme = {
             "category": compute.ComputeResource.kind,
@@ -117,25 +114,12 @@ class Controller(ooi.api.base.Controller):
         name = attrs.get("occi.core.title", "OCCI VM")
         image = obj["schemes"][templates.OpenStackOSTemplate.scheme][0]
         flavor = obj["schemes"][templates.OpenStackResourceTemplate.scheme][0]
-        req_body = {"server": {
-            "name": name,
-            "imageRef": image,
-            "flavorRef": flavor,
-        }}
+        user_data = None
         if contextualization.user_data.scheme in obj["schemes"]:
-            req_body["user_data"] = attrs.get(
-                "org.openstack.compute.user_data")
-        # TODO(enolfc): add here the correct metadata info
-        # if contextualization.public_key.scheme in obj["schemes"]:
-        #     req_body["metadata"] = XXX
-        req = self._get_req(req,
-                            path="/%s/servers" % tenant_id,
-                            content_type="application/json",
-                            body=json.dumps(req_body))
-        response = req.get_response(self.app)
-        # We only get one server
-        server = self.get_from_response(response, "server", {})
+            user_data = attrs.get("org.openstack.compute.user_data")
 
+        server = self.os_helper.create_server(req, name, image, flavor,
+                                              user_data=user_data)
         # The returned JSON does not contain the server name
         server["name"] = name
         occi_compute_resources = self._get_compute_resources([server])
