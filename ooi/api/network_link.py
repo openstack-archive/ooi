@@ -19,6 +19,7 @@ import json
 import webob.exc
 
 from ooi.api import base
+from ooi.api import helpers
 from ooi.api import network as network_api
 from ooi import exception
 from ooi.occi.core import collection
@@ -124,7 +125,7 @@ class Controller(base.Controller):
                             method="POST")
         response = req.get_response(self.app)
         if response.status_int != 202:
-            raise base.exception_from_response(response)
+            raise helpers.exception_from_response(response)
         n = network.NetworkResource(title="network", id=net_id)
         c = compute.ComputeResource(title="Compute", id=server_id)
         l = os_network.OSNetworkInterface(c, n, "mac", ip["ip"])
@@ -143,7 +144,7 @@ class Controller(base.Controller):
                             method="POST")
         response = req.get_response(self.app)
         if response.status_int != 202:
-            raise base.exception_from_response(response)
+            raise helpers.exception_from_response(response)
 
         # release IP
         path = "/%s/os-floating-ips/%s" % (tenant_id, iface.ip_id)
@@ -151,5 +152,5 @@ class Controller(base.Controller):
                             method="DELETE")
         response = req.get_response(self.app)
         if response.status_int != 202:
-            raise base.exception_from_response(response)
+            raise helpers.exception_from_response(response)
         return []
