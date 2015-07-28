@@ -14,17 +14,20 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import abc
 import copy
 
 from ooi.api import helpers
 from ooi import utils
 
 from oslo_log import log as logging
+import six
 import webob.exc
 
 LOG = logging.getLogger(__name__)
 
 
+@six.add_metaclass(abc.ABCMeta)
 class Controller(object):
     def __init__(self, app, openstack_version):
         self.app = app
