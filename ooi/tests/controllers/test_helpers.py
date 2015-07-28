@@ -131,6 +131,14 @@ class TestOpenStackHelper(base.TestController):
 
         self.assertExpectedReq("GET", path, "", os_req)
 
+    def test_get_os_floating_ip_pools(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        os_req = self.helper._get_floating_ip_pools_req(req)
+        path = "/%s/os-floating-ip-pools" % tenant["id"]
+
+        self.assertExpectedReq("GET", path, "", os_req)
+
     def test_get_os_get_server_create(self):
         tenant = fakes.tenants["foo"]
         req = self._build_req(tenant["id"])
