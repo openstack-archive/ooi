@@ -19,6 +19,7 @@ import json
 import webob.exc
 
 from ooi.api import base
+from ooi.api import helpers
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import storage
@@ -108,5 +109,5 @@ class Controller(base.Controller):
         req = self._get_req(req, path=req_path, method="DELETE")
         response = req.get_response(self.app)
         if response.status_int not in [202]:
-            raise base.exception_from_response(response)
+            raise helpers.exception_from_response(response)
         return []
