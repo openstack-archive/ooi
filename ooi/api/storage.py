@@ -14,8 +14,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import json
-
 from ooi.api import base
 import ooi.api.helpers
 from ooi import exception
@@ -26,11 +24,15 @@ from ooi.openstack import helpers
 
 
 class Controller(base.Controller):
+    def __init__(self, *args, **kwargs):
+        super(Controller, self).__init__(*args, **kwargs)
+        self.os_helper = ooi.api.helpers.OpenStackHelper(
+            self.app,
+            self.openstack_version
+        )
+
     def index(self, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req = self._get_req(req, path="/%s/os-volumes" % tenant_id)
-        response = req.get_response(self.app)
-        volumes = self.get_from_response(response, "volumes", [])
+        volumes = self.os_helper.get_volumes(req)
         occi_storage_resources = []
         if volumes:
             for v in volumes:
@@ -39,13 +41,8 @@ class Controller(base.Controller):
 
         return collection.Collection(resources=occi_storage_resources)
 
-    def show(self, id, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-
-        # get info from server
-        req = self._get_req(req, path="/%s/os-volumes/%s" % (tenant_id, id))
-        response = req.get_response(self.app)
-        v = self.get_from_response(response, "volume", {})
+    def show(self, req, id):
+        v = self.os_helper.get_volume(req, id)
 
         state = helpers.vol_state(v["status"])
         st = storage.StorageResource(title=v["displayName"], id=v["id"],
@@ -53,7 +50,6 @@ class Controller(base.Controller):
         return [st]
 
     def create(self, req, body):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
         parser = req.get_parser()(req.headers, req.body)
         scheme = {"category": storage.StorageResource.kind}
         obj = parser.parse()
@@ -68,14 +64,7 @@ class Controller(base.Controller):
         except KeyError:
             raise exception.Invalid()
 
-        req_body = {"volume": {
-            "display_name": name,
-            "size": size,
-        }}
-        req = self._get_req(req, path="/%s/os-volumes" % tenant_id,
-                            body=json.dumps(req_body), method="POST")
-        response = req.get_response(self.app)
-        volume = self.get_from_response(response, "volume", {})
+        volume = self.os_helper.volume_create(req, name, size)
 
         st = storage.StorageResource(title=volume["displayName"],
                                      id=volume["id"],
@@ -83,24 +72,9 @@ class Controller(base.Controller):
                                      state=helpers.vol_state(volume["status"]))
         return collection.Collection(resources=[st])
 
-    def _get_storage_ids(self, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req = self._get_req(req,
-                            path="/%s/os-volumes" % tenant_id,
-                            method="GET")
-        response = req.get_response(self.app)
-        return [v["id"] for v in self.get_from_response(response,
-                                                        "volumes", [])]
-
-    def _delete(self, req, ids):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        for id in ids:
-            req = self._get_req(req,
-                                path="/%s/os-volumes/%s" % (tenant_id, id),
-                                method="DELETE")
-            response = req.get_response(self.app)
-            if response.status_int not in [204]:
-                raise ooi.api.helpers.exception_from_response(response)
+    def _delete(self, req, vol_ids):
+        for vol_id in vol_ids:
+            self.os_helper.volume_delete(req, vol_id)
         return []
 
     # TODO(enolfc): these two methods could be in the base.Controller
@@ -109,7 +83,8 @@ class Controller(base.Controller):
         return self._delete(req, [id])
 
     def delete_all(self, req):
-        return self._delete(req, self._get_storage_ids(req))
+        ids = [v["id"] for v in self.os_helper.get_volumes(req)]
+        return self._delete(req, ids)
 
     # TODO(enolfc): implement the actions.
     def run_action(self, req, id, body):
@@ -119,4 +94,4 @@ class Controller(base.Controller):
         if action is None or action not in actions:
             raise exception.InvalidAction(action=action)
 
-        raise exception.NotImplemented
+        raise exception.NotImplemented()
