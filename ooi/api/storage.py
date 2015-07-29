@@ -26,11 +26,15 @@ from ooi.openstack import helpers
 
 
 class Controller(base.Controller):
+    def __init__(self, *args, **kwargs):
+        super(Controller, self).__init__(*args, **kwargs)
+        self.os_helper = ooi.api.helpers.OpenStackHelper(
+            self.app,
+            self.openstack_version
+        )
+
     def index(self, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req = self._get_req(req, path="/%s/os-volumes" % tenant_id)
-        response = req.get_response(self.app)
-        volumes = self.get_from_response(response, "volumes", [])
+        volumes = self.os_helper.get_volumes(req)
         occi_storage_resources = []
         if volumes:
             for v in volumes:
@@ -40,12 +44,7 @@ class Controller(base.Controller):
         return collection.Collection(resources=occi_storage_resources)
 
     def show(self, id, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-
-        # get info from server
-        req = self._get_req(req, path="/%s/os-volumes/%s" % (tenant_id, id))
-        response = req.get_response(self.app)
-        v = self.get_from_response(response, "volume", {})
+        v = self.os_helper.get_volume(req, id)
 
         state = helpers.vol_state(v["status"])
         st = storage.StorageResource(title=v["displayName"], id=v["id"],
