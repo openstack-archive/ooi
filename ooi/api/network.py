@@ -17,6 +17,7 @@
 import webob.exc
 
 from ooi.api import base
+import ooi.api.helpers
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import network
 
@@ -35,12 +36,15 @@ def _build_network(name, prefix=None):
 
 
 class NetworkController(base.Controller):
-    def _floating_index(self, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
+    def __init__(self, *args, **kwargs):
+        super(NetworkController, self).__init__(*args, **kwargs)
+        self.os_helper = ooi.api.helpers.OpenStackHelper(
+            self.app,
+            self.openstack_version
+        )
 
-        req = self._get_req(req, path="/%s/os-floating-ip-pools" % tenant_id)
-        response = req.get_response(self.app)
-        pools = self.get_from_response(response, "floating_ip_pools", [])
+    def _floating_index(self, req):
+        pools = self.os_helper.get_floating_ip_pools(req)
 
         occi_network_resources = []
         for p in pools:
@@ -61,13 +65,8 @@ class NetworkController(base.Controller):
         return _build_network("fixed")
 
     def show(self, req, id):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
+        pools = self.os_helper.get_floating_ip_pools(req)
 
-        # get info from server
-        req = self._get_req(req, path="/%s/os-floating-ip-pools" % tenant_id)
-        response = req.get_response(self.app)
-
-        pools = self.get_from_response(response, "floating_ip_pools", [])
         for p in pools:
             if p['name'] == id:
                 return [_build_network(p["name"], FLOATING_PREFIX)]
