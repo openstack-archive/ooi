@@ -280,6 +280,34 @@ class TestOpenStackHelper(controller_base.TestController):
         m.assert_called_with(None, server_uuid)
         m_exc.assert_called_with(resp)
 
+    @mock.patch.object(helpers.OpenStackHelper, "_get_volume_delete_req")
+    def test_volume_delete(self, m):
+        resp = fakes.create_fake_json_resp(None, 204)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        vol_uuid = uuid.uuid4().hex
+        ret = self.helper.volume_delete(None, vol_uuid)
+        self.assertEqual(None, ret)
+        m.assert_called_with(None, vol_uuid)
+
+    @mock.patch("ooi.api.helpers.exception_from_response")
+    @mock.patch.object(helpers.OpenStackHelper, "_get_volume_delete_req")
+    def test_volume_delete_with_exception(self, m, m_exc):
+        fault = {"computeFault": {"message": "bad", "code": 500}}
+        resp = fakes.create_fake_json_resp(fault, 500)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        vol_uuid = uuid.uuid4().hex
+        m_exc.return_value = webob.exc.HTTPInternalServerError()
+        self.assertRaises(webob.exc.HTTPInternalServerError,
+                          self.helper.volume_delete,
+                          None,
+                          vol_uuid)
+        m.assert_called_with(None, vol_uuid)
+        m_exc.assert_called_with(resp)
+
     @mock.patch.object(helpers.OpenStackHelper, "_get_run_action_req")
     def test_run_action(self, m):
         resp = fakes.create_fake_json_resp(None, 202)
@@ -489,6 +517,37 @@ class TestOpenStackHelper(controller_base.TestController):
         m.assert_called_with(None, name, image, flavor, user_data=user_data)
         m_exc.assert_called_with(resp)
 
+    @mock.patch.object(helpers.OpenStackHelper, "_get_volume_create_req")
+    def test_volume_create(self, m):
+        resp = fakes.create_fake_json_resp({"volume": "FOO"}, 200)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        name = uuid.uuid4().hex
+        size = "10"
+        ret = self.helper.volume_create(None, name, size)
+        self.assertEqual("FOO", ret)
+        m.assert_called_with(None, name, size)
+
+    @mock.patch("ooi.api.helpers.exception_from_response")
+    @mock.patch.object(helpers.OpenStackHelper, "_get_volume_create_req")
+    def test_volume_create_with_exception(self, m, m_exc):
+        fault = {"computeFault": {"message": "bad", "code": 500}}
+        resp = fakes.create_fake_json_resp(fault, 500)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        name = uuid.uuid4().hex
+        size = "10"
+        m_exc.return_value = webob.exc.HTTPInternalServerError()
+        self.assertRaises(webob.exc.HTTPInternalServerError,
+                          self.helper.volume_create,
+                          None,
+                          name,
+                          size)
+        m.assert_called_with(None, name, size)
+        m_exc.assert_called_with(resp)
+
 
 class TestOpenStackHelperReqs(controller_base.TestController):
     def setUp(self):
@@ -515,6 +574,15 @@ class TestOpenStackHelperReqs(controller_base.TestController):
         req = self._build_req(tenant["id"])
         os_req = self.helper._get_delete_req(req, server_uuid)
         path = "/%s/servers/%s" % (tenant["id"], server_uuid)
+
+        self.assertExpectedReq("DELETE", path, "", os_req)
+
+    def test_os_volume_delete_req(self):
+        tenant = fakes.tenants["foo"]
+        server_uuid = uuid.uuid4().hex
+        req = self._build_req(tenant["id"])
+        os_req = self.helper._get_volume_delete_req(req, server_uuid)
+        path = "/%s/os-volumes/%s" % (tenant["id"], server_uuid)
 
         self.assertExpectedReq("DELETE", path, "", os_req)
 
@@ -660,4 +728,21 @@ class TestOpenStackHelperReqs(controller_base.TestController):
         path = "/%s/servers" % tenant["id"]
         os_req = self.helper._get_create_server_req(req, name, image, flavor,
                                                     user_data=user_data)
+        self.assertExpectedReq("POST", path, body, os_req)
+
+    def test_get_os_get_volume_create(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        name = "foo server"
+        size = "10"
+
+        body = {
+            "volume": {
+                "display_name": name,
+                "size": size
+            }
+        }
+
+        path = "/%s/os-volumes" % tenant["id"]
+        os_req = self.helper._get_volume_create_req(req, name, size)
         self.assertExpectedReq("POST", path, body, os_req)

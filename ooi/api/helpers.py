@@ -360,3 +360,46 @@ class OpenStackHelper(BaseHelper):
         req = self._get_floating_ip_pools_req(req)
         response = req.get_response(self.app)
         return self.get_from_response(response, "floating_ip_pools", [])
+
+    def _get_volume_delete_req(self, req, vol_id):
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/os-volumes/%s" % (tenant_id, vol_id)
+        return self._get_req(req, path=path, method="DELETE")
+
+    def volume_delete(self, req, vol_id):
+        """Delete a volume.
+
+        :param req: the incoming request
+        :param vol_id: volume id to delete
+        """
+        req = self._get_volume_delete_req(req, vol_id)
+        response = req.get_response(self.app)
+        # FIXME(aloga): this should be handled in get_from_response, shouldn't
+        # it?
+        if response.status_int not in [204]:
+            raise exception_from_response(response)
+
+    def _get_volume_create_req(self, req, name, size):
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/os-volumes" % tenant_id
+        body = {"volume": {
+            "display_name": name,
+            "size": size,
+        }}
+        return self._get_req(req,
+                             path=path,
+                             content_type="application/json",
+                             body=json.dumps(body),
+                             method="POST")
+
+    def volume_create(self, req, name, size):
+        """Create a volume.
+
+        :param req: the incoming request
+        :param name: name for the new volume
+        :param size: size for the new volume
+        """
+        req = self._get_volume_create_req(req, name, size)
+        response = req.get_response(self.app)
+        # We only get one volume
+        return self.get_from_response(response, "volume", {})
