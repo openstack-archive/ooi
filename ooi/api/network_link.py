@@ -14,8 +14,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import webob.exc
-
 from ooi.api import base
 from ooi.api import helpers
 from ooi.api import network as network_api
@@ -62,13 +60,13 @@ class Controller(base.Controller):
                         title="network",
                         id="%s/%s" % (network_api.FLOATING_PREFIX, ip["pool"]))
                     return net, ip["id"]
-        raise webob.exc.HTTPNotFound()
+        raise exception.NetworkNotFound(resource_id=addr)
 
     def _get_interface_from_id(self, req, id):
         try:
             server_id, server_addr = id.split('_', 1)
         except ValueError:
-            raise webob.exc.HTTPNotFound()
+            raise exception.LinkNotFound(link_id=id)
         s = self.os_helper.get_server(req, server_id)
         addresses = s.get("addresses", {})
         for addr_set in addresses.values():
@@ -80,7 +78,7 @@ class Controller(base.Controller):
                     # TODO(enolfc): get the MAC?
                     return os_network.OSNetworkInterface(c, n, "mac",
                                                          addr["addr"], ip_id)
-        raise webob.exc.HTTPNotFound()
+        raise exception.LinkNotFound(link_id=id)
 
     def show(self, req, id):
         return [self._get_interface_from_id(req, id)]
@@ -102,7 +100,7 @@ class Controller(base.Controller):
         try:
             _, pool_name = net_id.split("/", 1)
         except ValueError:
-            raise webob.exc.HTTPNotFound()
+            raise exception.NetworkPoolFound(pool=net_id)
 
         # Allocate IP
         ip = self.os_helper.allocate_floating_ip(req, pool_name)

@@ -106,7 +106,7 @@ class TestNetworkLinkController(base.TestController):
         mock_get.assert_called_with(None, "bar")
 
     def test_get_interface_from_id_invalid(self):
-        self.assertRaises(webob.exc.HTTPNotFound,
+        self.assertRaises(exception.LinkNotFound,
                           self.controller._get_interface_from_id,
                           None,
                           "foobarbaz")
@@ -115,7 +115,7 @@ class TestNetworkLinkController(base.TestController):
     def test_get_interface_from_id_invalid_no_matching_server(self, mock_get):
         mock_get.return_value = {"addresses": {"foo": [{"addr": "1.1.1.2"}]}}
 
-        self.assertRaises(webob.exc.HTTPNotFound,
+        self.assertRaises(exception.LinkNotFound,
                           self.controller._get_interface_from_id,
                           None,
                           "%s_1.1.1.1" % uuid.uuid4().hex)
@@ -173,7 +173,7 @@ class TestNetworkLinkController(base.TestController):
         for tenant in fakes.tenants.values():
             ips = fakes.floating_ips[tenant["id"]]
             mock_floating_ips.return_value = ips
-            self.assertRaises(webob.exc.HTTPNotFound,
+            self.assertRaises(exception.NetworkNotFound,
                               self.controller._get_os_network_ip,
                               None,
                               addr)
@@ -213,7 +213,7 @@ class TestNetworkLinkController(base.TestController):
         req.get_parser = mock.MagicMock()
         req.get_parser.return_value.return_value.parse.return_value = obj
         mock_validator.validate.return_value = True
-        self.assertRaises(webob.exc.HTTPNotFound,
+        self.assertRaises(exception.NetworkPoolFound,
                           self.controller.create, req, None)
 
     @mock.patch.object(helpers.OpenStackHelper, "associate_floating_ip")

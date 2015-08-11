@@ -21,6 +21,7 @@ import webob
 
 from ooi.api import helpers
 from ooi.api import network as network_api
+from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import network
 from ooi.tests.controllers import base
@@ -115,14 +116,14 @@ class TestNetworkController(base.TestController):
         tenant = fakes.tenants["foo"]
         pools = fakes.pools[tenant["id"]]
         m_pools.return_value = pools
-        self.assertRaises(webob.exc.HTTPNotFound,
+        self.assertRaises(exception.NetworkNotFound,
                           self.controller.show,
                           None, uuid.uuid4().hex)
 
     @mock.patch.object(helpers.OpenStackHelper, "get_floating_ip_pools")
     def test_show_empty(self, m_pools):
         m_pools.return_value = []
-        self.assertRaises(webob.exc.HTTPNotFound,
+        self.assertRaises(exception.NetworkNotFound,
                           self.controller.show,
                           None, None)
         m_pools.assert_called_with(None)
