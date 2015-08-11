@@ -26,7 +26,7 @@ from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute as occi_compute
 from ooi.openstack import contextualization
 from ooi.openstack import templates
-from ooi.tests.controllers import base
+from ooi.tests import base
 from ooi.tests import fakes
 
 
