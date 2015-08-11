@@ -14,10 +14,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import webob.exc
-
 from ooi.api import base
 import ooi.api.helpers
+from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import network
 
@@ -70,4 +69,4 @@ class NetworkController(base.Controller):
         for p in pools:
             if p['name'] == id:
                 return [_build_network(p["name"], FLOATING_PREFIX)]
-        raise webob.exc.HTTPNotFound()
+        raise exception.NetworkNotFound(resource_id=id)
