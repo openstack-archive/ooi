@@ -17,6 +17,7 @@
 import json
 
 from ooi.api import base
+import ooi.api.helpers
 from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import storage
@@ -99,7 +100,7 @@ class Controller(base.Controller):
                                 method="DELETE")
             response = req.get_response(self.app)
             if response.status_int not in [204]:
-                raise base.exception_from_response(response)
+                raise ooi.api.helpers.exception_from_response(response)
         return []
 
     # TODO(enolfc): these two methods could be in the base.Controller
