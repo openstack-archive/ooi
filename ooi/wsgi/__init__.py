@@ -428,7 +428,7 @@ class ResourceExceptionHandler(object):
         if not ex_value:
             return True
 
-        if isinstance(ex_value, exception.Invalid):
+        if isinstance(ex_value, exception.OCCIException):
             raise Fault(exception.ConvertedException(
                         code=ex_value.code,
                         explanation=ex_value.format_message()))

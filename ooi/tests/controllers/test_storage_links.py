@@ -21,6 +21,7 @@ import webob
 
 from ooi.api import helpers
 from ooi.api import storage_link as storage_link_api
+from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import storage
@@ -107,13 +108,13 @@ class TestStorageLinkController(base.TestController):
                          self.controller._get_attachment_from_id(None,
                                                                  link_id))
         link_id = "%s_%s" % (uuid.uuid4().hex, uuid.uuid4().hex)
-        self.assertRaises(webob.exc.HTTPNotFound,
+        self.assertRaises(exception.LinkNotFound,
                           self.controller._get_attachment_from_id,
                           None,
                           link_id)
 
     def test_get_attachment_from_id_invalid(self):
-        self.assertRaises(webob.exc.HTTPNotFound,
+        self.assertRaises(exception.LinkNotFound,
                           self.controller._get_attachment_from_id,
                           None,
                           "foobarbaz")

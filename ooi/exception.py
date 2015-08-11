@@ -109,3 +109,24 @@ class OCCIMissingType(Invalid):
 class OCCISchemaMismatch(Invalid):
     msg_fmt = ("Schema does not match. Expecting '%(expected)s', "
                "but found '%(found)s'.")
+
+
+class NotFound(OCCIException):
+    msg_fmt = "Not Found"
+    code = 404
+
+
+class LinkNotFound(NotFound):
+    msg_fmt = "Link Not Found: '%(link_id)s"
+
+
+class ResourceNotFound(NotFound):
+    msg_fmt = "Resource Not Found: '%(resource_id)s'"
+
+
+class NetworkNotFound(NotFound):
+    msg_fmt = "Network Resource Not Found: '%(resource_id)s'"
+
+
+class NetworkPoolFound(NotFound):
+    msg_fmt = "Network Pool Not Found: '%(pool)s'"
