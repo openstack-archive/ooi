@@ -14,12 +14,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import json
-
 import webob.exc
 
 from ooi.api import base
-from ooi.api import helpers
+import ooi.api.helpers
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import storage
@@ -28,11 +26,15 @@ from ooi.occi import validator as occi_validator
 
 
 class Controller(base.Controller):
+    def __init__(self, *args, **kwargs):
+        super(Controller, self).__init__(*args, **kwargs)
+        self.os_helper = ooi.api.helpers.OpenStackHelper(
+            self.app,
+            self.openstack_version
+        )
+
     def index(self, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req = self._get_req(req, path="/%s/os-volumes" % tenant_id)
-        response = req.get_response(self.app)
-        volumes = self.get_from_response(response, "volumes", [])
+        volumes = self.os_helper.get_volumes(req)
         occi_link_resources = []
         for v in volumes:
             for attach in v["attachments"]:
@@ -46,18 +48,13 @@ class Controller(base.Controller):
 
         return collection.Collection(resources=occi_link_resources)
 
-    def _get_attachment_from_id(self, req, id):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
+    def _get_attachment_from_id(self, req, attachment_id):
         try:
-            server_id, vol_id = id.split('_', 1)
+            server_id, vol_id = attachment_id.split('_', 1)
         except ValueError:
             raise webob.exc.HTTPNotFound()
 
-        req_path = "/%s/servers/%s/os-volume_attachments" % (tenant_id,
-                                                             server_id)
-        req = self._get_req(req, path=req_path, method="GET")
-        response = req.get_response(self.app)
-        vols = self.get_from_response(response, "volumeAttachments", [])
+        vols = self.os_helper.get_server_volumes_link(req, server_id)
         for v in vols:
             if vol_id == v["volumeId"]:
                 return v
@@ -70,7 +67,6 @@ class Controller(base.Controller):
         return [storage_link.StorageLink(c, s, deviceid=v["device"])]
 
     def create(self, req, body):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
         parser = req.get_parser()(req.headers, req.body)
         scheme = {"category": storage_link.StorageLink.kind}
         obj = parser.parse()
@@ -80,22 +76,12 @@ class Controller(base.Controller):
         attrs = obj.get("attributes", {})
         vol_id = attrs.get("occi.core.target")
         server_id = attrs.get("occi.core.source")
-        req_body = {
-            "volumeAttachment": {
-                "volumeId": vol_id
-            }
-        }
         device = attrs.get("occi.storagelink.deviceid", None)
-        if device is not None:
-            req_body["volumeAttachment"]["device"] = device
-        req_path = "/%s/servers/%s/os-volume_attachments" % (tenant_id,
-                                                             server_id)
-        req = self._get_req(req,
-                            path=req_path,
-                            content_type="application/json",
-                            body=json.dumps(req_body))
-        response = req.get_response(self.app)
-        attachment = self.get_from_response(response, "volumeAttachment", {})
+
+        attachment = self.os_helper.create_server_volumes_link(req,
+                                                               server_id,
+                                                               vol_id,
+                                                               dev=device)
         c = compute.ComputeResource(title="Compute", id=server_id)
         s = storage.StorageResource(title="Storage", id=vol_id)
         l = storage_link.StorageLink(c, s, deviceid=attachment["device"])
@@ -103,11 +89,6 @@ class Controller(base.Controller):
 
     def delete(self, req, id):
         v = self._get_attachment_from_id(req, id)
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req_path = ("/%s/servers/%s/os-volume_attachments/%s"
-                    % (tenant_id, v["serverId"], v["id"]))
-        req = self._get_req(req, path=req_path, method="DELETE")
-        response = req.get_response(self.app)
-        if response.status_int not in [202]:
-            raise helpers.exception_from_response(response)
+        self.os_helper.delete_server_volumes_link(req,
+                                                  v["serverId"], v["volumeId"])
         return []
