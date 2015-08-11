@@ -190,7 +190,7 @@ class OCCIMiddleware(object):
         # we have /network and below that /network/fixed
         # and /network/floating/* for the pools
         self.resources["network"] = self._create_resource(
-            ooi.api.network.NetworkController)
+            ooi.api.network.Controller)
         self.mapper.connect("network", "/network",
                             controller=self.resources["network"],
                             action="general_index",

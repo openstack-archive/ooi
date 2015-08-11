@@ -28,10 +28,10 @@ from ooi.tests import base
 from ooi.tests import fakes
 
 
-class TestNetworkController(base.TestController):
+class TestController(base.TestController):
     def setUp(self):
-        super(TestNetworkController, self).setUp()
-        self.controller = network_api.NetworkController(mock.MagicMock(), None)
+        super(TestController, self).setUp()
+        self.controller = network_api.Controller(mock.MagicMock(), None)
 
     def _build_req(self, tenant_id, path="/whatever", **kwargs):
         m = mock.MagicMock()
@@ -42,7 +42,7 @@ class TestNetworkController(base.TestController):
 
         return webob.Request.blank(path, environ=environ, **kwargs)
 
-    @mock.patch.object(network_api.NetworkController, "_floating_index")
+    @mock.patch.object(network_api.Controller, "_floating_index")
     def test_index(self, m_float):
         res = network.NetworkResource(title="foo",
                                       id="foo",
@@ -56,7 +56,7 @@ class TestNetworkController(base.TestController):
         m_float.assert_called_with(None)
 
     @mock.patch("ooi.api.network._build_network")
-    @mock.patch.object(network_api.NetworkController, "_floating_index")
+    @mock.patch.object(network_api.Controller, "_floating_index")
     def test_general_index(self, m_float, m_build):
         res = network.NetworkResource(title="foo",
                                       id="foo",
