@@ -490,7 +490,7 @@ class FakeApp(object):
         else:
             exc = webob.exc.HTTPNotFound()
             return FakeOpenStackFault(exc)
-        ip = {"floating_ip": {"ip": allocated_ip}}
+        ip = {"floating_ip": {"ip": allocated_ip, "id": 1}}
         return create_fake_json_resp(ip, 202)
 
     def _do_post(self, req):

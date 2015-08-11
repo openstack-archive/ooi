@@ -14,8 +14,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import json
-
 import webob.exc
 
 from ooi.api import base
@@ -31,11 +29,15 @@ from ooi.openstack import network as os_network
 
 
 class Controller(base.Controller):
+    def __init__(self, *args, **kwargs):
+        super(Controller, self).__init__(*args, **kwargs)
+        self.os_helper = helpers.OpenStackHelper(
+            self.app,
+            self.openstack_version
+        )
+
     def index(self, req):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req = self._get_req(req, path="/%s/os-floating-ips" % tenant_id)
-        response = req.get_response(self.app)
-        floating_ips = self.get_from_response(response, "floating_ips", [])
+        floating_ips = self.os_helper.get_floating_ips(req)
         occi_link_resources = []
         for ip in floating_ips:
             if ip["instance_id"]:
@@ -53,10 +55,7 @@ class Controller(base.Controller):
         if addr["OS-EXT-IPS:type"] == "fixed":
             return network.NetworkResource(title="network", id="fixed"), None
         else:
-            tenant_id = req.environ["keystone.token_auth"].user.project_id
-            req = self._get_req(req, path="/%s/os-floating-ips" % tenant_id)
-            response = req.get_response(self.app)
-            floating_ips = self.get_from_response(response, "floating_ips", [])
+            floating_ips = self.os_helper.get_floating_ips(req)
             for ip in floating_ips:
                 if addr["addr"] == ip["ip"]:
                     net = network.NetworkResource(
@@ -66,15 +65,11 @@ class Controller(base.Controller):
         raise webob.exc.HTTPNotFound()
 
     def _get_interface_from_id(self, req, id):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
         try:
             server_id, server_addr = id.split('_', 1)
         except ValueError:
             raise webob.exc.HTTPNotFound()
-        path = "/%s/servers/%s" % (tenant_id, server_id)
-        req = self._get_req(req, path=path, method="GET")
-        response = req.get_response(self.app)
-        s = self.get_from_response(response, "server", {})
+        s = self.os_helper.get_server(req, server_id)
         addresses = s.get("addresses", {})
         for addr_set in addresses.values():
             for addr in addr_set:
@@ -91,7 +86,6 @@ class Controller(base.Controller):
         return [self._get_interface_from_id(req, id)]
 
     def create(self, req, body):
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
         parser = req.get_parser()(req.headers, req.body)
         scheme = {"category": network_link.NetworkInterface.kind}
         obj = parser.parse()
@@ -111,21 +105,10 @@ class Controller(base.Controller):
             raise webob.exc.HTTPNotFound()
 
         # Allocate IP
-        path = "/%s/os-floating-ips" % tenant_id
-        req = self._get_req(req, path="/%s/os-floating-ips" % tenant_id,
-                            body=json.dumps({"pool": pool_name}),
-                            method="POST")
-        response = req.get_response(self.app)
-        ip = self.get_from_response(response, "floating_ip", {})
+        ip = self.os_helper.allocate_floating_ip(req, pool_name)
 
         # Add it to server
-        req_body = {"addFloatingIp": {"address": ip["ip"]}}
-        path = "/%s/servers/%s/action" % (tenant_id, server_id)
-        req = self._get_req(req, path=path, body=json.dumps(req_body),
-                            method="POST")
-        response = req.get_response(self.app)
-        if response.status_int != 202:
-            raise helpers.exception_from_response(response)
+        self.os_helper.associate_floating_ip(req, server_id, ip["id"])
         n = network.NetworkResource(title="network", id=net_id)
         c = compute.ComputeResource(title="Compute", id=server_id)
         l = os_network.OSNetworkInterface(c, n, "mac", ip["ip"])
@@ -137,20 +120,9 @@ class Controller(base.Controller):
             raise exception.Invalid()
 
         # remove floating IP
-        tenant_id = req.environ["keystone.token_auth"].user.project_id
-        req_body = {"removeFloatingIp": {"address": iface.address}}
-        path = "/%s/servers/%s/action" % (tenant_id, iface.source.id)
-        req = self._get_req(req, path=path, body=json.dumps(req_body),
-                            method="POST")
-        response = req.get_response(self.app)
-        if response.status_int != 202:
-            raise helpers.exception_from_response(response)
+        server = iface.source.id
+        self.os_helper.remove_floating_ip(req, server, iface.address)
 
         # release IP
-        path = "/%s/os-floating-ips/%s" % (tenant_id, iface.ip_id)
-        req = self._get_req(req, path=path, body=json.dumps(req_body),
-                            method="DELETE")
-        response = req.get_response(self.app)
-        if response.status_int != 202:
-            raise helpers.exception_from_response(response)
+        self.os_helper.release_floating_ip(req, iface.ip_id)
         return []
