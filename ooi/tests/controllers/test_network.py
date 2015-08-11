@@ -24,7 +24,7 @@ from ooi.api import network as network_api
 from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import network
-from ooi.tests.controllers import base
+from ooi.tests import base
 from ooi.tests import fakes
 
 
