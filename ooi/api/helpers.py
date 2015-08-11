@@ -437,3 +437,75 @@ class OpenStackHelper(BaseHelper):
         response = req.get_response(self.app)
         # We only get one volume
         return self.get_from_response(response, "volume", {})
+
+    def _get_floating_ip_allocate_req(self, req, pool):
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/os-floating-ips" % tenant_id
+        body = {"pool": pool}
+        return self._get_req(req, path=path,
+                             body=json.dumps(body),
+                             method="POST")
+
+    def allocate_floating_ip(self, req, pool):
+        """Allocate a floating ip from a pool.
+
+        :param req: the incoming request
+        :param pool: floating ip pool to get the IP from
+        """
+        req = self._get_floating_ip_allocate_req(req, pool)
+        response = req.get_response(self.app)
+        return self.get_from_response(response, "floating_ip", {})
+
+    def _get_floating_ip_release_req(self, req, ip):
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/os-floating-ips/%s" % (tenant_id, ip)
+        return self._get_req(req, path=path, method="DELETE")
+
+    def release_floating_ip(self, req, ip):
+        """Release a floating ip.
+
+        :param req: the incoming request
+        :param ip: floating ip pool to release
+        """
+        req = self._get_floating_ip_release_req(req, ip)
+        response = req.get_response(self.app)
+        if response.status_int != 202:
+            raise exception_from_response(response)
+
+    def _get_associate_floating_ip_req(self, req, server, address):
+        tenant_id = self.tenant_from_req(req)
+        body = {"addFloatingIp": {"address": address}}
+        path = "/%s/servers/%s/action" % (tenant_id, server)
+        return self._get_req(req, path=path, body=json.dumps(body),
+                             method="POST")
+
+    def associate_floating_ip(self, req, server, address):
+        """Associate a floating ip to a server.
+
+        :param req: the incoming request
+        :param server: the server to associate the ip to
+        :param address: ip to associate to the server
+        """
+        req = self._get_associate_floating_ip_req(req, server, address)
+        response = req.get_response(self.app)
+        if response.status_int != 202:
+            raise exception_from_response(response)
+
+    def _get_remove_floating_ip_req(self, req, server, address):
+        tenant_id = self.tenant_from_req(req)
+        body = {"removeFloatingIp": {"address": address}}
+        path = "/%s/servers/%s/action" % (tenant_id, server)
+        return self._get_req(req, path=path, body=json.dumps(body),
+                             method="POST")
+
+    def remove_floating_ip(self, req, server, address):
+        """Remove a floating ip to a server.
+
+        :param req: the incoming request
+        :param server: the server to remove the ip from
+        :param address: ip to remove from the server
+        """
+        req = self._get_remove_floating_ip_req(req, server, address)
+        response = req.get_response(self.app)
+        if response.status_int != 202:
+            raise exception_from_response(response)

@@ -617,6 +617,84 @@ class TestOpenStackHelper(controller_base.TestController):
                           vol_uuid)
         m.assert_called_with(None, server_uuid, vol_uuid)
 
+    @mock.patch.object(helpers.OpenStackHelper,
+                       "_get_floating_ip_allocate_req")
+    def test_floating_ip_allocate(self, m_allocate):
+        pool = "foo"
+        resp = fakes.create_fake_json_resp({"floating_ip": "FOO"}, 200)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m_allocate.return_value = req_mock
+        ret = self.helper.allocate_floating_ip(None, pool)
+        self.assertEqual("FOO", ret)
+        m_allocate.assert_called_with(None, pool)
+
+    @mock.patch.object(helpers.OpenStackHelper, "_get_floating_ip_release_req")
+    def test_floating_ip_release(self, m):
+        resp = fakes.create_fake_json_resp(None, 202)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        ip_uuid = uuid.uuid4().hex
+        ret = self.helper.release_floating_ip(None, ip_uuid)
+        self.assertEqual(None, ret)
+        m.assert_called_with(None, ip_uuid)
+
+    @mock.patch.object(helpers.OpenStackHelper, "_get_floating_ip_release_req")
+    def test_floating_ip_release_w_exception(self, m):
+        fault = {"computeFault": {"message": "bad", "code": 500}}
+        resp = fakes.create_fake_json_resp(fault, 500)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        ip_uuid = uuid.uuid4().hex
+        self.assertRaises(webob.exc.HTTPInternalServerError,
+                          self.helper.release_floating_ip,
+                          None,
+                          ip_uuid)
+        m.assert_called_with(None, ip_uuid)
+
+    @mock.patch.object(helpers.OpenStackHelper,
+                       "_get_associate_floating_ip_req")
+    def test_associate_floating_ip(self, m):
+        resp = fakes.create_fake_json_resp({"floating_ip": "FOO"}, 202)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        ip = "192.168.0.20"
+        server = uuid.uuid4().hex
+        ret = self.helper.associate_floating_ip(None, server, ip)
+        self.assertEqual(None, ret)
+        m.assert_called_with(None, server, ip)
+
+    @mock.patch.object(helpers.OpenStackHelper, "_get_remove_floating_ip_req")
+    def test_remove_floating_ip(self, m):
+        resp = fakes.create_fake_json_resp(None, 202)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        ip = "192.168.0.20"
+        server = uuid.uuid4().hex
+        ret = self.helper.remove_floating_ip(None, server, ip)
+        self.assertEqual(None, ret)
+        m.assert_called_with(None, server, ip)
+
+    @mock.patch.object(helpers.OpenStackHelper, "_get_remove_floating_ip_req")
+    def test_remove_floating_ip_w_exception(self, m):
+        fault = {"computeFault": {"message": "bad", "code": 500}}
+        resp = fakes.create_fake_json_resp(fault, 500)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        ip = "192.168.0.20"
+        server = uuid.uuid4().hex
+        self.assertRaises(webob.exc.HTTPInternalServerError,
+                          self.helper.remove_floating_ip,
+                          None,
+                          server,
+                          ip)
+        m.assert_called_with(None, server, ip)
+
 
 class TestOpenStackHelperReqs(controller_base.TestController):
     def setUp(self):
@@ -844,4 +922,41 @@ class TestOpenStackHelperReqs(controller_base.TestController):
 
         path = "/%s/os-volumes" % tenant["id"]
         os_req = self.helper._get_volume_create_req(req, name, size)
+        self.assertExpectedReq("POST", path, body, os_req)
+
+    def test_get_os_floating_ip_allocate(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        pool = "foo"
+        body = {"pool": pool}
+        path = "/%s/os-floating-ips" % tenant["id"]
+        os_req = self.helper._get_floating_ip_allocate_req(req, pool)
+        self.assertExpectedReq("POST", path, body, os_req)
+
+    def test_get_os_floating_ip_release(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        ip = uuid.uuid4().hex
+        path = "/%s/os-floating-ips/%s" % (tenant["id"], ip)
+        os_req = self.helper._get_floating_ip_release_req(req, ip)
+        self.assertExpectedReq("DELETE", path, "", os_req)
+
+    def test_get_os_associate_floating_ip(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        server = uuid.uuid4().hex
+        ip = "192.168.0.20"
+        body = {"addFloatingIp": {"address": ip}}
+        path = "/%s/servers/%s/action" % (tenant["id"], server)
+        os_req = self.helper._get_associate_floating_ip_req(req, server, ip)
+        self.assertExpectedReq("POST", path, body, os_req)
+
+    def test_get_os_remove_floating_ip(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        server = uuid.uuid4().hex
+        ip = "192.168.0.20"
+        body = {"removeFloatingIp": {"address": ip}}
+        path = "/%s/servers/%s/action" % (tenant["id"], server)
+        os_req = self.helper._get_remove_floating_ip_req(req, server, ip)
         self.assertExpectedReq("POST", path, body, os_req)
