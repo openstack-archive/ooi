@@ -14,10 +14,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import webob.exc
-
 from ooi.api import base
 import ooi.api.helpers
+from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import storage
@@ -52,13 +51,13 @@ class Controller(base.Controller):
         try:
             server_id, vol_id = attachment_id.split('_', 1)
         except ValueError:
-            raise webob.exc.HTTPNotFound()
+            raise exception.LinkNotFound(link_id=attachment_id)
 
         vols = self.os_helper.get_server_volumes_link(req, server_id)
         for v in vols:
             if vol_id == v["volumeId"]:
                 return v
-        raise webob.exc.HTTPNotFound()
+        raise exception.LinkNotFound(link_id=attachment_id)
 
     def show(self, req, id):
         v = self._get_attachment_from_id(req, id)
