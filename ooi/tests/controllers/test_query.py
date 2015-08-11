@@ -30,7 +30,7 @@ from ooi.occi.infrastructure import storage_link
 from ooi.occi.infrastructure import templates as infra_templates
 from ooi.openstack import contextualization
 from ooi.openstack import templates
-from ooi.tests.controllers import base
+from ooi.tests import base
 from ooi.tests import fakes
 
 
