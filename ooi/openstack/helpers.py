@@ -23,11 +23,10 @@ def build_scheme(category):
     return helpers.build_scheme(category, prefix=_PREFIX)
 
 
-# TODO(enolfc): Check the correct names of nova states
 def vm_state(nova_status):
-    if nova_status in ["ACTIVE"]:
+    if nova_status == "ACTIVE":
         return "active"
-    elif nova_status in ["PAUSED", "SUSPENDED", "STOPPED"]:
+    elif nova_status == "SUSPENDED":
         return "suspended"
     else:
         return "inactive"

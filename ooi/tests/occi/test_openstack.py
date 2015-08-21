@@ -73,9 +73,9 @@ class TestOpenStackResourceTemplate(base.TestCase):
 class TestHelpers(base.TestCase):
     def test_vm_state(self):
         self.assertEqual("active", helpers.vm_state("ACTIVE"))
-        self.assertEqual("suspended", helpers.vm_state("PAUSED"))
         self.assertEqual("suspended", helpers.vm_state("SUSPENDED"))
-        self.assertEqual("suspended", helpers.vm_state("STOPPED"))
+        self.assertEqual("inactive", helpers.vm_state("PAUSED"))
+        self.assertEqual("inactive", helpers.vm_state("STOPPED"))
         self.assertEqual("inactive", helpers.vm_state("BUILDING"))
 
     def test_vol_state(self):
