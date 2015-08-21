@@ -20,6 +20,8 @@ import os
 import fixtures
 import testtools
 
+from ooi.tests import fakes
+
 _TRUE_VALUES = ('True', 'true', '1', 'yes')
 
 
@@ -51,3 +53,12 @@ class TestCase(testtools.TestCase):
             self.useFixture(fixtures.MonkeyPatch('sys.stderr', stderr))
 
         self.log_fixture = self.useFixture(fixtures.FakeLogger())
+
+
+class TestController(TestCase):
+    def __init__(self, *args, **kwargs):
+        super(TestController, self).__init__(*args, **kwargs)
+
+    def setUp(self):
+        super(TestController, self).setUp()
+        self.application_url = fakes.application_url

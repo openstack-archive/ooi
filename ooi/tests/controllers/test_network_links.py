@@ -27,7 +27,7 @@ from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import network
 from ooi.openstack import network as os_network
-from ooi.tests.controllers import base
+from ooi.tests import base
 from ooi.tests import fakes
 
 

@@ -14,6 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import json
 import uuid
 
 import mock
@@ -21,14 +22,13 @@ import six
 import webob
 
 from ooi.api import helpers
-import ooi.tests.base
-from ooi.tests.controllers import base as controller_base
+from ooi.tests import base
 from ooi.tests import fakes
 
 import webob.exc
 
 
-class TestExceptionHelper(ooi.tests.base.TestCase):
+class TestExceptionHelper(base.TestCase):
     @staticmethod
     def get_fault(code):
         return {
@@ -72,11 +72,76 @@ class TestExceptionHelper(ooi.tests.base.TestCase):
         self.assertIsInstance(ret, webob.exc.HTTPInternalServerError)
 
 
-class TestOpenStackHelper(controller_base.TestController):
+class TestBaseHelper(base.TestController):
     def setUp(self):
-        super(TestOpenStackHelper, self).setUp()
-        self.helper = helpers.OpenStackHelper(mock.MagicMock(), None)
+        super(TestBaseHelper, self).setUp()
+        self.version = "version foo bar baz"
+        self.helper = helpers.OpenStackHelper(mock.MagicMock(), self.version)
 
+    def assertExpectedReq(self, method, path, body, request):
+        self.assertEqual(method, request.method)
+        self.assertEqual(path, request.path_info)
+        if body and request.content_type == "application/json":
+            self.assertDictEqual(body, request.json_body)
+        else:
+            self.assertEqual(body, request.text)
+
+    def test_new_request(self):
+        req = webob.Request.blank("foo")
+        new_req = self.helper._get_req(req, method="GET")
+        self.assertEqual(self.version, new_req.script_name)
+        self.assertEqual("foo", new_req.path_info)
+        self.assertIsNot(req, new_req)
+
+    def test_new_request_with_path(self):
+        req = webob.Request.blank("foo")
+        new_req = self.helper._get_req(req, path="bar", method="GET")
+        self.assertEqual("bar", new_req.path_info)
+        self.assertExpectedReq("GET", "bar", "", new_req)
+
+    def test_new_request_with_body(self):
+        req = webob.Request.blank("foo")
+        body = {"bar": 1}
+        new_req = self.helper._get_req(req, body=json.dumps(body),
+                                       method="POST")
+        self.assertExpectedReq("POST", "foo", body, new_req)
+
+    def test_new_request_with_content_type(self):
+        req = webob.Request.blank("foo")
+        new_req = self.helper._get_req(req, content_type="foo/bar",
+                                       method="GET")
+        self.assertEqual("foo/bar", new_req.content_type)
+
+    def test_get_from_response(self):
+        d = {"element": {"foo": "bar"}}
+        body = json.dumps(d)
+        response = webob.Response(status=200, body=body)
+        result = self.helper.get_from_response(response,
+                                               "element",
+                                               {})
+        self.assertEqual(d["element"], result)
+
+    def test_get_from_response_with_default(self):
+        d = {"element": {"foo": "bar"}}
+        body = json.dumps({})
+        response = webob.Response(status=200, body=body)
+        result = self.helper.get_from_response(response,
+                                               "element",
+                                               d["element"])
+        self.assertEqual(d["element"], result)
+
+    def test_get_from_response_with_exception(self):
+        d = {"unauthorized": {"message": "unauthorized"}}
+        body = json.dumps(d)
+        response = webob.Response(status=403, body=body)
+        self.assertRaises(webob.exc.HTTPForbidden,
+                          self.helper.get_from_response,
+                          response,
+                          "foo",
+                          {})
+
+
+class TestOpenStackHelper(TestBaseHelper):
     @mock.patch.object(helpers.OpenStackHelper, "_get_index_req")
     def test_index(self, m):
         resp = fakes.create_fake_json_resp({"servers": ["FOO"]}, 200)
@@ -696,11 +761,7 @@ class TestOpenStackHelper(controller_base.TestController):
         m.assert_called_with(None, server, ip)
 
 
-class TestOpenStackHelperReqs(controller_base.TestController):
-    def setUp(self):
-        super(TestOpenStackHelperReqs, self).setUp()
-        self.helper = helpers.OpenStackHelper(mock.MagicMock(), None)
-
+class TestOpenStackHelperReqs(TestBaseHelper):
     def _build_req(self, tenant_id, **kwargs):
         m = mock.MagicMock()
         m.user.project_id = tenant_id

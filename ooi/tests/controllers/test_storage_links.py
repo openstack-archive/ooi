@@ -26,7 +26,7 @@ from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
-from ooi.tests.controllers import base
+from ooi.tests import base
 from ooi.tests import fakes
 
 
