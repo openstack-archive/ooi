@@ -21,7 +21,6 @@ import routes
 import routes.middleware
 import webob.dec
 
-import ooi
 import ooi.api.compute
 import ooi.api.network
 import ooi.api.network_link
@@ -30,6 +29,7 @@ import ooi.api.storage
 import ooi.api.storage_link
 from ooi import exception
 from ooi import utils
+from ooi import version
 from ooi.wsgi import parsers
 from ooi.wsgi import serializers
 
@@ -235,7 +235,7 @@ class OCCIMiddleware(object):
 
     def process_response(self, response):
         """Process a response by adding our headers."""
-        server_string = "ooi/%s %s" % (ooi.__version__,
+        server_string = "ooi/%s %s" % (version.version_string,
                                        self.occi_string)
 
         headers = (("server", server_string),)
