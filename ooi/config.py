@@ -15,7 +15,7 @@
 # under the License.
 
 
-from oslo.config import cfg
+from oslo_config import cfg
 
 
 def parse_args(argv, default_config_files=None):
