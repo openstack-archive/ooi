@@ -34,9 +34,9 @@ def _build_network(name, prefix=None):
                                    mixins=[network.ip_network])
 
 
-class NetworkController(base.Controller):
+class Controller(base.Controller):
     def __init__(self, *args, **kwargs):
-        super(NetworkController, self).__init__(*args, **kwargs)
+        super(Controller, self).__init__(*args, **kwargs)
         self.os_helper = ooi.api.helpers.OpenStackHelper(
             self.app,
             self.openstack_version
