@@ -130,3 +130,8 @@ class NetworkNotFound(NotFound):
 
 class NetworkPoolFound(NotFound):
     msg_fmt = "Network Pool Not Found: '%(pool)s'"
+
+
+class MissingKeypairName(Invalid):
+    msg_fmt = "Missing Keypair Name"
+    code = 400
