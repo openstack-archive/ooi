@@ -1,0 +1,10 @@
+Verified+2: Jenkins
+Workflow+1: Alvaro Lopez Garcia <aloga@ifca.unican.es>
+Code-Review+2: Pablo Orviz <orviz@ifca.unican.es>
+Workflow+1: Pablo Orviz <orviz@ifca.unican.es>
+Code-Review+1: Enol Fernández <enolfc@ifca.unican.es>
+Submitted-by: Jenkins
+Submitted-at: Fri, 21 Aug 2015 08:52:30 +0000
+Reviewed-on: https://review.openstack.org/211545
+Project: stackforge/ooi
+Branch: refs/heads/master
