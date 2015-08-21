@@ -27,7 +27,7 @@ def build_scheme(category):
 def vm_state(nova_status):
     if nova_status in ["ACTIVE"]:
         return "active"
-    elif nova_status in ["PAUSED", "SUSPENDED", "STOPPED"]:
+    elif nova_status == "SUSPENDED":
         return "suspended"
     else:
         return "inactive"
