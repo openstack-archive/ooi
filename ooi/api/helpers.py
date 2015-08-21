@@ -201,7 +201,9 @@ class OpenStackHelper(BaseHelper):
         response = req.get_response(self.app)
         return self.get_from_response(response, "server", {})
 
-    def _get_create_server_req(self, req, name, image, flavor, user_data=None):
+    def _get_create_server_req(self, req, name, image, flavor,
+                               user_data=None,
+                               key_name=None):
         tenant_id = self.tenant_from_req(req)
         path = "/%s/servers" % tenant_id
         # TODO(enolfc): add here the correct metadata info
@@ -212,15 +214,20 @@ class OpenStackHelper(BaseHelper):
             "imageRef": image,
             "flavorRef": flavor,
         }}
+
         if user_data is not None:
             body["server"]["user_data"] = user_data
+        if key_name is not None:
+            body["server"]["key_name"] = key_name
+
         return self._get_req(req,
                              path=path,
                              content_type="application/json",
                              body=json.dumps(body),
                              method="POST")
 
-    def create_server(self, req, name, image, flavor, user_data=None):
+    def create_server(self, req, name, image, flavor,
+                      user_data=None, key_name=None):
         """Create a server.
 
         :param req: the incoming request
@@ -228,9 +235,11 @@ class OpenStackHelper(BaseHelper):
         :param image: image id for the new server
         :param flavor: flavor id for the new server
         :param user_data: user data to inject into the server
+        :param key_name: user public key name
         """
         req = self._get_create_server_req(req, name, image, flavor,
-                                          user_data=user_data)
+                                          user_data=user_data,
+                                          key_name=key_name)
         response = req.get_response(self.app)
         # We only get one server
         return self.get_from_response(response, "server", {})
@@ -509,3 +518,46 @@ class OpenStackHelper(BaseHelper):
         response = req.get_response(self.app)
         if response.status_int != 202:
             raise exception_from_response(response)
+
+    def _get_keypairs_req(self, req):
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/keypairs" % tenant_id
+        return self._get_req(req, path=path, method="GET")
+
+    def get_keypairs(self, req):
+        """Get all keypairs.
+
+        :param req: the incoming request
+        """
+        req = self._get_keypairs_req(req)
+        response = req.get_response(self.app)
+        return self.get_from_response(response, "keypairs", [])
+
+    def _get_keypair_create_req(self, req, name, key_type="ssh",
+                                public_key=None):
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/keypairs" % tenant_id
+        body = {"keypair": {
+            "name": name,
+            "type": key_type,
+        }}
+        if public_key:
+            body["public_key"] = public_key
+
+        return self._get_req(req,
+                             path=path,
+                             content_type="application/json",
+                             body=json.dumps(body),
+                             method="POST")
+
+    def keypair_create(self, req, name, key_type="ssh", public_key=None):
+        """Create a keypair.
+
+        :param req: the incoming request
+        :param name: name for the new keypair
+        :param type: type of the new key
+        :param public_key: public ssh key to import
+        """
+        req = self._get_keypair_create_req(req, name, key_type, public_key)
+        response = req.get_response(self.app)
+        return self.get_from_response(response, "keypairs", {})

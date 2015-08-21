@@ -489,10 +489,13 @@ class TestOpenStackHelper(controller_base.TestController):
         image = uuid.uuid4().hex
         flavor = uuid.uuid4().hex
         user_data = "foo"
+        key_name = "wtfoo"
         ret = self.helper.create_server(None, name, image, flavor,
-                                        user_data=user_data)
+                                        user_data=user_data,
+                                        key_name=key_name)
         self.assertEqual("FOO", ret)
-        m.assert_called_with(None, name, image, flavor, user_data=user_data)
+        m.assert_called_with(None, name, image, flavor, user_data=user_data,
+                             key_name=key_name)
 
     @mock.patch("ooi.api.helpers.exception_from_response")
     @mock.patch.object(helpers.OpenStackHelper, "_get_create_server_req")
@@ -506,6 +509,7 @@ class TestOpenStackHelper(controller_base.TestController):
         image = uuid.uuid4().hex
         flavor = uuid.uuid4().hex
         user_data = "foo"
+        key_name = "wtfoo"
         m_exc.return_value = webob.exc.HTTPInternalServerError()
         self.assertRaises(webob.exc.HTTPInternalServerError,
                           self.helper.create_server,
@@ -513,8 +517,10 @@ class TestOpenStackHelper(controller_base.TestController):
                           name,
                           image,
                           flavor,
-                          user_data=user_data)
-        m.assert_called_with(None, name, image, flavor, user_data=user_data)
+                          user_data=user_data,
+                          key_name=key_name)
+        m.assert_called_with(None, name, image, flavor, user_data=user_data,
+                             key_name=key_name)
         m_exc.assert_called_with(resp)
 
     @mock.patch.object(helpers.OpenStackHelper, "_get_volume_create_req")

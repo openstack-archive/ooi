@@ -183,7 +183,8 @@ class TestComputeController(base.TestController):
         ret = self.controller.create(req, None)
         self.assertIsInstance(ret, collection.Collection)
         m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
-                                    user_data=None)
+                                    user_data=None,
+                                    key_name=None)
 
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
     @mock.patch("ooi.occi.validator.Validator")
@@ -212,4 +213,5 @@ class TestComputeController(base.TestController):
         ret = self.controller.create(req, None)  # noqa
         self.assertIsInstance(ret, collection.Collection)
         m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
-                                    user_data="bazonk")
+                                    user_data="bazonk",
+                                    key_name=None)

@@ -114,12 +114,22 @@ class Controller(ooi.api.base.Controller):
         name = attrs.get("occi.core.title", "OCCI VM")
         image = obj["schemes"][templates.OpenStackOSTemplate.scheme][0]
         flavor = obj["schemes"][templates.OpenStackResourceTemplate.scheme][0]
-        user_data = None
+        user_data, key_name, key_data = None, None, None
         if contextualization.user_data.scheme in obj["schemes"]:
             user_data = attrs.get("org.openstack.compute.user_data")
+        if contextualization.public_key.scheme in obj["schemes"]:
+            key_name = attrs.get("org.openstack.credentials.publickey.name")
+            key_data = attrs.get("org.openstack.credentials.publickey.data")
+
+            if key_name and key_data:
+                # add keypair
+                self.os_helper.keypair_create(key_name, public_key=key_data)
+            elif not key_name and key_data:
+                raise exception.MissingKeypairName
 
         server = self.os_helper.create_server(req, name, image, flavor,
-                                              user_data=user_data)
+                                              user_data=user_data,
+                                              key_name=key_name)
         # The returned JSON does not contain the server name
         server["name"] = name
         occi_compute_resources = self._get_compute_resources([server])
