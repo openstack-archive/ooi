@@ -5,3 +5,5 @@ User documentation
    :maxdepth: 2
 
    installation
+   configuration
+   pipelines/index
