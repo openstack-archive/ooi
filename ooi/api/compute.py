@@ -111,7 +111,7 @@ class Controller(ooi.api.base.Controller):
         validator.validate(scheme)
 
         attrs = obj.get("attributes", {})
-        name = attrs.get("occi.core.title", "OCCI VM")
+        name = attrs.get("occi.core.title", "OCCI_VM")
         image = obj["schemes"][templates.OpenStackOSTemplate.scheme][0]
         flavor = obj["schemes"][templates.OpenStackResourceTemplate.scheme][0]
         user_data = None
