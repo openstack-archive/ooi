@@ -15,7 +15,7 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.abspath('../..'))
+sys.path.insert(0, os.path.abspath('../../'))
 # -- General configuration ----------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -23,7 +23,6 @@ sys.path.insert(0, os.path.abspath('../..'))
 extensions = [
     'sphinx.ext.autodoc',
     #'sphinx.ext.intersphinx',
-    'oslosphinx'
 ]
 
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
@@ -40,6 +39,12 @@ master_doc = 'index'
 project = u'ooi'
 copyright = u'2014-present, Spanish National Research Council - CSIC'
 
+from ooi.version import version_info
+# The full version, including alpha/beta/rc tags.
+release = version_info.release_string()
+# The short X.Y version.
+version = version_info.version_string()
+
 # If true, '()' will be appended to :func: etc. cross-reference text.
 add_function_parentheses = True
 
@@ -55,6 +60,7 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
 # html_theme_path = ["."]
+html_theme = 'haiku'
 # html_theme = '_theme'
 # html_static_path = ['static']
 
