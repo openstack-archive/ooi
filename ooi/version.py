@@ -14,11 +14,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
-:mod:`ooi` -- OpenStack OCCI Interface
-===================================
+import pbr.version
 
-.. automodule:: ooi
-   :platform: Unix
-   :synopsis: OCCI Interface for OpenStack.
-"""
+version_info = pbr.version.VersionInfo('ooi')
+version_string = version_info.version_string
