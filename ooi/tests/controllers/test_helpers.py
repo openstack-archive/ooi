@@ -554,10 +554,13 @@ class TestOpenStackHelper(TestBaseHelper):
         image = uuid.uuid4().hex
         flavor = uuid.uuid4().hex
         user_data = "foo"
+        key_name = "wtfoo"
         ret = self.helper.create_server(None, name, image, flavor,
-                                        user_data=user_data)
+                                        user_data=user_data,
+                                        key_name=key_name)
         self.assertEqual("FOO", ret)
-        m.assert_called_with(None, name, image, flavor, user_data=user_data)
+        m.assert_called_with(None, name, image, flavor, user_data=user_data,
+                             key_name=key_name)
 
     @mock.patch("ooi.api.helpers.exception_from_response")
     @mock.patch.object(helpers.OpenStackHelper, "_get_create_server_req")
@@ -571,6 +574,7 @@ class TestOpenStackHelper(TestBaseHelper):
         image = uuid.uuid4().hex
         flavor = uuid.uuid4().hex
         user_data = "foo"
+        key_name = "wtfoo"
         m_exc.return_value = webob.exc.HTTPInternalServerError()
         self.assertRaises(webob.exc.HTTPInternalServerError,
                           self.helper.create_server,
@@ -578,8 +582,10 @@ class TestOpenStackHelper(TestBaseHelper):
                           name,
                           image,
                           flavor,
-                          user_data=user_data)
-        m.assert_called_with(None, name, image, flavor, user_data=user_data)
+                          user_data=user_data,
+                          key_name=key_name)
+        m.assert_called_with(None, name, image, flavor, user_data=user_data,
+                             key_name=key_name)
         m_exc.assert_called_with(resp)
 
     @mock.patch.object(helpers.OpenStackHelper, "_get_volume_create_req")
@@ -968,6 +974,28 @@ class TestOpenStackHelperReqs(TestBaseHelper):
                                                     user_data=user_data)
         self.assertExpectedReq("POST", path, body, os_req)
 
+    def test_get_os_get_server_create_with_key_name(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        name = "foo server"
+        image = "bar image"
+        flavor = "baz flavor"
+        key_name = "wtfoo"
+
+        body = {
+            "server": {
+                "name": name,
+                "imageRef": image,
+                "flavorRef": flavor,
+                "key_name": key_name,
+            },
+        }
+
+        path = "/%s/servers" % tenant["id"]
+        os_req = self.helper._get_create_server_req(req, name, image, flavor,
+                                                    key_name=key_name)
+        self.assertExpectedReq("POST", path, body, os_req)
+
     def test_get_os_get_volume_create(self):
         tenant = fakes.tenants["foo"]
         req = self._build_req(tenant["id"])
@@ -1021,3 +1049,97 @@ class TestOpenStackHelperReqs(TestBaseHelper):
         path = "/%s/servers/%s/action" % (tenant["id"], server)
         os_req = self.helper._get_remove_floating_ip_req(req, server, ip)
         self.assertExpectedReq("POST", path, body, os_req)
+
+    def test_get_os_get_keypair_create(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        name = "fookey"
+
+        body = {
+            "keypair": {
+                "name": name,
+            }
+        }
+
+        path = "/%s/os-keypairs" % tenant["id"]
+        os_req = self.helper._get_keypair_create_req(req, name)
+        self.assertExpectedReq("POST", path, body, os_req)
+
+    def test_get_os_get_keypair_create_import(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        name = "fookey"
+        public_key = "fookeydata"
+
+        body = {
+            "keypair": {
+                "name": name,
+                "public_key": public_key
+            }
+        }
+
+        path = "/%s/os-keypairs" % tenant["id"]
+        os_req = self.helper._get_keypair_create_req(req, name,
+                                                     public_key=public_key)
+        self.assertExpectedReq("POST", path, body, os_req)
+
+    @mock.patch.object(helpers.OpenStackHelper, "_get_keypair_create_req")
+    def test_keypair_create(self, m):
+        resp = fakes.create_fake_json_resp({"keypair": "FOO"}, 200)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        name = uuid.uuid4().hex
+        public_key = None
+        ret = self.helper.keypair_create(None, name)
+        self.assertEqual("FOO", ret)
+        m.assert_called_with(None, name, public_key=public_key)
+
+    @mock.patch.object(helpers.OpenStackHelper, "_get_keypair_create_req")
+    def test_keypair_create_key_import(self, m):
+        resp = fakes.create_fake_json_resp({"keypair": "FOO"}, 200)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        name = uuid.uuid4().hex
+        public_key = "fookeydata"
+        ret = self.helper.keypair_create(None, name, public_key=public_key)
+        self.assertEqual("FOO", ret)
+        m.assert_called_with(None, name, public_key=public_key)
+
+    @mock.patch("ooi.api.helpers.exception_from_response")
+    @mock.patch.object(helpers.OpenStackHelper, "_get_keypair_create_req")
+    def test_keypair_create_with_exception(self, m, m_exc):
+        fault = {"computeFault": {"message": "bad", "code": 500}}
+        resp = fakes.create_fake_json_resp(fault, 500)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        name = uuid.uuid4().hex
+        m_exc.return_value = webob.exc.HTTPInternalServerError()
+        self.assertRaises(webob.exc.HTTPInternalServerError,
+                          self.helper.keypair_create,
+                          None,
+                          name,
+                          None)
+        m.assert_called_with(None, name, public_key=None)
+        m_exc.assert_called_with(resp)
+
+    @mock.patch("ooi.api.helpers.exception_from_response")
+    @mock.patch.object(helpers.OpenStackHelper, "_get_keypair_create_req")
+    def test_keypair_create_key_import_with_exception(self, m, m_exc):
+        fault = {"computeFault": {"message": "bad", "code": 500}}
+        resp = fakes.create_fake_json_resp(fault, 500)
+        req_mock = mock.MagicMock()
+        req_mock.get_response.return_value = resp
+        m.return_value = req_mock
+        name = uuid.uuid4().hex
+        public_key = "fookeydata"
+        m_exc.return_value = webob.exc.HTTPInternalServerError()
+        self.assertRaises(webob.exc.HTTPInternalServerError,
+                          self.helper.keypair_create,
+                          None,
+                          name,
+                          public_key)
+        m.assert_called_with(None, name, public_key=public_key)
+        m_exc.assert_called_with(resp)
