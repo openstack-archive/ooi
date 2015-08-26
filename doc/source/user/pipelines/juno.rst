@@ -1,0 +1,22 @@
+Juno (2014.2)
+-------------
+
+.. code:: ini
+
+    [composite:osapi_compute]
+    use = call:nova.api.openstack.urlmap:urlmap_factory
+    /: oscomputeversions
+    /v1.1: openstack_compute_api_v2
+    /v2: openstack_compute_api_v2
+    /v2.1: openstack_compute_api_v21
+    /v3: openstack_compute_api_v3
+    /occi1.1: occi_api_11
+
+    [filter:occi]
+    paste.filter_factory = ooi.wsgi:OCCIMiddleware.factory
+    openstack_version = /v2.1
+
+    [composite:occi_api_11]
+    use = call:nova.api.auth:pipeline_factory_v21
+    noauth = compute_req_id faultwrap sizelimit noauth occi osapi_compute_app_v21
+    keystone = compute_req_id faultwrap sizelimit authtoken keystonecontext occi osapi_compute_app_v21

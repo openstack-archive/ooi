@@ -13,10 +13,10 @@ User documentation
 .. toctree::
     :maxdepth: 2
 
-    user
+    user/index
 
 Developer documentation
-----------------------
+-----------------------
 .. toctree::
     :maxdepth: 2
 
