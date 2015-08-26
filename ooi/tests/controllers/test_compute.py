@@ -126,12 +126,11 @@ class TestComputeController(base.TestController):
             self.assertEqual([], ret)
             m_run_action.assert_called_with(mock.ANY, action, server_uuid)
 
-    @mock.patch.object(helpers.OpenStackHelper, "get_floating_ips")
     @mock.patch.object(helpers.OpenStackHelper, "get_server_volumes_link")
     @mock.patch.object(helpers.OpenStackHelper, "get_image")
     @mock.patch.object(helpers.OpenStackHelper, "get_flavor")
     @mock.patch.object(helpers.OpenStackHelper, "get_server")
-    def test_show(self, m_server, m_flavor, m_image, m_vol, m_ips):
+    def test_show(self, m_server, m_flavor, m_image, m_vol):
         for tenant in fakes.tenants.values():
             servers = fakes.servers[tenant["id"]]
             for server in servers:
@@ -140,13 +139,11 @@ class TestComputeController(base.TestController):
                 volumes = fakes.volumes.get(tenant["id"], [])
                 if volumes:
                     volumes = volumes[0]["attachments"]
-                floating_ips = fakes.floating_ips[tenant["id"]]
 
                 m_server.return_value = server
                 m_flavor.return_value = flavor
                 m_image.return_value = image
                 m_vol.return_value = volumes
-                m_ips.return_value = floating_ips
 
                 ret = self.controller.show(None, server["id"])
                 # FIXME(aloga): Should we test the resource?
@@ -155,8 +152,6 @@ class TestComputeController(base.TestController):
                 m_flavor.assert_called_with(None, flavor["id"])
                 m_image.assert_called_with(None, image["id"])
                 m_vol.assert_called_with(None, server["id"])
-                if server.get("addresses"):
-                    m_ips.assert_called_with(None)
 
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
     @mock.patch("ooi.occi.validator.Validator")

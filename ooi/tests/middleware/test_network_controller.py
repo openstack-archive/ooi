@@ -23,7 +23,7 @@ from ooi.tests.middleware import test_middleware
 from ooi import utils
 
 
-def build_occi_network(pool, floating=True):
+def build_occi_network(pool_name):
     cats = []
     cats.append('network; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
@@ -32,25 +32,20 @@ def build_occi_network(pool, floating=True):
     cats.append('ipnetwork; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure/'
                 'network#"; class="mixin"; title="IP Networking Mixin"')
-
-    if floating:
-        pool_id = "floating/%s" % pool["name"]
-    else:
-        pool_id = pool["name"]
     attrs = [
-        'occi.core.title="%s"' % pool["name"],
+        'occi.core.title="%s"' % pool_name,
         'occi.network.state="active"',
-        'occi.core.id="%s"' % pool_id,
+        'occi.core.id="%s"' % pool_name,
     ]
     links = []
     links.append('<%s/network/%s?action=up>; '
                  'rel="http://schemas.ogf.org/occi/'
                  'infrastructure/network/action#up"' %
-                 (fakes.application_url, pool_id))
+                 (fakes.application_url, pool_name))
     links.append('<%s/network/%s?action=down>; '
                  'rel="http://schemas.ogf.org/occi/'
                  'infrastructure/network/action#down"' %
-                 (fakes.application_url, pool_id))
+                 (fakes.application_url, pool_name))
     result = []
     for c in cats:
         result.append(("Category", c))
@@ -99,11 +94,11 @@ class TestNetworkController(test_middleware.TestMiddleware):
                 ("X-OCCI-Location",
                  utils.join_url(self.application_url + "/", "network/fixed"))
             ]
-            for s in fakes.pools[tenant["id"]]:
+            if fakes.pools[tenant["id"]]:
                 expected.append(
                     ("X-OCCI-Location",
                      utils.join_url(self.application_url + "/",
-                                    "network/floating/%s" % s["name"]))
+                                    "network/floating"))
                 )
             self.assertDefaults(resp)
             self.assertExpectedResult(expected, resp)
@@ -113,11 +108,10 @@ class TestNetworkController(test_middleware.TestMiddleware):
         app = self.get_app()
 
         for pool in fakes.pools[tenant["id"]]:
-            req = self._build_req("/network/floating/%s" % pool["name"],
-                                  tenant["id"], method="GET")
-
+            req = self._build_req("/network/floating", tenant["id"],
+                                  method="GET")
             resp = req.get_response(app)
-            expected = build_occi_network(pool)
+            expected = build_occi_network("floating")
             self.assertDefaults(resp)
             self.assertExpectedResult(expected, resp)
             self.assertEqual(200, resp.status_code)
@@ -129,7 +123,7 @@ class TestNetworkController(test_middleware.TestMiddleware):
         req = self._build_req("/network/fixed", tenant["id"], method="GET")
 
         resp = req.get_response(app)
-        expected = build_occi_network({"name": "fixed"}, False)
+        expected = build_occi_network("fixed")
         self.assertDefaults(resp)
         self.assertExpectedResult(expected, resp)
         self.assertEqual(200, resp.status_code)
@@ -138,7 +132,7 @@ class TestNetworkController(test_middleware.TestMiddleware):
         tenant = fakes.tenants["foo"]
 
         app = self.get_app()
-        req = self._build_req("/network/floating/%s" % uuid.uuid4().hex,
+        req = self._build_req("/network/%s" % uuid.uuid4().hex,
                               tenant["id"], method="GET")
         resp = req.get_response(app)
         self.assertEqual(404, resp.status_code)

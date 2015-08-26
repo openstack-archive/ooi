@@ -329,8 +329,7 @@ class TestComputeController(test_middleware.TestMiddleware):
                     if addr["OS-EXT-IPS:type"] == "fixed":
                         net_id = "fixed"
                     else:
-                        name = fakes.pools[tenant["id"]][0]["name"]
-                        net_id = "floating/%s" % name
+                        net_id = "floating"
                     target = utils.join_url(self.application_url + "/",
                                             "network/%s" % net_id)
                     self.assertResultIncludesLink(link_id, source, target,

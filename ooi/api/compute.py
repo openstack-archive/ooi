@@ -30,15 +30,12 @@ from ooi.openstack import network as os_network
 from ooi.openstack import templates
 
 
-def _create_network_link(addr, comp, floating_ips):
+def _create_network_link(addr, comp):
     if addr["OS-EXT-IPS:type"] == "floating":
-        for ip in floating_ips:
-            if addr["addr"] == ip["ip"]:
-                net = network.NetworkResource(
-                    title="network",
-                    id="%s/%s" % (network_api.FLOATING_PREFIX, ip["pool"]))
+        net_id = network_api.FLOATING_PREFIX
     else:
-        net = network.NetworkResource(title="network", id="fixed")
+        net_id = network_api.FIXED_PREFIX
+    net = network.NetworkResource(title="network", id=net_id)
     return os_network.OSNetworkInterface(comp, net,
                                          addr["OS-EXT-IPS-MAC:mac_addr"],
                                          addr["addr"])
@@ -173,11 +170,9 @@ class Controller(ooi.api.base.Controller):
         # network links
         addresses = s.get("addresses", {})
         if addresses:
-            floating_ips = self.os_helper.get_floating_ips(req)
             for addr_set in addresses.values():
                 for addr in addr_set:
-                    comp.add_link(_create_network_link(addr, comp,
-                                                       floating_ips))
+                    comp.add_link(_create_network_link(addr, comp))
 
         return [comp]
 

@@ -21,6 +21,7 @@ from ooi.occi.core import collection
 from ooi.occi.infrastructure import network
 
 FLOATING_PREFIX = "floating"
+FIXED_PREFIX = "fixed"
 
 
 def _build_network(name, prefix=None):
@@ -44,29 +45,21 @@ class Controller(base.Controller):
 
     def _floating_index(self, req):
         pools = self.os_helper.get_floating_ip_pools(req)
-
         occi_network_resources = []
-        for p in pools:
-            occi_network_resources.append(_build_network(p["name"],
-                                                         FLOATING_PREFIX))
+        if pools:
+            occi_network_resources.append(_build_network(FLOATING_PREFIX))
         return occi_network_resources
-
-    def general_index(self, req):
-        occi_network_resources = self._floating_index(req)
-        occi_network_resources.append(_build_network("fixed"))
-        return collection.Collection(resources=occi_network_resources)
 
     def index(self, req):
         occi_network_resources = self._floating_index(req)
+        occi_network_resources.append(_build_network(FIXED_PREFIX))
         return collection.Collection(resources=occi_network_resources)
 
-    def show_fixed(self, req):
-        return _build_network("fixed")
-
     def show(self, req, id):
-        pools = self.os_helper.get_floating_ip_pools(req)
-
-        for p in pools:
-            if p['name'] == id:
-                return [_build_network(p["name"], FLOATING_PREFIX)]
+        if id == FIXED_PREFIX:
+            return [_build_network(id)]
+        elif id == FLOATING_PREFIX:
+            pools = self.os_helper.get_floating_ip_pools(req)
+            if pools:
+                return [_build_network(id)]
         raise exception.NetworkNotFound(resource_id=id)
