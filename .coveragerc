@@ -4,4 +4,4 @@ source = ooi
 omit = ooi/tests/*
 
 [report]
-ignore-errors = True
+ignore_errors = True
