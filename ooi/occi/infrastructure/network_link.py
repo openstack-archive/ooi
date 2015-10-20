@@ -27,7 +27,7 @@ class NetworkInterface(link.Link):
                                            "occi.networkinterface.state"])
     kind = kind.Kind(helpers.build_scheme('infrastructure'),
                      'networkinterface', 'network link resource',
-                     attributes, '/networklink/',
+                     attributes, 'networklink/',
                      related=[link.Link.kind])
 
     def __init__(self, mixins, source, target, id=None, interface=None,
