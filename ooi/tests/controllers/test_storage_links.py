@@ -121,7 +121,8 @@ class TestStorageLinkController(base.TestController):
 
     @mock.patch.object(helpers.OpenStackHelper, "create_server_volumes_link")
     @mock.patch("ooi.occi.validator.Validator")
-    def test_create_link(self, m_validator, m_create):
+    @mock.patch("ooi.api.helpers.get_id_with_kind")
+    def test_create_link(self, m_get_id, m_validator, m_create):
         tenant = fakes.tenants["foo"]
         req = self._build_req(tenant["id"])
         vol_id = uuid.uuid4().hex
@@ -138,6 +139,7 @@ class TestStorageLinkController(base.TestController):
         # NOTE(aloga): MOG!
         req.get_parser.return_value.return_value.parse.return_value = obj
         m_validator.validate.return_value = True
+        m_get_id.side_effect = [('', vol_id), ('', server_id)]
         attachment = {
             "device": "/dev/vdd",
             "id": "a26887c6-c47b-4654-abb5-dfadf7d3f803",

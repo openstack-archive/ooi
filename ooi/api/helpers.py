@@ -16,13 +16,48 @@
 
 import copy
 import json
+import os
 
+import six.moves.urllib.parse as urlparse
+
+from ooi import exception
 from ooi import utils
 
 from oslo_log import log as logging
 import webob.exc
 
 LOG = logging.getLogger(__name__)
+
+
+def _resolve_id(base_url, resource_url):
+    """Gets the resource id from a base URL.
+
+    :param base_url: application or request url (normally absolute)
+    :param resource_url: absolute or relative resource url
+    :returns: a tuple with the calculated base url and resource id
+    """
+    if not base_url.endswith('/'):
+        base_url = base_url + '/'
+    full_url = urlparse.urljoin(base_url, resource_url)
+    parts = urlparse.urlsplit(full_url)
+    base_parts = parts[0:2] + (os.path.dirname(parts[2]),) + parts[3:]
+    return urlparse.urlunsplit(base_parts), os.path.basename(parts[2])
+
+
+def get_id_with_kind(req, resource_url, kind=None):
+    """Resolves the resource URL and tries to match it with the kind.
+
+    :param req: current request
+    :param resource_url: absolute or relative resource url
+    :returns: a tuple with a base url and a resource id
+    :raises ooi.exception.Invalid: if resource does not match kind
+    """
+    res_base, res_id = _resolve_id(req.url, resource_url)
+    if kind:
+        kind_base, kind_id = _resolve_id(req.application_url, kind.location)
+        if kind_base != res_base:
+            raise exception.Invalid("Expecting %s resource" % kind_base)
+    return res_base, res_id
 
 
 def exception_from_response(response):
