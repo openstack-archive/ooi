@@ -41,7 +41,7 @@ class StorageResource(resource.Resource):
                                            "occi.storage.state"])
     actions = (online, offline, backup, snapshot, resize)
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'storage',
-                     'storage resource', attributes, '/storage/',
+                     'storage resource', attributes, 'storage/',
                      actions=actions,
                      related=[resource.Resource.kind])
 

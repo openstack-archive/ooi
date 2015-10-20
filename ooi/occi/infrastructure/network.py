@@ -34,7 +34,7 @@ class NetworkResource(resource.Resource):
                                            "occi.network.state"])
     actions = (up, down)
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'network',
-                     'network resource', attributes, '/network/',
+                     'network resource', attributes, 'network/',
                      actions=actions,
                      related=[resource.Resource.kind])
 
