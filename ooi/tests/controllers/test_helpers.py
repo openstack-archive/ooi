@@ -28,6 +28,66 @@ from ooi.tests import fakes
 import webob.exc
 
 
+class TestIDGetter(base.TestCase):
+    def test_resolve_id_relative_url(self):
+        res_url = uuid.uuid4().hex
+        base_url = "http://foobar.com/foo"
+        r = helpers._resolve_id(base_url, res_url)
+        self.assertEqual(base_url, r[0])
+        self.assertEqual(res_url, r[1])
+
+    def test_resolve_id_absolute(self):
+        res_id = uuid.uuid4().hex
+        res_url = "/%s" % res_id
+        base_url = "http://foobar.com/foo"
+        r = helpers._resolve_id(base_url, res_url)
+        self.assertEqual("http://foobar.com/", r[0])
+        self.assertEqual(res_id, r[1])
+
+    def test_resolve_id_no_resource_url(self):
+        base_url = "http://foobar.com/foo"
+        r = helpers._resolve_id(base_url, "")
+        self.assertEqual(base_url, r[0])
+        self.assertEqual("", r[1])
+
+    def test_get_id_no_kind_relative(self):
+        req_url = '/foo'
+        req = webob.Request.blank(req_url)
+        res_url = "%s" % uuid.uuid4().hex
+        r = helpers.get_id_with_kind(req, res_url)
+        self.assertEqual('%s%s' % (req.application_url, req_url), r[0])
+        self.assertEqual(res_url, r[1])
+
+    def test_get_id_no_kind_absolute(self):
+        req_url = '/foo'
+        req = webob.Request.blank(req_url)
+        res_id = uuid.uuid4().hex
+        res_url = "/bar/%s" % res_id
+        r = helpers.get_id_with_kind(req, res_url)
+        self.assertEqual('%s/bar' % (req.application_url), r[0])
+        self.assertEqual(res_id, r[1])
+
+    def test_get_id_kind_matching(self):
+        m = mock.MagicMock()
+        m.location = "foo/"
+        req_url = "/foo"
+        req = webob.Request.blank(req_url)
+        res_url = "%s" % uuid.uuid4().hex
+        r = helpers.get_id_with_kind(req, res_url, m)
+        self.assertEqual("%s%s" % (req.application_url, req_url), r[0])
+        self.assertEqual(res_url, r[1])
+
+    def test_get_id_kind_not_matching(self):
+        m = mock.MagicMock()
+        m.location = "foo/"
+        req_url = "/foo"
+        req = webob.Request.blank(req_url)
+        from ooi import exception
+        self.assertRaises(exception.Invalid,
+                          helpers.get_id_with_kind,
+                          req, "/bar/baz", m)
+
+
 class TestExceptionHelper(base.TestCase):
     @staticmethod
     def get_fault(code):
