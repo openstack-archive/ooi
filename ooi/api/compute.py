@@ -75,12 +75,20 @@ class Controller(ooi.api.base.Controller):
         parser = req.get_parser()(req.headers, req.body)
         obj = parser.parse()
 
+        server = self.os_helper.get_server(req, id)
+
         if action == "stop":
             scheme = {"category": compute.stop}
         elif action == "start":
             scheme = {"category": compute.start}
+            if server["status"] == "SUSPENDED":
+                action = "resume"
+            elif server["status"] == "PAUSED":
+                action = "unpause"
         elif action == "restart":
             scheme = {"category": compute.restart}
+        elif action == "suspend":
+            scheme = {"category": compute.suspend}
         else:
             raise exception.NotImplemented
 

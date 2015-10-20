@@ -167,6 +167,9 @@ class OpenStackHelper(BaseHelper):
         actions_map = {
             "stop": {"os-stop": None},
             "start": {"os-start": None},
+            "suspend": {"suspend": None},
+            "resume": {"resume": None},
+            "unpause": {"unpause": None},
             "restart": {"reboot": {"type": "SOFT"}},
         }
         action = actions_map[action]

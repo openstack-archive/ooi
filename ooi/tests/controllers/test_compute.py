@@ -17,6 +17,7 @@
 import uuid
 
 import mock
+import six
 import webob
 
 from ooi.api import compute
@@ -102,25 +103,26 @@ class TestComputeController(base.TestController):
                           server_uuid,
                           None)
 
-    def test_run_action_not_implemented(self):
-        tenant = fakes.tenants["foo"]
-        req = self._build_req(tenant["id"], path="/foo?action=suspend")
-        req.get_parser = mock.MagicMock()
-        server_uuid = uuid.uuid4().hex
-        self.assertRaises(exception.NotImplemented,
-                          self.controller.run_action,
-                          req,
-                          server_uuid,
-                          None)
-
     @mock.patch.object(helpers.OpenStackHelper, "run_action")
+    @mock.patch.object(helpers.OpenStackHelper, "get_server")
     @mock.patch("ooi.occi.validator.Validator")
-    def test_run_action_start(self, m_validator, m_run_action):
+    def test_run_action_start(self, m_validator, m_get_server, m_run_action):
         tenant = fakes.tenants["foo"]
-        for action in ("stop", "start", "restart"):
-            req = self._build_req(tenant["id"], path="/foo?action=%s" % action)
+#        for action in ("stop", "start", "restart", "suspend"):
+        action = "start"
+
+        state_action_map = {
+            "SUSPENDED": "resume",
+            "PAUSED": "unpause",
+            "STOPPED": "start",
+        }
+
+        req = self._build_req(tenant["id"], path="/foo?action=start")
+        for state, action in six.iteritems(state_action_map):
             req.get_parser = mock.MagicMock()
             server_uuid = uuid.uuid4().hex
+            server = {"status": state}
+            m_get_server.return_value = server
             m_run_action.return_value = None
             ret = self.controller.run_action(req, server_uuid, None)
             self.assertEqual([], ret)
