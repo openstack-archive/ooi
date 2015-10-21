@@ -113,6 +113,27 @@ class TestMiddleware(base.TestCase):
         result = req.get_response(self.app)
         self.assertEqual(406, result.status_code)
 
+    def test_various_content_type_post(self):
+        req = webob.Request.blank("/foos",
+                                  method="POST",
+                                  content_type="text/occi,text/plain")
+        result = req.get_response(self.app)
+        self.assertEqual(501, result.status_code)
+
+    def test_various_one_bad_content_type_post(self):
+        req = webob.Request.blank("/foos",
+                                  method="POST",
+                                  content_type="text/bazonk,text/plain")
+        result = req.get_response(self.app)
+        self.assertEqual(501, result.status_code)
+
+    def test_various_bad_content_types_post(self):
+        req = webob.Request.blank("/foos",
+                                  method="POST",
+                                  content_type="text/bazonk,text/foobar")
+        result = req.get_response(self.app)
+        self.assertEqual(406, result.status_code)
+
     def test_bad_content_type_post(self):
         req = webob.Request.blank("/foos",
                                   method="POST",

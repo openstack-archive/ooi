@@ -48,11 +48,14 @@ class Request(webob.Request):
         if not self.should_have_body():
             return None
 
-        if self.content_type not in parsers.get_supported_content_types():
-            LOG.debug("Unrecognized Content-Type provided in request")
-            raise exception.InvalidContentType(content_type=self.content_type)
+        content_types = self.content_type.split(",")
 
-        return self.content_type
+        for ct in content_types:
+            if ct in parsers.get_supported_content_types():
+                return ct
+
+        LOG.debug("Unrecognized Content-Type provided in request")
+        raise exception.InvalidContentType(content_type=self.content_type)
 
     def get_best_match_content_type(self, default_match=None):
         content_types = serializers.get_supported_content_types()
