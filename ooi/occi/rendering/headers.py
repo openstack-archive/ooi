@@ -42,6 +42,13 @@ class ExceptionRenderer(HeaderRenderer):
 
 
 class CategoryRenderer(HeaderRenderer):
+    def _render_location(self, env={}):
+        if getattr(self.obj, 'location'):
+            url = env.get("application_url", "")
+            loc = utils.join_url(url, self.obj.location)
+            return ['location="%s"' % loc]
+        return []
+
     def render(self, env={}):
         d = {
             "term": self.obj.term,
@@ -55,7 +62,8 @@ class CategoryRenderer(HeaderRenderer):
         for rel in getattr(self.obj, 'related', []):
             d = {"scheme": rel.scheme, "term": rel.term}
             ret.append('rel="%(scheme)s%(term)s"' % d)
-        # FIXME(enolfc): missing location, attributes and actions
+        ret.extend(self._render_location(env))
+        # FIXME(enolfc): missing attributes and actions
         return [('Category', "; ".join(ret))]
 
 
@@ -64,6 +72,10 @@ class KindRenderer(CategoryRenderer):
 
 
 class ActionRenderer(CategoryRenderer):
+    def _render_location(self, env={}):
+        """Do not render location for actions."""
+        return []
+
     def render(self, ass_obj=None, env={}):
         # We have an associated object, render it as a link to that object
         if ass_obj is not None:
