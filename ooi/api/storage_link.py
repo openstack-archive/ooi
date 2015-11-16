@@ -73,10 +73,15 @@ class Controller(base.Controller):
         validator.validate(scheme)
 
         attrs = obj.get("attributes", {})
-        vol_id = attrs.get("occi.core.target")
-        server_id = attrs.get("occi.core.source")
+        _, vol_id = ooi.api.helpers.get_id_with_kind(
+            req,
+            attrs.get("occi.core.target"),
+            storage.StorageResource.kind)
+        _, server_id = ooi.api.helpers.get_id_with_kind(
+            req,
+            attrs.get("occi.core.source"),
+            compute.ComputeResource.kind)
         device = attrs.get("occi.storagelink.deviceid", None)
-
         attachment = self.os_helper.create_server_volumes_link(req,
                                                                server_id,
                                                                vol_id,

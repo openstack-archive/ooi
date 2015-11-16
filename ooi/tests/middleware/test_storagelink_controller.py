@@ -134,7 +134,11 @@ class TestStorageLinkController(test_middleware.TestMiddleware):
         tenant = fakes.tenants["foo"]
 
         server_id = fakes.servers[tenant["id"]][0]["id"]
+        server_url = utils.join_url(self.application_url + "/",
+                                    "compute/%s" % server_id)
         vol_id = fakes.volumes[tenant["id"]][0]["id"]
+        vol_url = utils.join_url(self.application_url + "/",
+                                 "storage/%s" % vol_id)
 
         app = self.get_app()
         headers = {
@@ -145,7 +149,7 @@ class TestStorageLinkController(test_middleware.TestMiddleware):
             'X-OCCI-Attribute': (
                 'occi.core.source="%s", '
                 'occi.core.target="%s"'
-                ) % (server_id, vol_id)
+                ) % (server_url, vol_url)
         }
         req = self._build_req("/storagelink", tenant["id"], method="POST",
                               headers=headers)
@@ -163,7 +167,11 @@ class TestStorageLinkController(test_middleware.TestMiddleware):
         tenant = fakes.tenants["foo"]
 
         server_id = fakes.servers[tenant["id"]][0]["id"]
+        server_url = utils.join_url(self.application_url + "/",
+                                    "compute/%s" % server_id)
         vol_id = fakes.volumes[tenant["id"]][0]["id"]
+        vol_url = utils.join_url(self.application_url + "/",
+                                 "storage/%s" % vol_id)
 
         app = self.get_app()
         headers = {
@@ -175,7 +183,7 @@ class TestStorageLinkController(test_middleware.TestMiddleware):
                 'occi.storagelink.deviceid="/dev/vdc", '
                 'occi.core.source="%s", '
                 'occi.core.target="%s"'
-                ) % (server_id, vol_id)
+                ) % (server_url, vol_url)
         }
         req = self._build_req("/storagelink", tenant["id"], method="POST",
                               headers=headers)
