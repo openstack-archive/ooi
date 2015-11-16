@@ -28,7 +28,8 @@ def build_occi_network(pool_name):
     cats.append('network; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
                 'class="kind"; title="network resource"; '
-                'rel="http://schemas.ogf.org/occi/core#resource"')
+                'rel="http://schemas.ogf.org/occi/core#resource"; '
+                'location="%s/network/"' % fakes.application_url)
     cats.append('ipnetwork; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure/'
                 'network#"; class="mixin"; title="IP Networking Mixin"')

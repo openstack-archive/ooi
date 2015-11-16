@@ -35,7 +35,8 @@ def build_occi_volume(vol):
                 'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
                 'class="kind"; '
                 'title="storage resource"; '
-                'rel="http://schemas.ogf.org/occi/core#resource"')
+                'rel="http://schemas.ogf.org/occi/core#resource"; '
+                'location="%s/storage/"' % fakes.application_url)
     attrs = [
         'occi.core.title="%s"' % name,
         'occi.storage.size=%s' % size,
