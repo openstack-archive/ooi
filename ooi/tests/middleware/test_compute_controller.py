@@ -44,7 +44,8 @@ def build_occi_server(server):
     cats.append('compute; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
                 'class="kind"; title="compute resource"; '
-                'rel="http://schemas.ogf.org/occi/core#resource"'),
+                'rel="http://schemas.ogf.org/occi/core#resource"; '
+                'location="%s/compute/"' % fakes.application_url)
     cats.append('%s; '
                 'scheme="http://schemas.openstack.org/template/os#"; '
                 'class="mixin"; title="%s"; '

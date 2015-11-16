@@ -214,23 +214,27 @@ def fake_query_results():
     cats.append(
         'link; '
         'scheme="http://schemas.ogf.org/occi/core#"; '
-        'class="kind"; title="link"')
+        'class="kind"; title="link"; '
+        'location="%s/link/"' % application_url)
     cats.append(
         'resource; '
         'scheme="http://schemas.ogf.org/occi/core#"; '
         'class="kind"; title="resource"; '
-        'rel="http://schemas.ogf.org/occi/core#entity"')
+        'rel="http://schemas.ogf.org/occi/core#entity"; '
+        'location="%s/resource/"' % application_url)
     cats.append(
         'entity; '
         'scheme="http://schemas.ogf.org/occi/core#"; '
-        'class="kind"; title="entity"')
+        'class="kind"; title="entity"; '
+        'location="%s/entity/"' % application_url)
 
     # OCCI Infrastructure Compute
     cats.append(
         'compute; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
         'class="kind"; title="compute resource"; '
-        'rel="http://schemas.ogf.org/occi/core#resource"')
+        'rel="http://schemas.ogf.org/occi/core#resource"; '
+        'location="%s/compute/"' % application_url)
     cats.append(
         'start; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
@@ -287,7 +291,8 @@ def fake_query_results():
         'network; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
         'class="kind"; title="network resource"; '
-        'rel="http://schemas.ogf.org/occi/core#resource"')
+        'rel="http://schemas.ogf.org/occi/core#resource"; '
+        'location="%s/network/"' % application_url)
     cats.append(
         'ipnetwork; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/network#"; '
@@ -304,7 +309,8 @@ def fake_query_results():
         'networkinterface; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
         'class="kind"; title="network link resource"; '
-        'rel="http://schemas.ogf.org/occi/core#link"')
+        'rel="http://schemas.ogf.org/occi/core#link"; '
+        'location="%s/networklink/"' % application_url)
     cats.append(
         'ipnetworkinterface; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/'
@@ -316,12 +322,14 @@ def fake_query_results():
         'storage; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
         'class="kind"; title="storage resource"; '
-        'rel="http://schemas.ogf.org/occi/core#resource"')
+        'rel="http://schemas.ogf.org/occi/core#resource"; '
+        'location="%s/storage/"' % application_url)
     cats.append(
         'storagelink; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
         'class="kind"; title="storage link resource"; '
-        'rel="http://schemas.ogf.org/occi/core#link"')
+        'rel="http://schemas.ogf.org/occi/core#link"; '
+        'location="%s/storagelink/"' % application_url)
     cats.append(
         'offline; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/storage/action#"; '
