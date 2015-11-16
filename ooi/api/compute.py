@@ -14,6 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import webob.exc
+
 import ooi.api.base
 import ooi.api.helpers
 import ooi.api.network as network_api
@@ -156,7 +158,11 @@ class Controller(ooi.api.base.Controller):
                                                       flavor["disk"])
 
         # get info from image
-        image = self.os_helper.get_image(req, s["image"]["id"])
+        try:
+            image = self.os_helper.get_image(req, s["image"]["id"])
+        except webob.exc.HTTPNotFound:
+            image = {"id": s["image"]["id"], "name": "None (Image Not Found)"}
+
         os_tpl = templates.OpenStackOSTemplate(image["id"],
                                                image["name"])
 
