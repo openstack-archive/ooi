@@ -63,7 +63,7 @@ class Request(webob.Request):
                                               default_match=default_match)
         if not content_type:
             LOG.debug("Unrecognized Accept Content-type provided in request")
-            raise exception.InvalidAccept(content_type=content_type)
+            raise exception.InvalidAccept(content_type=self.accept)
         return content_type
 
     def get_parser(self):
