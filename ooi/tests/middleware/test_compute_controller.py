@@ -40,22 +40,26 @@ def build_occi_server(server):
     else:
         status = "inactive"
 
+    app_url = fakes.application_url
     cats = []
     cats.append('compute; '
                 'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
                 'class="kind"; title="compute resource"; '
                 'rel="http://schemas.ogf.org/occi/core#resource"; '
-                'location="%s/compute/"' % fakes.application_url)
+                'location="%s/compute/"' % app_url)
     cats.append('%s; '
                 'scheme="http://schemas.openstack.org/template/os#"; '
                 'class="mixin"; title="%s"; '
-                'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"'
-                % (image_id, image_id)),
+                'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"; '
+                'location="%s/os_tpl/%s"'
+                % (image_id, image_id, app_url, image_id)),
     cats.append('%s; '
                 'scheme="http://schemas.openstack.org/template/resource#"; '
                 'class="mixin"; title="Flavor: %s"; '
                 'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"'
-                % (flavor_id, flavor_name)),
+                '; '
+                'location="%s/resource_tpl/%s"'
+                % (flavor_id, flavor_name, app_url, flavor_id)),
 
     attrs = [
         'occi.core.title="%s"' % name,

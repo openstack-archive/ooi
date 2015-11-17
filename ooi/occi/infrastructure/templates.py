@@ -18,10 +18,29 @@ from ooi.occi.core import mixin
 from ooi.occi import helpers
 
 
-os_tpl = mixin.Mixin(helpers.build_scheme("infrastructure"),
-                     "os_tpl",
-                     "OCCI OS Template")
+class OCCIOSTemplate(mixin.Mixin):
+    scheme = helpers.build_scheme("infrastructure")
+    _location = "os_tpl"
 
-resource_tpl = mixin.Mixin(helpers.build_scheme("infrastructure"),
-                           "resource_tpl",
-                           "OCCI Resource Template")
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("location", self._location + "/")
+        super(OCCIOSTemplate, self).__init__(self.scheme, *args, **kwargs)
+
+
+os_tpl = OCCIOSTemplate("os_tpl",
+                        "OCCI OS Template")
+
+
+class OCCIResourceTemplate(mixin.Mixin):
+    scheme = helpers.build_scheme("infrastructure")
+    _location = "resource_tpl"
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("location", self._location + "/")
+        super(OCCIResourceTemplate, self).__init__(self.scheme,
+                                                   *args,
+                                                   **kwargs)
+
+
+resource_tpl = OCCIResourceTemplate("resource_tpl",
+                                    "OCCI Resource Template")

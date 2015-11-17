@@ -15,23 +15,23 @@
 # under the License.
 
 from ooi.occi.core import attribute
-from ooi.occi.core import mixin
 from ooi.occi.infrastructure import templates
 from ooi.openstack import helpers
 
 
-class OpenStackOSTemplate(mixin.Mixin):
+class OpenStackOSTemplate(templates.OCCIOSTemplate):
     scheme = helpers.build_scheme("template/os")
 
     def __init__(self, uuid, name):
+        location = "%s/%s" % (self._location, uuid)
         super(OpenStackOSTemplate, self).__init__(
-            OpenStackOSTemplate.scheme,
             uuid,
             name,
-            related=[templates.os_tpl])
+            related=[templates.os_tpl],
+            location=location)
 
 
-class OpenStackResourceTemplate(mixin.Mixin):
+class OpenStackResourceTemplate(templates.OCCIResourceTemplate):
     scheme = helpers.build_scheme("template/resource")
 
     def __init__(self, id, name, cores, memory, disk, ephemeral=0, swap=0):
@@ -46,12 +46,13 @@ class OpenStackResourceTemplate(mixin.Mixin):
 
         attrs = attribute.AttributeCollection({a.name: a for a in attrs})
 
+        location = "%s/%s" % (self._location, id)
         super(OpenStackResourceTemplate, self).__init__(
-            OpenStackResourceTemplate.scheme,
             id,
             "Flavor: %s" % name,
             related=[templates.resource_tpl],
-            attributes=attrs)
+            attributes=attrs,
+            location=location)
 
     @property
     def cores(self):

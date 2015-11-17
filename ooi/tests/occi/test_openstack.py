@@ -31,6 +31,7 @@ class TestOpenStackOSTemplate(base.TestCase):
     def test_os_template(self):
         id = uuid.uuid4().hex
         title = "Frobble Image"
+        location = "%s/%s" % (occi_templates.os_tpl._location, id)
 
         tpl = templates.OpenStackOSTemplate(id,
                                             title)
@@ -38,6 +39,7 @@ class TestOpenStackOSTemplate(base.TestCase):
         self.assertEqual(title, tpl.title)
         self.assertTrue(tpl.scheme.startswith(helpers._PREFIX))
         self.assertIn(occi_templates.os_tpl, tpl.related)
+        self.assertEqual(location, tpl.location)
 
 
 class TestOpenStackResourceTemplate(base.TestCase):
@@ -49,6 +51,7 @@ class TestOpenStackResourceTemplate(base.TestCase):
         disk = 40
         swap = 20
         ephemeral = 50
+        location = "%s/%s" % (occi_templates.resource_tpl._location, id)
 
         tpl = templates.OpenStackResourceTemplate(id,
                                                   name,
@@ -68,6 +71,7 @@ class TestOpenStackResourceTemplate(base.TestCase):
         self.assertEqual(swap, tpl.swap)
         self.assertEqual(ephemeral, tpl.ephemeral)
         self.assertEqual(name, tpl.name)
+        self.assertEqual(location, tpl.location)
 
 
 class TestHelpers(base.TestCase):
