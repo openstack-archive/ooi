@@ -256,35 +256,41 @@ def fake_query_results():
     cats.append(
         'os_tpl; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="mixin"; title="OCCI OS Template"')
+        'class="mixin"; title="OCCI OS Template"; '
+        'location="%s/os_tpl/"' % application_url)
     cats.append(
         'resource_tpl; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
-        'class="mixin"; title="OCCI Resource Template"')
+        'class="mixin"; title="OCCI Resource Template"; '
+        'location="%s/resource_tpl/"' % application_url)
 
     # OpenStack Images
     cats.append(
         'bar; '
         'scheme="http://schemas.openstack.org/template/os#"; '
         'class="mixin"; title="bar"; '
-        'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"')
+        'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"; '
+        'location="%s/os_tpl/bar"' % application_url)
     cats.append(
         'foo; '
         'scheme="http://schemas.openstack.org/template/os#"; '
         'class="mixin"; title="foo"; '
-        'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"')
+        'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"; '
+        'location="%s/os_tpl/foo"' % application_url)
 
     # OpenStack Flavors
     cats.append(
         '1; '
         'scheme="http://schemas.openstack.org/template/resource#"; '
         'class="mixin"; title="Flavor: foo"; '
-        'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"')
+        'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"; '
+        'location="%s/resource_tpl/1"' % application_url)
     cats.append(
         '2; '
         'scheme="http://schemas.openstack.org/template/resource#"; '
         'class="mixin"; title="Flavor: bar"; '
-        'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"')
+        'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"; '
+        'location="%s/resource_tpl/2"' % application_url)
 
     # OCCI Infrastructure Network
     cats.append(
