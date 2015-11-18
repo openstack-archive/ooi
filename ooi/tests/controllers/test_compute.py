@@ -19,6 +19,7 @@ import uuid
 import mock
 import six
 import webob
+import webob.exc
 
 from ooi.api import compute
 from ooi.api import helpers
@@ -145,6 +146,33 @@ class TestComputeController(base.TestController):
                 m_server.return_value = server
                 m_flavor.return_value = flavor
                 m_image.return_value = image
+                m_vol.return_value = volumes
+
+                ret = self.controller.show(None, server["id"])
+                # FIXME(aloga): Should we test the resource?
+                self.assertIsInstance(ret[0], occi_compute.ComputeResource)
+                m_server.assert_called_with(None, server["id"])
+                m_flavor.assert_called_with(None, flavor["id"])
+                m_image.assert_called_with(None, image["id"])
+                m_vol.assert_called_with(None, server["id"])
+
+    @mock.patch.object(helpers.OpenStackHelper, "get_server_volumes_link")
+    @mock.patch.object(helpers.OpenStackHelper, "get_image")
+    @mock.patch.object(helpers.OpenStackHelper, "get_flavor")
+    @mock.patch.object(helpers.OpenStackHelper, "get_server")
+    def test_show_no_image(self, m_server, m_flavor, m_image, m_vol):
+        for tenant in fakes.tenants.values():
+            servers = fakes.servers[tenant["id"]]
+            for server in servers:
+                flavor = fakes.flavors[server["flavor"]["id"]]
+                image = fakes.images[server["image"]["id"]]
+                volumes = fakes.volumes.get(tenant["id"], [])
+                if volumes:
+                    volumes = volumes[0]["attachments"]
+
+                m_server.return_value = server
+                m_flavor.return_value = flavor
+                m_image.side_effect = webob.exc.HTTPNotFound()
                 m_vol.return_value = volumes
 
                 ret = self.controller.show(None, server["id"])
