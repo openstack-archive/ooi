@@ -242,30 +242,6 @@ class TestComputeController(base.TestController):
                                     user_data="bazonk",
                                     key_name=None)
 
-    @mock.patch("ooi.occi.validator.Validator")
-    def test_create_server_with_sshkeys_invalid(self, m_validator):
-        tenant = fakes.tenants["foo"]
-        req = self._build_req(tenant["id"])
-        obj = {
-            "attributes": {
-                "occi.core.title": "foo instance",
-                "org.openstack.credentials.publickey.name": "",
-                "org.openstack.credentials.publickey.data": "wtfoodata"
-            },
-            "schemes": {
-                templates.OpenStackOSTemplate.scheme: ["foo"],
-                templates.OpenStackResourceTemplate.scheme: ["bar"],
-                contextualization.public_key.scheme: None,
-            },
-        }
-
-        req.get_parser = mock.MagicMock()
-        req.get_parser.return_value.return_value.parse.return_value = obj
-        self.assertRaises(exception.MissingKeypairName,
-                          self.controller.create,
-                          req,
-                          None)
-
     @mock.patch.object(helpers.OpenStackHelper, "keypair_create")
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
     @mock.patch("ooi.occi.validator.Validator")
@@ -298,3 +274,37 @@ class TestComputeController(base.TestController):
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
                                     key_name="wtfoo")
+
+    @mock.patch.object(helpers.OpenStackHelper, "keypair_delete")
+    @mock.patch.object(helpers.OpenStackHelper, "keypair_create")
+    @mock.patch.object(helpers.OpenStackHelper, "create_server")
+    @mock.patch("ooi.occi.validator.Validator")
+    def test_create_server_with_no_sshkey_name(self, m_validator, m_server,
+                                               m_keypair, m_keypair_delete):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        obj = {
+            "attributes": {
+                "occi.core.title": "foo instance",
+                "org.openstack.credentials.publickey.data": "wtfoodata"
+            },
+            "schemes": {
+                templates.OpenStackOSTemplate.scheme: ["foo"],
+                templates.OpenStackResourceTemplate.scheme: ["bar"],
+                contextualization.public_key.scheme: None,
+            },
+        }
+        req.get_parser = mock.MagicMock()
+        req.get_parser.return_value.return_value.parse.return_value = obj
+        m_validator.validate.return_value = True
+        server = {"id": uuid.uuid4().hex}
+        m_server.return_value = server
+        m_keypair.return_value = None
+        ret = self.controller.create(req, None)  # noqa
+        self.assertIsInstance(ret, collection.Collection)
+        m_keypair.assert_called_with(mock.ANY, mock.ANY,
+                                     public_key="wtfoodata")
+        m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
+                                    user_data=None,
+                                    key_name=mock.ANY)
+        m_keypair_delete.assert_called_with(mock.ANY, mock.ANY)

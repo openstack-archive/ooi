@@ -14,6 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import uuid
+
 import webob.exc
 
 import ooi.api.base
@@ -122,6 +124,7 @@ class Controller(ooi.api.base.Controller):
         image = obj["schemes"][templates.OpenStackOSTemplate.scheme][0]
         flavor = obj["schemes"][templates.OpenStackResourceTemplate.scheme][0]
         user_data, key_name, key_data = None, None, None
+        create_key, create_key_tmp = False, False
         if contextualization.user_data.scheme in obj["schemes"]:
             user_data = attrs.get("org.openstack.compute.user_data")
         if contextualization.public_key.scheme in obj["schemes"]:
@@ -129,12 +132,19 @@ class Controller(ooi.api.base.Controller):
             key_data = attrs.get("org.openstack.credentials.publickey.data")
 
             if key_name and key_data:
+                create_key = True
+            elif not key_name and key_data:
+                # NOTE(orviz) To be occi-os compliant, not
+                # raise exception.MissingKeypairName
+                key_name = uuid.uuid4().hex
+                create_key = True
+                create_key_tmp = True
+
+            if create_key:
                 # add keypair: if key_name already exists, a 409 HTTP code
                 # will be returned by OpenStack
                 self.os_helper.keypair_create(req, key_name,
                                               public_key=key_data)
-            elif not key_name and key_data:
-                raise exception.MissingKeypairName
 
         server = self.os_helper.create_server(req, name, image, flavor,
                                               user_data=user_data,
@@ -142,6 +152,9 @@ class Controller(ooi.api.base.Controller):
         # The returned JSON does not contain the server name
         server["name"] = name
         occi_compute_resources = self._get_compute_resources([server])
+
+        if create_key_tmp:
+            self.os_helper.keypair_delete(req, key_name)
 
         return collection.Collection(resources=occi_compute_resources)
 
