@@ -582,3 +582,19 @@ class OpenStackHelper(BaseHelper):
         req = self._get_keypair_create_req(req, name, public_key=public_key)
         response = req.get_response(self.app)
         return self.get_from_response(response, "keypair", {})
+
+    def _get_keypair_delete_req(self, req, name):
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/os-keypairs/%s" % (tenant_id, name)
+        return self._get_req(req, path=path, method="DELETE")
+
+    def keypair_delete(self, req, name):
+        """Delete a keypair.
+
+        :param req: the incoming request
+        :param name: keypair name to delete
+        """
+        req = self._get_keypair_delete_req(req, name)
+        response = req.get_response(self.app)
+        if response.status_int not in [204]:
+            raise exception_from_response(response)
