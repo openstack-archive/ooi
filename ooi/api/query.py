@@ -26,6 +26,7 @@ from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
 from ooi.occi.infrastructure import templates as infra_templates
 from ooi.openstack import contextualization
+from ooi.openstack import network as os_network
 from ooi.openstack import templates
 
 
@@ -58,6 +59,14 @@ class Controller(base.Controller):
                 tpl = templates.OpenStackOSTemplate(i["id"], i["name"])
                 occi_os_templates.append(tpl)
         return occi_os_templates
+
+    def _ip_pools(self, req):
+        pools = self.os_helper.get_floating_ip_pools(req)
+        occi_ip_pools = []
+        if pools:
+            for p in pools:
+                occi_ip_pools.append(os_network.OSFloatingIPPool(p["name"]))
+        return occi_ip_pools
 
     def index(self, req):
         l = []
@@ -93,4 +102,7 @@ class Controller(base.Controller):
         # OpenStack Contextualization
         l.append(contextualization.user_data)
         l.append(contextualization.public_key)
+
+        # OpenStack Floating IP Pools
+        l.extend(self._ip_pools(req))
         return l

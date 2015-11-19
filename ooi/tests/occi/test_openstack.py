@@ -119,7 +119,7 @@ class TestOSNetworkInterface(base.TestCase):
                                     summary="This is a summary",
                                     id=uuid.uuid4().hex)
         i = os_network.OSNetworkInterface(c, n, "00:01:02:03:04:05",
-                                          "127.0.0.1")
+                                          "127.0.0.1", pool="foo")
         self.assertEqual('_'.join([c.id, "127.0.0.1"]), i.id)
         self.assertEqual(i.address, "127.0.0.1")
         self.assertEqual(i.interface, "eth0")
@@ -127,7 +127,17 @@ class TestOSNetworkInterface(base.TestCase):
         self.assertEqual(i.state, "active")
         self.assertIsNone(i.gateway)
         self.assertEqual(network_link.NetworkInterface.kind, i.kind)
+        self.assertEqual(2, len(i.mixins))
         self.assertIn(network_link.ip_network_interface, i.mixins)
+        # FIXME(enolfc): this won't work without proper object comparison
+        # self.assertIn(p, i.mixins)
+        has_pool = False
+        for m in i.mixins:
+            if isinstance(m, os_network.OSFloatingIPPool):
+                self.assertEqual(m.term, "foo")
+                has_pool = True
+                break
+        self.assertTrue(has_pool)
         # contains kind and mixins attributes
         for att in network_link.NetworkInterface.kind.attributes:
             self.assertIn(att, i.attributes)
