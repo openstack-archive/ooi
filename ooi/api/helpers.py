@@ -21,9 +21,9 @@ import os
 import six.moves.urllib.parse as urlparse
 
 from ooi import exception
+from ooi.log import log as logging
 from ooi import utils
 
-from oslo_log import log as logging
 import webob.exc
 
 LOG = logging.getLogger(__name__)
@@ -161,7 +161,10 @@ class OpenStackHelper(BaseHelper):
 
     @staticmethod
     def tenant_from_req(req):
-        return req.environ["keystone.token_auth"].user.project_id
+        try:
+            return req.environ["keystone.token_auth"].user.project_id
+        except AttributeError:
+            return req.environ["keystone.token_info"]["token"]["project"]["id"]
 
     def _get_index_req(self, req):
         tenant_id = self.tenant_from_req(req)

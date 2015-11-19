@@ -14,17 +14,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import abc
 
-import six
-
-from ooi.log import log as logging
-
-LOG = logging.getLogger(__name__)
-
-
-@six.add_metaclass(abc.ABCMeta)
-class Controller(object):
-    def __init__(self, app, openstack_version):
-        self.app = app
-        self.openstack_version = openstack_version
+try:
+    from oslo_log import log
+except ImportError:
+    from nova.openstack.common import log  # noqa

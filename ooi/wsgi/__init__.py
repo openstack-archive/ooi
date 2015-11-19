@@ -16,7 +16,6 @@
 
 import re
 
-from oslo_log import log as logging
 import routes
 import routes.middleware
 import webob.dec
@@ -28,6 +27,7 @@ from ooi.api import query
 import ooi.api.storage
 import ooi.api.storage_link
 from ooi import exception
+from ooi.log import log as logging
 from ooi import utils
 from ooi import version
 from ooi.wsgi import parsers
