@@ -495,15 +495,19 @@ class FakeApp(object):
         return create_fake_json_resp(v, 202)
 
     def _do_allocate_ip(self, req):
-        body = req.json_body.copy()
-        pool = body.popitem()
         tenant = req.path_info.split('/')[1]
-        for p in pools[tenant]:
-            if p["name"] == pool[1]:
-                break
-        else:
-            exc = webob.exc.HTTPNotFound()
-            return FakeOpenStackFault(exc)
+        try:
+            body = req.json_body.copy()
+            pool = body.popitem()
+            for p in pools[tenant]:
+                if p["name"] == pool[1]:
+                    break
+            else:
+                exc = webob.exc.HTTPNotFound()
+                return FakeOpenStackFault(exc)
+        except ValueError:
+            # no body, just don't check pool
+            pass
         ip = {"floating_ip": {"ip": allocated_ip, "id": 1}}
         return create_fake_json_resp(ip, 202)
 

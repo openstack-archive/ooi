@@ -29,6 +29,7 @@ from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
 from ooi.occi.infrastructure import templates as infra_templates
 from ooi.openstack import contextualization
+from ooi.openstack import network as os_network
 from ooi.openstack import templates
 from ooi.tests import base
 from ooi.tests import fakes
@@ -50,7 +51,8 @@ class TestQueryController(base.TestController):
 
     @mock.patch.object(query.Controller, "_os_tpls")
     @mock.patch.object(query.Controller, "_resource_tpls")
-    def test_index(self, m_res, m_os):
+    @mock.patch.object(query.Controller, "_ip_pools")
+    def test_index(self, m_res, m_os, m_pools):
         tenant = fakes.tenants["foo"]
         req = self._build_req(tenant["id"])
 
@@ -62,10 +64,13 @@ class TestQueryController(base.TestController):
         i = fakes.images["foo"]
         os_tpl = templates.OpenStackOSTemplate(i["id"], i["name"])
         m_os.return_value = [os_tpl]
+        ip_pool = os_network.OSFloatingIPPool("foo")
+        m_pools.return_value = [ip_pool]
 
         expected = [
             res_tpl,
             os_tpl,
+            ip_pool,
             # OCCI Core Kinds:
             entity.Entity.kind,
             resource.Resource.kind,
@@ -150,5 +155,25 @@ class TestQueryController(base.TestController):
     def test_get_os_tpls_empty(self, m_get_images):
         m_get_images.return_value = []
         ret = self.controller._os_tpls(None)
+        expected = []
+        self.assertEqual(expected, ret)
+
+    @mock.patch.object(helpers.OpenStackHelper, "get_floating_ip_pools")
+    def test_get_ip_pools(self, m_get_pools):
+        for tenant in fakes.tenants.values():
+            pools = fakes.pools[tenant["id"]]
+            m_get_pools.return_value = pools
+            expected = [os_network.OSFloatingIPPool(p['id']) for p in pools]
+            ret = self.controller._ip_pools(None)
+            # FIXME(aloga): this won't work til we create the correct equality
+            # functions
+            # self.assertItemsEqual(expected, ret)
+            for i in range(len(expected)):
+                self.assertEqual(expected[i].title, ret[i].title)
+
+    @mock.patch.object(helpers.OpenStackHelper, "get_floating_ip_pools")
+    def test_get_ip_pools_empty(self, m_get_pools):
+        m_get_pools.return_value = []
+        ret = self.controller._ip_pools(None)
         expected = []
         self.assertEqual(expected, ret)
