@@ -81,7 +81,8 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
                                         "compute/%s" % ip["instance_id"])
                 target = utils.join_url(self.application_url + "/",
                                         "network/floating/%s" % ip["pool"])
-                self.assertResultIncludesLink(link_id, source, target, resp)
+                self.assertResultIncludesLinkAttr(link_id, source, target,
+                                                  resp)
                 self.assertEqual(200, resp.status_code)
 
     def test_show_invalid_id(self):

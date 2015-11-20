@@ -99,7 +99,8 @@ class TestStorageLinkController(test_middleware.TestMiddleware):
                                         "compute/%s" % a["serverId"])
                 target = utils.join_url(self.application_url + "/",
                                         "storage/%s" % a["volumeId"])
-                self.assertResultIncludesLink(link_id, source, target, resp)
+                self.assertResultIncludesLinkAttr(link_id, source, target,
+                                                  resp)
                 self.assertEqual(200, resp.status_code)
 
     def test_show_invalid_id(self):
