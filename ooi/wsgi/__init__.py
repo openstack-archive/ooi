@@ -431,7 +431,7 @@ class ResourceExceptionHandler(object):
             LOG.info("HTTP exception thrown: %s", ex_value)
             raise Fault(ex_value)
         else:
-            LOG.warning("Unexpected exception: %s" % ex_value)
+            LOG.exception("Unexpected exception: %s" % ex_value)
             raise Fault(webob.exc.HTTPInternalServerError())
 
         # We didn't handle the exception
