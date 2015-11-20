@@ -126,8 +126,23 @@ class AttributeRenderer(HeaderRenderer):
         return [('X-OCCI-Attribute', self.render_attr(env))]
 
 
-class LinkRenderer(HeaderRenderer):
+class EntityRenderer(HeaderRenderer):
     def render(self, env={}):
+        ret = []
+        ret.extend(KindRenderer(self.obj.kind).render(env=env))
+        for m in self.obj.mixins:
+            ret.extend(MixinRenderer(m).render(env=env))
+        for a in self.obj.attributes:
+            # FIXME(aloga): I dont like this test here
+            if self.obj.attributes[a].value is None:
+                continue
+            r = AttributeRenderer(self.obj.attributes[a])
+            ret.extend(r.render(env=env))
+        return ret
+
+
+class LinkRenderer(EntityRenderer):
+    def render_link(self, env={}):
         ret = []
         url = env.get("application_url", "")
         url = utils.join_url(url, self.obj.location)
@@ -145,23 +160,14 @@ class LinkRenderer(HeaderRenderer):
         return [('Link', '; '.join(ret))]
 
 
-class ResourceRenderer(HeaderRenderer):
+class ResourceRenderer(EntityRenderer):
     def render(self, env={}):
-        ret = []
-        ret.extend(KindRenderer(self.obj.kind).render(env=env))
-        for m in self.obj.mixins:
-            ret.extend(MixinRenderer(m).render(env=env))
-        for a in self.obj.attributes:
-            # FIXME(aloga): I dont like this test here
-            if self.obj.attributes[a].value is None:
-                continue
-            r = AttributeRenderer(self.obj.attributes[a])
-            ret.extend(r.render(env=env))
+        ret = super(ResourceRenderer, self).render(env)
         for a in self.obj.actions:
             r = ActionRenderer(a)
             ret.extend(r.render(ass_obj=self.obj, env=env))
         for l in self.obj.links:
-            ret.extend(LinkRenderer(l).render(env=env))
+            ret.extend(LinkRenderer(l).render_link(env=env))
         return ret
 
 
