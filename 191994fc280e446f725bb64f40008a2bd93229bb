@@ -1,0 +1,8 @@
+Verified+2: Jenkins
+Code-Review+2: Alvaro Lopez Garcia <aloga@ifca.unican.es>
+Workflow+1: Alvaro Lopez Garcia <aloga@ifca.unican.es>
+Submitted-by: Jenkins
+Submitted-at: Mon, 23 Nov 2015 09:24:59 +0000
+Reviewed-on: https://review.openstack.org/247455
+Project: openstack/ooi
+Branch: refs/heads/master
