@@ -121,6 +121,25 @@ class TextParser(BaseParser):
             pass
         return attrs
 
+    def parse_links(self, headers):
+        links = {}
+        try:
+            header_links = headers["Link"]
+        except KeyError:
+            return links
+        for link in _quoted_split(header_links):
+            ll = _quoted_split(link, "; ")
+            # remove the "<" and ">"
+            if ll[0][1] != "<" and ll[0][-1] != ">":
+                raise exception.OCCIInvalidSchema("Unable to parse link")
+            link_dest = ll[0][1:-1]
+            try:
+                d = dict([_split_unquote(i) for i in ll[1:]])
+            except ValueError:
+                raise exception.OCCIInvalidSchema("Unable to parse link")
+            links[link_dest] = d
+        return links
+
     def _convert_to_headers(self):
         if not self.body:
             raise exception.OCCIInvalidSchema("No schema found")
@@ -130,18 +149,19 @@ class TextParser(BaseParser):
             hdrs[hdr].append(content)
         return {hdr: ','.join(hdrs[hdr]) for hdr in hdrs}
 
-    def parse(self):
-        body_headers = self._convert_to_headers()
-        obj = self.parse_categories(body_headers)
-        obj['attributes'] = self.parse_attributes(body_headers)
+    def _parse(self, headers):
+        obj = self.parse_categories(headers)
+        obj['attributes'] = self.parse_attributes(headers)
+        obj['links'] = self.parse_links(headers)
         return obj
+
+    def parse(self):
+        return self._parse(self._convert_to_headers())
 
 
 class HeaderParser(TextParser):
     def parse(self):
-        obj = self.parse_categories(self.headers)
-        obj['attributes'] = self.parse_attributes(self.headers)
-        return obj
+        return self._parse(self.headers)
 
 
 _PARSERS_MAP = {
