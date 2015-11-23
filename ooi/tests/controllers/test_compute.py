@@ -209,7 +209,8 @@ class TestComputeController(base.TestController):
         self.assertIsInstance(ret, collection.Collection)
         m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
-                                    key_name=None)
+                                    key_name=None,
+                                    block_device_mapping_v2=[])
 
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
     @mock.patch("ooi.occi.validator.Validator")
@@ -240,7 +241,8 @@ class TestComputeController(base.TestController):
         self.assertIsInstance(ret, collection.Collection)
         m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data="bazonk",
-                                    key_name=None)
+                                    key_name=None,
+                                    block_device_mapping_v2=[])
 
     @mock.patch.object(helpers.OpenStackHelper, "keypair_create")
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
@@ -273,7 +275,8 @@ class TestComputeController(base.TestController):
                                      public_key="wtfoodata")
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
-                                    key_name="wtfoo")
+                                    key_name="wtfoo",
+                                    block_device_mapping_v2=[])
 
     @mock.patch.object(helpers.OpenStackHelper, "keypair_delete")
     @mock.patch.object(helpers.OpenStackHelper, "keypair_create")
@@ -306,5 +309,6 @@ class TestComputeController(base.TestController):
                                      public_key="wtfoodata")
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
-                                    key_name=mock.ANY)
+                                    key_name=mock.ANY,
+                                    block_device_mapping_v2=[])
         m_keypair_delete.assert_called_with(mock.ANY, mock.ANY)
