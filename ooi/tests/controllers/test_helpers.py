@@ -1085,6 +1085,15 @@ class TestOpenStackHelperReqs(TestBaseHelper):
         os_req = self.helper._get_floating_ip_allocate_req(req, pool)
         self.assertExpectedReq("POST", path, body, os_req)
 
+    def test_get_os_floating_ip_allocate_no_pool(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        pool = None
+        body = {"pool": pool}
+        path = "/%s/os-floating-ips" % tenant["id"]
+        os_req = self.helper._get_floating_ip_allocate_req(req, pool)
+        self.assertExpectedReq("POST", path, body, os_req)
+
     def test_get_os_floating_ip_release(self):
         tenant = fakes.tenants["foo"]
         req = self._build_req(tenant["id"])

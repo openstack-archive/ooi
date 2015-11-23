@@ -15,7 +15,16 @@
 # under the License.
 
 from ooi.occi.core import attribute as attr
+from ooi.occi.core import mixin
 from ooi.occi.infrastructure import network_link
+from ooi.openstack import helpers
+
+
+class OSFloatingIPPool(mixin.Mixin):
+    scheme = helpers.build_scheme("network/floatingippool")
+
+    def __init__(self, pool=None):
+        super(OSFloatingIPPool, self).__init__(self.scheme, pool, pool)
 
 
 class OSNetworkInterface(network_link.NetworkInterface):
@@ -23,9 +32,11 @@ class OSNetworkInterface(network_link.NetworkInterface):
                                            "occi.networkinterface.gateway",
                                            "occi.networkinterface.allocation"])
 
-    def __init__(self, source, target, mac, address, ip_id=None):
+    def __init__(self, source, target, mac, address, ip_id=None, pool=None):
         link_id = '_'.join([source.id, address])
         mixins = [network_link.ip_network_interface]
+        if pool:
+            mixins.append(OSFloatingIPPool(pool))
         super(OSNetworkInterface, self).__init__(mixins, source, target,
                                                  link_id, "eth0", mac,
                                                  "active")

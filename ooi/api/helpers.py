@@ -488,15 +488,14 @@ class OpenStackHelper(BaseHelper):
         # We only get one volume
         return self.get_from_response(response, "volume", {})
 
-    def _get_floating_ip_allocate_req(self, req, pool):
+    def _get_floating_ip_allocate_req(self, req, pool=None):
         tenant_id = self.tenant_from_req(req)
         path = "/%s/os-floating-ips" % tenant_id
         body = {"pool": pool}
-        return self._get_req(req, path=path,
-                             body=json.dumps(body),
+        return self._get_req(req, path=path, body=json.dumps(body),
                              method="POST")
 
-    def allocate_floating_ip(self, req, pool):
+    def allocate_floating_ip(self, req, pool=None):
         """Allocate a floating ip from a pool.
 
         :param req: the incoming request
