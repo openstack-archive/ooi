@@ -69,6 +69,24 @@ class Validator(object):
                     break
         return unmatched
 
+    def _validate_optional_links(self, expected, links):
+        print "*" * 80
+        print expected
+        print links
+        print "*" * 80
+        for uri, l in links.items():
+            try:
+                rel = l['rel']
+            except KeyError:
+                raise exception.OCCIMissingType(type_id=uri)
+            for ex in expected:
+                if rel == ex.type_id:
+                    break
+            else:
+                expected_types = ', '.join([e.type_id for e in expected])
+                raise exception.OCCISchemaMismatch(expected=expected_types,
+                                                   found=l['rel'])
+
     def validate(self, schema):
         if "category" in schema:
             self._validate_category(schema["category"])
@@ -81,4 +99,6 @@ class Validator(object):
         if unexpected:
             raise exception.OCCISchemaMismatch(expected="",
                                                found=unexpected)
+        self._validate_optional_links(
+            schema.get("optional_links", []), self.parsed_obj["links"])
         return True

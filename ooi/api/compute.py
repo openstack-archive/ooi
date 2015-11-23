@@ -113,7 +113,11 @@ class Controller(ooi.api.base.Controller):
             "optional_mixins": [
                 contextualization.user_data,
                 contextualization.public_key,
+            ],
+            "optional_links": [
+                storage.StorageResource.kind,
             ]
+
         }
         obj = parser.parse()
         validator = occi_validator.Validator(obj)
@@ -146,9 +150,41 @@ class Controller(ooi.api.base.Controller):
                 self.os_helper.keypair_create(req, key_name,
                                               public_key=key_data)
 
-        server = self.os_helper.create_server(req, name, image, flavor,
-                                              user_data=user_data,
-                                              key_name=key_name)
+        block_device_mapping_v2 = []
+        for l in obj["links"].values():
+            if l["rel"] == storage.StorageResource.kind.type_id:
+                _, vol_id = ooi.api.helpers.get_id_with_kind(
+                    req,
+                    l.get("occi.core.target"),
+                    storage.StorageResource.kind)
+                mapping = {
+                    "source_type": "volume",
+                    "uuid": vol_id,
+                    "delete_on_termination": False,
+                }
+                try:
+                    mapping['device_name'] = l['occi.storagelink.deviceid']
+                except KeyError:
+                    pass
+                block_device_mapping_v2.append(mapping)
+        # this needs to be there if we have a mapping
+        if block_device_mapping_v2:
+            block_device_mapping_v2.insert(0, {
+                "source_type": "image",
+                "destination_type": "local",
+                "boot_index": 0,
+                "delete_on_termination": True,
+                "uuid": image,
+            })
+
+        server = self.os_helper.create_server(
+            req,
+            name,
+            image,
+            flavor,
+            user_data=user_data,
+            key_name=key_name,
+            block_device_mapping_v2=block_device_mapping_v2)
         # The returned JSON does not contain the server name
         server["name"] = name
         occi_compute_resources = self._get_compute_resources([server])
