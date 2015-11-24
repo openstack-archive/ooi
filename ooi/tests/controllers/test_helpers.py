@@ -829,9 +829,7 @@ class TestOpenStackHelper(TestBaseHelper):
 
 class TestOpenStackHelperReqs(TestBaseHelper):
     def _build_req(self, tenant_id, **kwargs):
-        m = mock.MagicMock()
-        m.user.project_id = tenant_id
-        environ = {"keystone.token_auth": m}
+        environ = {"HTTP_X_PROJECT_ID": tenant_id}
         return webob.Request.blank("/whatever", environ=environ, **kwargs)
 
     def test_os_index_req(self):
