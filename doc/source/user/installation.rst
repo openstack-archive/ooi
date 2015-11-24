@@ -1,11 +1,17 @@
 Installation
 ============
 
-Get the latest source code::
+Installation via packages
+*************************
 
-    $ git clone https://github.com/openstack/ooi.git
+TBD
 
-Install it::
+Instalation from pip
+********************
 
-    $ cd ooi
-    $ pip install .
+ooi can be installed via pip from OpenStack Kilo onwards. If you are running
+Juno, the code will still work, but there are some dependencies that may be in
+conflict with the existing Python modules in your system, as long as missing
+dependencies (``oslo.log`` is not available in Juno)::
+
+    $ pip install ooi
