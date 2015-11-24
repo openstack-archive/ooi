@@ -3,13 +3,8 @@ Kilo (2015.1)
 
 .. code:: ini
 
-    [composite:osapi_compute]
+    [composite:ooi]
     use = call:nova.api.openstack.urlmap:urlmap_factory
-    /: oscomputeversions
-    /v1.1: openstack_compute_api_v2
-    /v2: openstack_compute_api_v2
-    /v2.1: openstack_compute_api_v21
-    /v3: openstack_compute_api_v3
     /occi1.1: occi_api_11
 
     [filter:occi]
