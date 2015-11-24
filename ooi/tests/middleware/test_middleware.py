@@ -14,7 +14,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import mock
 import webob
 import webob.dec
 import webob.exc
@@ -99,9 +98,7 @@ class TestMiddleware(base.TestCase):
         if self.content_type is not None:
             kwargs["content_type"] = self.content_type
 
-        m = mock.MagicMock()
-        m.user.project_id = tenant_id
-        environ = {"keystone.token_auth": m}
+        environ = {"HTTP_X_PROJECT_ID": tenant_id}
 
         kwargs["base_url"] = self.application_url
 

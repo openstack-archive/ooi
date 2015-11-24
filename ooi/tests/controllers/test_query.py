@@ -15,7 +15,6 @@
 # under the License.
 
 import mock
-import webob
 
 from ooi.api import helpers
 from ooi.api import query
@@ -39,15 +38,6 @@ class TestQueryController(base.TestController):
     def setUp(self):
         super(TestQueryController, self).setUp()
         self.controller = query.Controller(mock.MagicMock(), None)
-
-    def _build_req(self, tenant_id, path="/whatever", **kwargs):
-        m = mock.MagicMock()
-        m.user.project_id = tenant_id
-        environ = {"keystone.token_auth": m}
-
-        kwargs["base_url"] = self.application_url
-
-        return webob.Request.blank(path, environ=environ, **kwargs)
 
     @mock.patch.object(query.Controller, "_os_tpls")
     @mock.patch.object(query.Controller, "_resource_tpls")

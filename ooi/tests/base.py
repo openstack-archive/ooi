@@ -19,6 +19,7 @@ import os
 
 import fixtures
 import testtools
+import webob
 
 from ooi.tests import fakes
 
@@ -62,3 +63,9 @@ class TestController(TestCase):
     def setUp(self):
         super(TestController, self).setUp()
         self.application_url = fakes.application_url
+
+    def _build_req(self, tenant_id, path="/whatever", **kwargs):
+        environ = {"HTTP_X_PROJECT_ID": tenant_id}
+        kwargs["base_url"] = self.application_url
+
+        return webob.Request.blank(path, environ=environ, **kwargs)

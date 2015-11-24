@@ -81,6 +81,11 @@ class InvalidAction(Invalid):
     msg_fmt = "Invalid action %(action)s provided."
 
 
+class Forbidden(Invalid):
+    msg_fmt = "Forbidden: %(reason)s"
+    code = 403
+
+
 class InvalidContentType(Invalid):
     msg_fmt = "Invalid Content-type %(content_type)s."
     code = 406

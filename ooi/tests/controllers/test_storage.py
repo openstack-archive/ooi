@@ -17,7 +17,6 @@
 import uuid
 
 import mock
-import webob
 
 from ooi.api import helpers
 from ooi.api import storage as storage_api
@@ -32,15 +31,6 @@ class TestStorageController(base.TestController):
     def setUp(self):
         super(TestStorageController, self).setUp()
         self.controller = storage_api.Controller(mock.MagicMock(), None)
-
-    def _build_req(self, tenant_id, path="/whatever", **kwargs):
-        m = mock.MagicMock()
-        m.user.project_id = tenant_id
-        environ = {"keystone.token_auth": m}
-
-        kwargs["base_url"] = self.application_url
-
-        return webob.Request.blank(path, environ=environ, **kwargs)
 
     @mock.patch.object(helpers.OpenStackHelper, "get_volumes")
     def test_index(self, m_volumes):

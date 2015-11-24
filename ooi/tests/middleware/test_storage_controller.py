@@ -16,8 +16,6 @@
 
 import uuid
 
-import mock
-
 from ooi.tests import fakes
 from ooi.tests.middleware import test_middleware
 from ooi import utils
@@ -85,9 +83,7 @@ class TestStorageController(test_middleware.TestMiddleware):
         for url in ("/storage/", "/storage"):
             req = self._build_req(url, tenant["id"], method="GET")
 
-            m = mock.MagicMock()
-            m.user.project_id = tenant["id"]
-            req.environ["keystone.token_auth"] = m
+            req.environ["HTTP_X_PROJECT_ID"] = tenant["id"]
 
             resp = req.get_response(app)
 
