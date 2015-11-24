@@ -15,7 +15,10 @@
 # under the License.
 
 
-from oslo_config import cfg
+try:
+    from oslo_config import cfg
+except ImportError:
+    from oslo.config import cfg  # noqa
 
 
 def parse_args(argv, default_config_files=None):
