@@ -43,8 +43,6 @@ occi_opts = [
                       'will listen.'),
     config.cfg.IntOpt('ooi_listen_port',
                       default=8787,
-                      min=1,
-                      max=65535,
                       help='The port on which the OCCI (ooi) API '
                       'will listen.'),
     config.cfg.IntOpt('ooi_workers',
