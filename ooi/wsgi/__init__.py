@@ -26,6 +26,7 @@ import ooi.api.network_link
 from ooi.api import query
 import ooi.api.storage
 import ooi.api.storage_link
+from ooi import config
 from ooi import exception
 from ooi.log import log as logging
 from ooi import utils
@@ -34,6 +35,15 @@ from ooi.wsgi import parsers
 from ooi.wsgi import serializers
 
 LOG = logging.getLogger(__name__)
+
+occi_opts = [
+    config.cfg.IntOpt("ooi_listen_port",
+               default=8787,
+               help="Port OCCI interface will listen on."),
+]
+
+CONF = config.cfg.CONF
+CONF.register_opts(occi_opts)
 
 
 class Request(webob.Request):
