@@ -1,0 +1,15 @@
+[DEFAULT]
+
+#
+# From ooi
+#
+
+# The IP address on which the OCCI (ooi) API will listen. (string value)
+#ooi_listen = 0.0.0.0
+
+# The port on which the OCCI (ooi) API will listen. (integer value)
+#ooi_listen_port = 8787
+
+# Number of workers for OCCI (ooi) API service. The default will be equal to
+# the number of CPUs available. (integer value)
+#ooi_workers = <None>
