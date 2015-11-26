@@ -17,3 +17,4 @@ corresponding OpenStack Compute version. These are to be **added** into your
 
     juno
     kilo
+    liberty
