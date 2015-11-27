@@ -69,7 +69,7 @@ above where ``/v2`` has been configured, we need to duplicate the
 The last step regarding the API configuration is to add it to create the
 ``[composite:ooi]`` section::
 
-    [composite:osapi_compute]
+    [composite:ooi]
     use = call:nova.api.openstack.urlmap:urlmap_factory
     /occi1.1: occi_api_11
 
