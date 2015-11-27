@@ -207,8 +207,31 @@ class Controller(ooi.api.base.Controller):
 
         return [comp]
 
+    def _get_server_floating_ips(self, req, server_id):
+        s = self.os_helper.get_server(req, server_id)
+        addresses = s.get("addresses", {})
+        floating_ips = []
+        if addresses:
+            for addr_set in addresses.values():
+                for addr in addr_set:
+                    if addr["OS-EXT-IPS:type"] == "floating":
+                        floating_ips.append(addr["addr"])
+        return floating_ips
+
+    def _release_floating_ips(self, req, server_id):
+        server_ips = self._get_server_floating_ips(req, server_id)
+        if server_ips:
+            floating_ips = self.os_helper.get_floating_ips(req)
+            for server_ip in server_ips:
+                for ip in floating_ips:
+                    if server_ip == ip["ip"]:
+                        self.os_helper.remove_floating_ip(req, server_id,
+                                                          ip["ip"])
+                        self.os_helper.release_floating_ip(req, ip["id"])
+
     def _delete(self, req, server_ids):
         for server_id in server_ids:
+            self._release_floating_ips(req, server_id)
             self.os_helper.delete(req, server_id)
         return []
 
