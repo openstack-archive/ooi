@@ -60,7 +60,7 @@ to be added just before the last component of the pipeline. So, in the example
 above where ``/v2`` has been configured, we need to duplicate the
 ``[composite:openstack_compute_api_v2]`` as follows::
 
-    [composite:occi_api_v11]
+    [composite:occi_api_11]
     use = call:nova.api.auth:pipeline_factory
     noauth = compute_req_id faultwrap sizelimit noauth ratelimit occi osapi_compute_app_v2
     keystone = compute_req_id faultwrap sizelimit occi authtoken keystonecontext ratelimit occi osapi_compute_app_v2
