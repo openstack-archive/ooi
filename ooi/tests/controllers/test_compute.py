@@ -26,6 +26,7 @@ from ooi.api import helpers
 from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute as occi_compute
+from ooi.occi.infrastructure import storage as occi_storage
 from ooi.openstack import contextualization
 from ooi.openstack import templates
 from ooi.tests import base
@@ -253,7 +254,8 @@ class TestComputeController(base.TestController):
         self.assertIsInstance(ret, collection.Collection)
         m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
-                                    key_name=None)
+                                    key_name=None,
+                                    block_device_mapping_v2=[])
 
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
     @mock.patch("ooi.occi.validator.Validator")
@@ -284,7 +286,8 @@ class TestComputeController(base.TestController):
         self.assertIsInstance(ret, collection.Collection)
         m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data="bazonk",
-                                    key_name=None)
+                                    key_name=None,
+                                    block_device_mapping_v2=[])
 
     @mock.patch.object(helpers.OpenStackHelper, "keypair_create")
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
@@ -317,7 +320,8 @@ class TestComputeController(base.TestController):
                                      public_key="wtfoodata")
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
-                                    key_name="wtfoo")
+                                    key_name="wtfoo",
+                                    block_device_mapping_v2=[])
 
     @mock.patch.object(helpers.OpenStackHelper, "keypair_delete")
     @mock.patch.object(helpers.OpenStackHelper, "keypair_create")
@@ -350,5 +354,119 @@ class TestComputeController(base.TestController):
                                      public_key="wtfoodata")
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
-                                    key_name=mock.ANY)
+                                    key_name=mock.ANY,
+                                    block_device_mapping_v2=[])
         m_keypair_delete.assert_called_with(mock.ANY, mock.ANY)
+
+    def test_build_block_mapping_no_links(self):
+        ret = self.controller._build_block_mapping(None, {})
+        self.assertEqual([], ret)
+
+    def test_build_block_mapping_invalid_rel(self):
+        obj = {'links': {'foo': {'rel': 'bar'}}}
+        ret = self.controller._build_block_mapping(None, obj)
+        self.assertEqual([], ret)
+
+    @mock.patch("ooi.api.helpers.get_id_with_kind")
+    def test_build_block_mapping(self, m_get_id):
+        vol_id = uuid.uuid4().hex
+        image_id = uuid.uuid4().hex
+        obj = {
+            'links': {
+                'l1': {
+                    'rel': ('http://schemas.ogf.org/occi/infrastructure#'
+                            'storage'),
+                    'occi.core.target': vol_id,
+                }
+            },
+            "schemes": {
+                templates.OpenStackOSTemplate.scheme: [image_id],
+            }
+        }
+        m_get_id.return_value = (None, vol_id)
+        ret = self.controller._build_block_mapping(None, obj)
+        expected = [
+            {
+                "source_type": "image",
+                "destination_type": "local",
+                "boot_index": 0,
+                "delete_on_termination": True,
+                "uuid": image_id,
+            },
+            {
+                "source_type": "volume",
+                "uuid": vol_id,
+                "delete_on_termination": False,
+            }
+        ]
+        self.assertEqual(expected, ret)
+        m_get_id.assert_called_with(None, vol_id,
+                                    occi_storage.StorageResource.kind)
+
+    @mock.patch("ooi.api.helpers.get_id_with_kind")
+    def test_build_block_mapping_device_id(self, m_get_id):
+        vol_id = uuid.uuid4().hex
+        image_id = uuid.uuid4().hex
+        obj = {
+            'links': {
+                'l1': {
+                    'rel': ('http://schemas.ogf.org/occi/infrastructure#'
+                            'storage'),
+                    'occi.core.target': vol_id,
+                    'occi.storagelink.deviceid': 'baz'
+                }
+            },
+            "schemes": {
+                templates.OpenStackOSTemplate.scheme: [image_id],
+            }
+        }
+        m_get_id.return_value = (None, vol_id)
+        ret = self.controller._build_block_mapping(None, obj)
+        expected = [
+            {
+                "source_type": "image",
+                "destination_type": "local",
+                "boot_index": 0,
+                "delete_on_termination": True,
+                "uuid": image_id,
+            },
+            {
+                "source_type": "volume",
+                "uuid": vol_id,
+                "delete_on_termination": False,
+                "device_name": "baz",
+            }
+        ]
+        self.assertEqual(expected, ret)
+        m_get_id.assert_called_with(None, vol_id,
+                                    occi_storage.StorageResource.kind)
+
+    @mock.patch.object(helpers.OpenStackHelper, "create_server")
+    @mock.patch.object(compute.Controller, "_build_block_mapping")
+    @mock.patch("ooi.occi.validator.Validator")
+    def test_create_server_with_storage_link(self, m_validator, m_block,
+                                             m_server):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        obj = {
+            "attributes": {
+                "occi.core.title": "foo instance",
+            },
+            "schemes": {
+                templates.OpenStackOSTemplate.scheme: ["foo"],
+                templates.OpenStackResourceTemplate.scheme: ["bar"],
+            },
+        }
+        req.get_parser = mock.MagicMock()
+        req.get_parser.return_value.return_value.parse.return_value = obj
+        m_validator.validate.return_value = True
+        server = {"id": uuid.uuid4().hex}
+        m_server.return_value = server
+        m_block.return_value = "mapping"
+        ret = self.controller.create(req, None)  # noqa
+        self.assertIsInstance(ret, collection.Collection)
+        m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
+                                    user_data=None,
+                                    key_name=mock.ANY,
+                                    block_device_mapping_v2="mapping")
+        m_block.assert_called_with(req, obj)

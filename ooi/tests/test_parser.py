@@ -102,6 +102,29 @@ class TestParserBase(base.TestCase):
         expected_attrs = {"foo": "bar", "baz": "1234", "bazonk": "foo=123"}
         self.assertEqual(expected_attrs, res["attributes"])
 
+    def test_link(self):
+        headers = {
+            'Category': ('foo; '
+                         'scheme="http://example.com/scheme#"; '
+                         'class="kind"'),
+            'Link': ('<bar>; foo="bar"; "bazonk"="foo=123"')
+        }
+        parser = self._get_parser(headers, None)
+        res = parser.parse()
+        expected_links = {"bar": {"foo": "bar", "bazonk": "foo=123"}}
+        self.assertEqual(expected_links, res["links"])
+
+    def test_invalid_link(self):
+        headers = {
+            'Category': ('foo; '
+                         'scheme="http://example.com/scheme#"; '
+                         'class="kind"'),
+            'Link': ('bar; foo="bar"; "bazonk"="foo=123"')
+        }
+        parser = self._get_parser(headers, None)
+        self.assertRaises(exception.OCCIInvalidSchema,
+                          parser.parse)
+
 
 class TestTextParser(TestParserBase):
     def _get_parser(self, headers, body):

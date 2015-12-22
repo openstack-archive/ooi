@@ -244,7 +244,8 @@ class OpenStackHelper(BaseHelper):
 
     def _get_create_server_req(self, req, name, image, flavor,
                                user_data=None,
-                               key_name=None):
+                               key_name=None,
+                               block_device_mapping_v2=None):
         tenant_id = self.tenant_from_req(req)
         path = "/%s/servers" % tenant_id
         # TODO(enolfc): add here the correct metadata info
@@ -260,6 +261,8 @@ class OpenStackHelper(BaseHelper):
             body["server"]["user_data"] = user_data
         if key_name is not None:
             body["server"]["key_name"] = key_name
+        if block_device_mapping_v2:
+            body["server"]["block_device_mapping_v2"] = block_device_mapping_v2
 
         return self._get_req(req,
                              path=path,
@@ -268,7 +271,8 @@ class OpenStackHelper(BaseHelper):
                              method="POST")
 
     def create_server(self, req, name, image, flavor,
-                      user_data=None, key_name=None):
+                      user_data=None, key_name=None,
+                      block_device_mapping_v2=None):
         """Create a server.
 
         :param req: the incoming request
@@ -278,9 +282,14 @@ class OpenStackHelper(BaseHelper):
         :param user_data: user data to inject into the server
         :param key_name: user public key name
         """
-        req = self._get_create_server_req(req, name, image, flavor,
-                                          user_data=user_data,
-                                          key_name=key_name)
+        req = self._get_create_server_req(
+            req,
+            name,
+            image,
+            flavor,
+            user_data=user_data,
+            key_name=key_name,
+            block_device_mapping_v2=block_device_mapping_v2)
         response = req.get_response(self.app)
         # We only get one server
         return self.get_from_response(response, "server", {})

@@ -615,12 +615,14 @@ class TestOpenStackHelper(TestBaseHelper):
         flavor = uuid.uuid4().hex
         user_data = "foo"
         key_name = "wtfoo"
+        bdm = []
         ret = self.helper.create_server(None, name, image, flavor,
                                         user_data=user_data,
-                                        key_name=key_name)
+                                        key_name=key_name,
+                                        block_device_mapping_v2=bdm)
         self.assertEqual("FOO", ret)
         m.assert_called_with(None, name, image, flavor, user_data=user_data,
-                             key_name=key_name)
+                             key_name=key_name, block_device_mapping_v2=bdm)
 
     @mock.patch("ooi.api.helpers.exception_from_response")
     @mock.patch.object(helpers.OpenStackHelper, "_get_create_server_req")
@@ -635,6 +637,7 @@ class TestOpenStackHelper(TestBaseHelper):
         flavor = uuid.uuid4().hex
         user_data = "foo"
         key_name = "wtfoo"
+        bdm = []
         m_exc.return_value = webob.exc.HTTPInternalServerError()
         self.assertRaises(webob.exc.HTTPInternalServerError,
                           self.helper.create_server,
@@ -643,9 +646,10 @@ class TestOpenStackHelper(TestBaseHelper):
                           image,
                           flavor,
                           user_data=user_data,
-                          key_name=key_name)
+                          key_name=key_name,
+                          block_device_mapping_v2=bdm)
         m.assert_called_with(None, name, image, flavor, user_data=user_data,
-                             key_name=key_name)
+                             key_name=key_name, block_device_mapping_v2=bdm)
         m_exc.assert_called_with(resp)
 
     @mock.patch.object(helpers.OpenStackHelper, "_get_volume_create_req")
