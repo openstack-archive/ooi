@@ -51,6 +51,57 @@ class TestComputeController(base.TestController):
             self.assertEqual(expected, result.resources)
             m_index.assert_called_with(None)
 
+    @mock.patch.object(helpers.OpenStackHelper, "get_server")
+    def test_get_server_floating_ips_no_ips(self, mock_get_server):
+        mock_get_server.return_value = {}
+        ret = self.controller._get_server_floating_ips(None, "foo")
+        mock_get_server.assert_called_with(None, "foo")
+        self.assertEqual([], ret)
+
+    @mock.patch.object(helpers.OpenStackHelper, "get_server")
+    def test_get_server_floating_ips_with_ips(self, mock_get_server):
+        mock_get_server.return_value = {
+            "addresses": {
+                "private": [
+                    {
+                        "OS-EXT-IPS:type": "floating",
+                        "addr": "1.2.3.4",
+                    },
+                    {
+                        "OS-EXT-IPS:type": "fixed",
+                        "addr": "10.11.12.13",
+                    },
+                    {
+                        "OS-EXT-IPS:type": "floating",
+                        "addr": "5.6.7.8",
+                    },
+                ]
+            }
+        }
+        ret = self.controller._get_server_floating_ips(None, "foo")
+        mock_get_server.assert_called_with(None, "foo")
+        self.assertEqual(["1.2.3.4", "5.6.7.8"], ret)
+
+    @mock.patch.object(compute.Controller, "_get_server_floating_ips")
+    @mock.patch.object(helpers.OpenStackHelper, "get_floating_ips")
+    @mock.patch.object(helpers.OpenStackHelper, "remove_floating_ip")
+    @mock.patch.object(helpers.OpenStackHelper, "release_floating_ip")
+    def test_release_floating_ips(self, mock_release, mock_remove,
+                                  mock_get_floating,
+                                  mock_server_floating):
+        mock_server_floating.return_value = ["1.2.3.4", "5.6.7.8"]
+        mock_get_floating.return_value = [
+            {"ip": "1.2.3.4", "id": "bar"},
+            {"ip": "5.6.7.8", "id": "baz"},
+        ]
+        self.controller._release_floating_ips(None, "foo")
+        mock_server_floating.assert_called_with(None, "foo")
+        mock_get_floating.assert_called_with(None)
+        mock_remove.assert_has_calls([mock.call(None, "foo", "1.2.3.4"),
+                                      mock.call(None, "foo", "5.6.7.8")])
+        mock_release.assert_has_calls([mock.call(None, "bar"),
+                                       mock.call(None, "baz")])
+
     @mock.patch.object(compute.Controller, "_delete")
     def test_delete(self, mock_delete):
         mock_delete.return_value = []
@@ -59,12 +110,14 @@ class TestComputeController(base.TestController):
         mock_delete.assert_called_with(None, ["foo"])
 
     @mock.patch.object(helpers.OpenStackHelper, "delete")
-    def test_delete_ids(self, mock_delete):
+    @mock.patch.object(compute.Controller, "_release_floating_ips")
+    def test_delete_ids(self, mock_release, mock_delete):
         server_ids = [uuid.uuid4().hex, uuid.uuid4().hex]
         mock_delete.return_value = None
         ret = self.controller._delete(None, server_ids)
         self.assertEqual([], ret)
         mock_delete.assert_has_calls([mock.call(None, s) for s in server_ids])
+        mock_release.assert_has_calls([mock.call(None, s) for s in server_ids])
 
     @mock.patch.object(helpers.OpenStackHelper, "index")
     @mock.patch.object(compute.Controller, "_delete")
