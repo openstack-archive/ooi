@@ -17,24 +17,21 @@
 import webob
 import webob.dec
 import webob.exc
-
-from ooi.tests.middleware import test_middleware as testmi
+import mock
+from ooi.tests import base
 from ooi.tests.tests_networks import fakes
-from ooi.wsgi.networks.middleware import OCCINetworkMiddleware
+from ooi.wsgi import OCCIMiddleware
+from ooi.api import query
 
 
-class TestMiddleware(testmi.TestMiddleware):
-    """OCCI middleware test without Accept header.
+class TestMiddleware(base.TestCase):
 
-    According to the OCCI HTTP rendering, no Accept header
-    means text/plain.
-    """
 
     def setUp(self):
         super(TestMiddleware, self).setUp()
-
-    def get_app(self, resp=None):
-        return OCCINetworkMiddleware(fakes.FakeApp())
+        self.accept = self.content_type = None
+        self.application_url = fakes.application_url
+        self.app = OCCIMiddleware(None)
 
     def assertDefaults(self, result):
         self.assertContentType(result)
@@ -45,23 +42,35 @@ class TestMiddleware(testmi.TestMiddleware):
         self.assertIn("Network", result.headers)
         self.assertIn(self.occi_string, result.headers["network"])
 
-    def _build_req(self, path, tenant_id, **kwargs):
+    def assertContentType(self, result):
+        if self.accept in (None, "*/*"):
+            expected = "text/plain"
+        else:
+            expected = self.accept
+        self.assertEqual(expected, result.content_type)
+
+    def _build_req(self, path, **kwargs):
         if self.accept is not None:
             kwargs["accept"] = self.accept
 
         if self.content_type is not None:
             kwargs["content_type"] = self.content_type
 
-        environ = {"HTTP_X-Auth-Token":"XXXX", "project": tenant_id} #fixme(jorgesece): network does not use it
+        environ = {"HTTP_X-Auth-Token":"XXXX"} #fixme(jorgesece): network does not use it
 
         kwargs["base_url"] = self.application_url
 
         return webob.Request.blank(path, environ=environ, **kwargs)
 
-    # def test_query(self):
-    #     tenant_id = fakes.tenants["bar"]["id"]
-    #     req = self._build_req("/-/", tenant_id)
-    #     result = req.get_response(self.get_app())
+    # @mock.patch.object(query.Controller,"_resource_tpls")
+    # @mock.patch.object(query.Controller,"_os_tpls")
+    # @mock.patch.object(query.Controller,"_ip_pools")
+    # def test_query(self,m1,m2,m3):
+    #     m1.return_value  =  []
+    #     m2.return_value  =  []
+    #     m3.return_value  =  []
+    #     req = self._build_req("/-/")
+    #     result = req.get_response(self.app)
     #     self.assertDefaults(result)
-    #    # self.assertExpectedResult(fakes.fake_query_results(), result)
+    #     self.assertExpectedResult(fakes.fake_query_results(), result)
     #     self.assertEqual(200, result.status_code)

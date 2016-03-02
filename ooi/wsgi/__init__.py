@@ -33,6 +33,8 @@ from ooi import utils
 from ooi import version
 from ooi.wsgi import parsers
 from ooi.wsgi import serializers
+import ooi.api.networks.network
+from ooi.occi.validator import Validator
 
 LOG = logging.getLogger(__name__)
 
@@ -49,6 +51,10 @@ occi_opts = [
                       help='Number of workers for OCCI (ooi) API service. '
                       'The default will be equal to the number of CPUs '
                       'available.'),
+    #NEUTRON
+    config.cfg.StrOpt('neutron_endpoint',
+                      default="http//:127.0.0.1/v3",
+                      help='Neutron end point which access to the Neutron Resfult API.'),
 ]
 
 CONF = config.cfg.CONF
@@ -104,7 +110,7 @@ class OCCIMiddleware(object):
             return cls(app, **local_conf)
         return _factory
 
-    def __init__(self, application, openstack_version="/v2.1"):
+    def __init__(self, application, openstack_version="/v2.1", neutron_endpoint="0.0.0.0"):
         self.application = application
         self.openstack_version = openstack_version
 
@@ -112,6 +118,7 @@ class OCCIMiddleware(object):
 
         self.mapper = routes.Mapper()
         self._setup_routes()
+        OCCINetworkMiddleware(neutron_endpoint).setup_net_routes(mapper=self.mapper, resources=self.resources)
 
     def _create_resource(self, controller):
         return Resource(controller(self.application, self.openstack_version))
@@ -500,3 +507,72 @@ class Fault(webob.exc.HTTPException):
 
     def __str__(self):
         return self.wrapped_exc.__str__()
+
+
+#########################
+####### NETWORK #########
+########################
+# class ResourceNet(Resource):
+#     def __init__(self, controller):
+#         super(ResourceNet, self).__init__(controller)
+#
+#     @staticmethod
+#     def _process_parameters(req):
+#         content = None
+#         param = None
+#         parser = req.get_parser()(req.headers, req.body)
+#         try:
+#             if 'Category' in req.headers:
+#                 param = parser.parse()
+#             else:
+#                 attrs = parser.parse_attributes(req.headers)
+#                 if attrs.__len__():
+#                     param = {"attributes": attrs}
+#         except:
+#             raise exception.Invalid
+#         if param:
+#             content = {"parameters": param}
+#         return content
+
+    # def __call__(self, request, args):
+    #     """Control the method dispatch."""
+    #     try:
+    #         with ResourceExceptionHandler():
+    #             parameters = self._process_parameters(request)
+    #     except Fault as ex:
+    #         return ex
+    #     if parameters:
+    #         args.update(parameters)
+    #     return super(ResourceNet,self).__call__(request,args)
+
+
+class OCCINetworkMiddleware(object):
+
+    def __init__(self, neutron_endpoint="0.0.0.0"):
+        super(OCCINetworkMiddleware, self).__init__()
+        self.neutron_endpoint = neutron_endpoint
+
+    def _create_net_resource(self, controller):
+        #fixme(jorgesece): wsgi unitttest do not work, it is not using FakeApp
+        return Resource(controller(self.neutron_endpoint))
+
+    def _setup_net_resources_routes(self, resource, controller, mapper):
+        path = "/" + resource
+         # These two could be removed for total OCCI compliance
+        mapper.connect(resource, path, controller=controller,
+                       action="index",  conditions=dict(method=["GET"]))
+        mapper.connect(resource, path, controller=controller,
+                       action="create", conditions=dict(method=["POST"]))
+        #OK
+        mapper.connect(resource, path + "/", controller=controller,
+                       action="index",  conditions=dict(method=["GET"]))
+        mapper.connect(resource, path + "/", controller=controller,
+                       action="create", conditions=dict(method=["POST"]))
+        mapper.connect(resource, path + "/{id}", controller=controller,
+                       action="show", conditions=dict(method=["GET"]))
+        mapper.connect(resource, path + "/{id}", controller=controller,
+                       action="delete", conditions=dict(method=["DELETE"]))
+
+    def setup_net_routes(self, mapper, resources):
+        resources["networks"] = self._create_net_resource(ooi.api.networks.network.Controller)
+        self._setup_net_resources_routes("networks", resources["networks"], mapper)

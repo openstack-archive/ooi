@@ -15,8 +15,8 @@
 # under the License.
 
 from ooi.tests import base
-from ooi.wsgi.networks import parsers
-from  ooi.wsgi.parsers import HeaderParser
+from ooi.api.networks import parsers
+from ooi.wsgi.parsers import HeaderParser
 
 
 class TestParser(base.TestCase):

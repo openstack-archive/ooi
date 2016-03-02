@@ -15,8 +15,6 @@
 # under the License.
 #
 
-from ooi.wsgi import parsers
-
 
 def make_body(resource, parameters):
         body = {resource:{}}
@@ -54,3 +52,20 @@ def network_status(neutron_status):
         return "suspended"
     else:
         return "inactive"
+
+
+def process_parameters(req):
+    param = None
+    parser = req.get_parser()(req.headers, req.body)
+    if 'Category' in req.headers:
+        param = parser.parse()
+    else:
+        attrs = parser.parse_attributes(req.headers)
+        if attrs.__len__():
+            param = {"attributes": attrs}
+    if 'X_PROJECT_ID' in req.headers:
+            if param:
+                param["attributes"]["X_PROJECT_ID"] = req.headers["X_PROJECT_ID"]
+            else:
+                param ={"attributes":{"X_PROJECT_ID":req.headers["X_PROJECT_ID"]}}
+    return param

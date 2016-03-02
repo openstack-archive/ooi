@@ -18,9 +18,9 @@ import webob
 import webob.dec
 import webob.exc
 
-from occinet import wsgi
 from ooi.tests import base
-from ooi.wsgi.networks.middleware import OCCINetworkMiddleware, ResourceNet
+from ooi.wsgi import OCCIMiddleware, Resource, ResponseObject
+from ooi.tests.tests_networks import fakes
 
 
 @webob.dec.wsgify
@@ -39,16 +39,19 @@ class FakeController(object):
     def delete(self, req, id):
         raise webob.exc.HTTPNotImplemented()
 
-    def show(self, req, id, parameters):
+    def show(self, req, id):
         # Returning a ResponseObject should stop the pipepline
         # so the application won't be called.
-        resp = wsgi.ResponseObject([])
+        resp = ResponseObject([])
         return resp
 
 
-class FakeMiddleware(OCCINetworkMiddleware):
+class FakeMiddleware(OCCIMiddleware):
+    def __int__(self, application):
+        super(FakeMiddleware, self).__init__(application)
+
     def _setup_routes(self):
-        self.resources["foo"] = ResourceNet(FakeController())
+        self.resources["foo"] = Resource(FakeController())
         self.mapper.resource("foo", "foos",
                              controller=self.resources["foo"])
 
@@ -56,8 +59,8 @@ class FakeMiddleware(OCCINetworkMiddleware):
 class TestMiddleware(base.TestCase):
     def setUp(self):
         super(TestMiddleware, self).setUp()
-
         self.app = FakeMiddleware(fake_app)
+
 
     def test_index(self):
         result = webob.Request.blank("/foos",
@@ -97,3 +100,4 @@ class TestMiddleware(base.TestCase):
                                      method="GET", headers=headers).get_response(self.app)
         self.assertEqual(204, result.status_code)
         self.assertEqual("", result.text)
+

@@ -21,28 +21,32 @@ import webob
 
 from ooi import utils
 from ooi.api import helpers
-from ooi.wsgi.networks import parsers
+from ooi.api.networks import parsers
 
 
 class OpenStackNet(helpers.BaseHelper):
     """Class to interact with the neutron API."""
 
-    def __init__(self, app, neutron_version, neutron_endpoint):
-        super(OpenStackNet, self).__init__(app, neutron_version)
+    def __init__(self, neutron_endpoint):
+        super(OpenStackNet, self).__init__(None, None)
         self.neutron_endpoint = neutron_endpoint
 
     translation = {"network": {"occi.core.title":"name",
                                 "occi.core.id":"network_id",
                                 "occi.network.state":"status",
-                                "project":"tenant_id",
-                                "occi.core.title":"name"
+                                "X_PROJECT_ID":"tenant_id",
                                },
-                   "subnet": {"network_id":"network_id",
+                   "subnet": {"occi.core.id":"network_id",
                              "occi.network.ip_version": "ip_version",
                              "occi.networkinterface.address": "cidr",
                              "occi.networkinterface.gateway":"gateway_ip"
                              }
                    }
+    required = {"network": {"occi.core.title":"name",
+                             "occi.network.ip_version": "ip_version",
+                             "occi.networkinterface.address": "cidr",
+                            }
+                }
 
     def _get_req(self, req, method,
                  path=None,
@@ -67,8 +71,6 @@ class OpenStackNet(helpers.BaseHelper):
         :returns: a Request object
         """
         server = self.neutron_endpoint
-        port = "9696"
-        kwargs = {"http_version": "HTTP/1.1", "server_name": server, "server_port": port}
         try:
             if "HTTP_X-Auth-Token" in req.environ:
                 token = req.environ["HTTP_X-Auth-Token"]
@@ -79,8 +81,7 @@ class OpenStackNet(helpers.BaseHelper):
             raise webob.exc.HTTPUnauthorized
         environ = {"HTTP_X-Auth-Token": token} #"HTTP_X_PROJECT_ID": project_id}
 
-        new_req = webob.Request.blank(path=path, environ=environ,  base_url="/v2.0", **kwargs)
-        new_req.script_name = self.openstack_version
+        new_req = webob.Request.blank(path=path, environ=environ,  base_url=server)
         new_req.query_string = query_string
         new_req.method = method
         if path is not None:
@@ -135,7 +136,7 @@ class OpenStackNet(helpers.BaseHelper):
         """
         path = "/networks"
         os_req = self._make_get_request(req, path, parameters)
-        response = os_req.get_response(self.app)
+        response = os_req.get_response()
         return self.get_from_response(response, "networks", [])
 
     def get_network(self, req, id):
@@ -145,16 +146,15 @@ class OpenStackNet(helpers.BaseHelper):
         """
         path = "/networks/%s" % id
         req = self._make_get_request(req, path)
-        response = req.get_response(self.app)
+        response = req.get_response()
         net = self.get_from_response(response, "network", {})
         # subnet
-        if net["subnets"]:
+        if "subnets" in net:
             path = "/subnets/%s" % net["subnets"][0]
             req_subnet = self._make_get_request(req, path)
-            response_subnet = req_subnet.get_response(self.app)
+            response_subnet = req_subnet.get_response()
             net["subnet_info"] = self.get_from_response(response_subnet, "subnet", {})
 
-        net["status"] = parsers.network_status(net["status"]);
         return net
 
     def get_subnet(self, req, id):
@@ -164,7 +164,7 @@ class OpenStackNet(helpers.BaseHelper):
         """
         path = "/subnets/%s" % id
         req = self._make_get_request(req, path)
-        response = req.get_response(self.app)
+        response = req.get_response()
 
         return self.get_from_response(response, "subnet", {})
 
@@ -174,15 +174,25 @@ class OpenStackNet(helpers.BaseHelper):
         :param parameters: parameters with values for the new network
         """
         req = self._make_create_request(req, "network", parameters)
-        response = req.get_response(self.app)
+        response = req.get_response()
         json_response = self.get_from_response(response, "network", {})
         #subnetattributes
-        if "occi.networkinterface.address" in parameters:#TODO(jorgesece): Create unittest for it
-            parameters["network_id"] = json_response["id"]
-            req_subnet= self._make_create_request(req, "subnet", parameters)
-            response_subnet = req_subnet.get_response(self.app)
-            json_response["subnet_info"] = self.get_from_response(response_subnet, "subnet", {})
+        # if "occi.networkinterface.address" in parameters:#TODO(jorgesece): Create unittest for it
+        #     parameters["network_id"] = json_response["id"]
+        #     req_subnet= self._make_create_request(req, "subnet", parameters)
+        #     response_subnet = req_subnet.get_response()
+        #     json_response["subnet_info"] = self.get_from_response(response_subnet, "subnet", {})
 
+        return json_response
+
+    def create_subnet(self, req, parameters):
+        """Create a server.
+        :param req: the incoming request
+        :param parameters: parameters with values for the new network
+        """
+        req_subnet= self._make_create_request(req, "subnet", parameters)
+        response_subnet = req_subnet.get_response()
+        json_response = self.get_from_response(response_subnet, "subnet", {})
         return json_response
 
     def delete_network(self, req, parameters):
@@ -192,7 +202,7 @@ class OpenStackNet(helpers.BaseHelper):
         """
         path = "/networks"
         req = self._make_delete_request(req, path, parameters)
-        response = req.get_response(self.app)
+        response = req.get_response()
         return response
 
     def run_action(self, req, action, id):
@@ -202,6 +212,6 @@ class OpenStackNet(helpers.BaseHelper):
         :param server_id: server id to delete
         """
         os_req = self._make_action_reques(req, action, id)
-        response = os_req.get_response(self.app)
+        response = os_req.get_response()
         if response.status_int != 202:
             raise helpers.exception_from_response(response)
