@@ -23,6 +23,7 @@ from ooi.occi.core import link
 from ooi.occi.core import resource
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import network
+from ooi.occi.infrastructure import network_extend
 from ooi.occi.infrastructure import network_link
 from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
@@ -82,6 +83,9 @@ class TestQueryController(base.TestController):
             storage.snapshot,
             storage.resize,
 
+            # OCCI infra Networks Management:
+            network_extend.Network.kind,
+
             # OCCI infra network
             network.NetworkResource.kind,
             network.up,
@@ -90,6 +94,8 @@ class TestQueryController(base.TestController):
             network_link.NetworkInterface.kind,
             network_link.ip_network_interface,
 
+
+
             # OCCI infra compute mixins
             infra_templates.os_tpl,
             infra_templates.resource_tpl,
@@ -97,6 +103,8 @@ class TestQueryController(base.TestController):
             # OpenStack Contextualization
             contextualization.user_data,
             contextualization.public_key,
+
+
         ]
 
         ret = self.controller.index(req)
