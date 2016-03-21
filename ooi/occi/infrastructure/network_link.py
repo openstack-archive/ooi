@@ -28,7 +28,7 @@ class NetworkInterface(link.Link):
     kind = kind.Kind(helpers.build_scheme('infrastructure'),
                      'networkinterface', 'network link resource',
                      attributes, 'networklink/',
-                     related=[link.Link.kind])
+                     parent=link.Link.kind)
 
     def __init__(self, mixins, source, target, id=None, interface=None,
                  mac=None, state=None):
@@ -66,4 +66,5 @@ ip_network_interface = mixin.Mixin(
     attributes=attr.AttributeCollection([
         "occi.networkinterface.address",
         "occi.networkinterface.gateway",
-        "occi.networkinterface.allocation"]))
+        "occi.networkinterface.allocation"]),
+    applies=[NetworkInterface.kind])
