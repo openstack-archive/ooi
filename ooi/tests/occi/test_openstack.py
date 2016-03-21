@@ -38,7 +38,7 @@ class TestOpenStackOSTemplate(base.TestCase):
         self.assertEqual(id, tpl.term)
         self.assertEqual(title, tpl.title)
         self.assertTrue(tpl.scheme.startswith(helpers._PREFIX))
-        self.assertIn(occi_templates.os_tpl, tpl.related)
+        self.assertIn(occi_templates.os_tpl, tpl.depends)
         self.assertEqual(location, tpl.location)
 
 
@@ -64,7 +64,7 @@ class TestOpenStackResourceTemplate(base.TestCase):
         self.assertEqual(id, tpl.term)
         self.assertEqual("Flavor: %s" % name, tpl.title)
         self.assertTrue(tpl.scheme.startswith(helpers._PREFIX))
-        self.assertIn(occi_templates.resource_tpl, tpl.related)
+        self.assertIn(occi_templates.resource_tpl, tpl.depends)
         self.assertEqual(cores, tpl.cores)
         self.assertEqual(memory, tpl.memory)
         self.assertEqual(disk, tpl.disk)
