@@ -59,6 +59,9 @@ class TestOCCIHeaderRendering(base.BaseRendererTest):
         expected = self.get_category("kind", obj)
         self.assertEqual(expected, observed)
 
+    def assertKindAttr(self, obj, attr, observed):
+        self.skipTest("Kind attribute rendering missing for headers")
+
     def assertLink(self, obj, observed):
         category = self.get_category("kind", obj.kind,
                                      location=obj.kind.location)
