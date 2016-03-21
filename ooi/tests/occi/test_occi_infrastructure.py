@@ -44,7 +44,7 @@ class TestOCCICompute(base.TestCase):
         self.assertIn("occi.compute.memory", c.attributes)
         self.assertIn("occi.compute.speed", c.attributes)
         self.assertIn("occi.compute.state", c.attributes)
-        self.assertIn(resource.Resource.kind, c.kind.related)
+        self.assertEqual(resource.Resource.kind, c.kind.parent)
         self.assertEqual(c.kind.location, "compute/")
         # TODO(aloga): We need to check that the attributes are actually set
         # after we get an object (we have to check this for this but also for
@@ -106,7 +106,7 @@ class TestOCCIStorage(base.TestCase):
         self.assertIn("occi.core.title", s.attributes)
         self.assertIn("occi.storage.size", s.attributes)
         self.assertIn("occi.storage.state", s.attributes)
-        self.assertIn(resource.Resource.kind, s.kind.related)
+        self.assertEqual(resource.Resource.kind, s.kind.parent)
         self.assertEqual(s.kind.location, "storage/")
         # TODO(aloga): We need to check that the attributes are actually set
         # after we get an object (we have to check this for this but also for
@@ -144,7 +144,7 @@ class TestOCCIStorageLink(base.TestCase):
         self.assertIn("occi.storagelink.mountpoint", s.attributes)
         self.assertIn("occi.storagelink.deviceid", s.attributes)
         self.assertIn("occi.storagelink.state", s.attributes)
-        self.assertIn(link.Link.kind, s.kind.related)
+        self.assertEqual(link.Link.kind, s.kind.parent)
         self.assertEqual(s.kind.location, "storagelink/")
 
     def test_storagelink(self):
@@ -217,7 +217,7 @@ class TestOCCINetwork(base.TestCase):
         self.assertIn("occi.network.vlan", n.attributes)
         self.assertIn("occi.network.label", n.attributes)
         self.assertIn("occi.network.state", n.attributes)
-        self.assertIn(resource.Resource.kind, n.kind.related)
+        self.assertEqual(resource.Resource.kind, n.kind.parent)
         self.assertEqual(n.kind.location, "network/")
         # TODO(aloga): We need to check that the attributes are actually set
         # after we get an object (we have to check this for this but also for
@@ -283,7 +283,7 @@ class TestOCCINetworkInterface(base.TestCase):
         self.assertIn("occi.networkinterface.interface", l.attributes)
         self.assertIn("occi.networkinterface.mac", l.attributes)
         self.assertIn("occi.networkinterface.state", l.attributes)
-        self.assertIn(link.Link.kind, l.kind.related)
+        self.assertEqual(link.Link.kind, l.kind.parent)
         self.assertEqual(l.kind.location, "networklink/")
 
     def test_networkinterface(self):
