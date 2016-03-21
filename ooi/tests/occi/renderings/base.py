@@ -14,7 +14,6 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-# import mock
 import uuid
 
 import webob.exc
@@ -26,13 +25,6 @@ from ooi.occi.core import kind
 from ooi.occi.core import link
 from ooi.occi.core import mixin
 from ooi.occi.core import resource
-# from ooi.occi.infrastructure import action
-# from ooi.occi.infrastructure import compute
-# from ooi.occi.infrastructure import network
-# from ooi.occi.infrastructure import network_link
-# from ooi.occi.infrastructure import storage
-# from ooi.occi.infrastructure import storage_link
-# from ooi.occi.infrastructure import templatesa
 import ooi.tests.base
 
 
