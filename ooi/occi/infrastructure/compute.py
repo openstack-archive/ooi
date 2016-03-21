@@ -44,7 +44,7 @@ class ComputeResource(resource.Resource):
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'compute',
                      'compute resource', attributes, 'compute/',
                      actions=actions,
-                     related=[resource.Resource.kind])
+                     parent=resource.Resource.kind)
 
     def __init__(self, title, summary=None, id=None, architecture=None,
                  cores=None, hostname=None, speed=None, memory=None,
