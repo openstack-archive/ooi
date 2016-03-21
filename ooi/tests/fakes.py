@@ -313,13 +313,11 @@ def fake_query_results():
         'bar; '
         'scheme="http://schemas.openstack.org/template/os#"; '
         'class="mixin"; title="bar"; '
-        'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"; '
         'location="%s/os_tpl/bar"' % application_url)
     cats.append(
         'foo; '
         'scheme="http://schemas.openstack.org/template/os#"; '
         'class="mixin"; title="foo"; '
-        'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"; '
         'location="%s/os_tpl/foo"' % application_url)
 
     # OpenStack Flavors
@@ -327,13 +325,11 @@ def fake_query_results():
         '1; '
         'scheme="http://schemas.openstack.org/template/resource#"; '
         'class="mixin"; title="Flavor: foo"; '
-        'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"; '
         'location="%s/resource_tpl/1"' % application_url)
     cats.append(
         '2; '
         'scheme="http://schemas.openstack.org/template/resource#"; '
         'class="mixin"; title="Flavor: bar"; '
-        'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"; '
         'location="%s/resource_tpl/2"' % application_url)
 
     # OCCI Infrastructure Network

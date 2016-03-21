@@ -27,7 +27,6 @@ class OpenStackOSTemplate(templates.OCCIOSTemplate):
         super(OpenStackOSTemplate, self).__init__(
             uuid,
             name,
-            related=[templates.os_tpl],
             location=location)
 
 
@@ -51,7 +50,6 @@ class OpenStackResourceTemplate(templates.OCCIResourceTemplate):
         super(OpenStackResourceTemplate, self).__init__(
             id,
             "Flavor: %s" % name,
-            related=[templates.resource_tpl],
             attributes=attrs,
             location=location)
 

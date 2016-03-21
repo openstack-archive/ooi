@@ -155,35 +155,22 @@ class TestCoreOCCIKind(BaseTestCoreOCCICategory):
                           *self.args,
                           actions=actions)
 
-    def test_related(self):
-        related = [self.obj(None, None, None)]
-        kind = self.obj(*self.args, related=related)
+
+def TestCoreOCCIKindRelations(TestCoreOCCIKind):
+    def test_parent(self):
+        parent = self.obj(None, None, None)
+        kind = self.obj(*self.args, parent=parent)
 
         for i in (self.args):
             self.assertEqual(i, getattr(kind, i))
-        self.assertEqual(related, kind.related)
+        self.assertEqual(parent, kind.parent)
 
-    def test_related_empty(self):
-        related = []
-        kind = self.obj(*self.args, related=related)
-
-        for i in (self.args):
-            self.assertEqual(i, getattr(kind, i))
-        self.assertEqual(related, kind.related)
-
-    def test_related_invalid(self):
-        related = None
+    def test_parent_invalid(self):
+        parent = None
         self.assertRaises(TypeError,
                           self.obj,
                           *self.args,
-                          related=related)
-
-    def test_related_invalid_list(self):
-        related = [None]
-        self.assertRaises(TypeError,
-                          self.obj,
-                          *self.args,
-                          related=related)
+                          parent=parent)
 
 
 class TestCoreOCCIMixin(TestCoreOCCIKind):
@@ -199,7 +186,7 @@ class TestCoreOCCIEntity(base.TestCase):
         e = entity.Entity
         self.assertIn("occi.core.id", e.attributes)
         self.assertIn("occi.core.title", e.attributes)
-        self.assertEqual([], e.kind.related)
+        self.assertIsNone(e.kind.parent)
         # TODO(aloga): We need to check that the attributes are actually set
         # after we get an object
 
@@ -241,7 +228,7 @@ class TestCoreOCCIResource(base.TestCase):
         self.assertIn("occi.core.id", r.attributes)
         self.assertIn("occi.core.summary", r.attributes)
         self.assertIn("occi.core.title", r.attributes)
-        self.assertIn(entity.Entity.kind, r.kind.related)
+        self.assertEqual(entity.Entity.kind, r.kind.parent)
         # TODO(aloga): We need to check that the attributes are actually set
         # after we get an object
 
@@ -253,7 +240,7 @@ class TestCoreOCCIResource(base.TestCase):
         self.assertEqual("bar", r.title)
         self.assertEqual("baz", r.summary)
         self.assertEqual(id, r.id)
-        self.assertIn(entity.Entity.kind, r.kind.related)
+        self.assertEqual(entity.Entity.kind, r.kind.parent)
         r.summary = "bazonk"
         self.assertEqual("bazonk", r.summary)
 

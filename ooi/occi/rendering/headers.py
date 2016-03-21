@@ -49,6 +49,9 @@ class CategoryRenderer(HeaderRenderer):
             return ['location="%s"' % loc]
         return []
 
+    def _render_rel(self, env={}):
+        return []
+
     def render(self, env={}):
         d = {
             "term": self.obj.term,
@@ -59,16 +62,19 @@ class CategoryRenderer(HeaderRenderer):
         ret = []
         ret.append(('%(term)s; scheme="%(scheme)s"; class="%(class)s"; '
                     'title="%(title)s"') % d)
-        for rel in getattr(self.obj, 'related', []):
-            d = {"scheme": rel.scheme, "term": rel.term}
-            ret.append('rel="%(scheme)s%(term)s"' % d)
+        ret.extend(self._render_rel(env))
         ret.extend(self._render_location(env))
         # FIXME(enolfc): missing attributes and actions
         return [('Category', "; ".join(ret))]
 
 
 class KindRenderer(CategoryRenderer):
-    pass
+    def _render_rel(self, env={}):
+        parent = getattr(self.obj, 'parent', None)
+        if parent is not None:
+            d = {"scheme": parent.scheme, "term": parent.term}
+            return ['rel="%(scheme)s%(term)s"' % d]
+        return []
 
 
 class ActionRenderer(CategoryRenderer):

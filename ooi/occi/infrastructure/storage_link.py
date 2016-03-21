@@ -26,7 +26,7 @@ class StorageLink(link.Link):
                                            "occi.storagelink.state"])
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'storagelink',
                      'storage link resource', attributes, 'storagelink/',
-                     related=[link.Link.kind])
+                     parent=link.Link.kind)
 
     def __init__(self, source, target, deviceid=None, mountpoint=None,
                  state=None):
