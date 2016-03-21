@@ -16,6 +16,7 @@
 
 from ooi.occi.core import action
 from ooi.occi.core import category
+from ooi.occi.core import kind
 from ooi.occi import helpers
 
 
@@ -28,15 +29,17 @@ class Mixin(category.Category):
     """
 
     def __init__(self, scheme, term, title, attributes=None, location=None,
-                 related=[], actions=[]):
+                 depends=[], applies=[], actions=[]):
         super(Mixin, self).__init__(scheme, term, title, attributes=attributes,
                                     location=location)
 
-        helpers.check_type(related, Mixin)
+        helpers.check_type(depends, Mixin)
         helpers.check_type(actions, action.Action)
+        helpers.check_type(applies, kind.Kind)
 
-        self.related = related
+        self.depends = depends
         self.actions = actions
+        self.applies = applies
 
     def _class_name(self):
         return "mixin"
