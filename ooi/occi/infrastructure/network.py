@@ -36,7 +36,7 @@ class NetworkResource(resource.Resource):
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'network',
                      'network resource', attributes, 'network/',
                      actions=actions,
-                     related=[resource.Resource.kind])
+                     parent=resource.Resource.kind)
 
     def __init__(self, title, summary=None, id=None, vlan=None, label=None,
                  state=None, mixins=[]):
@@ -75,4 +75,5 @@ ip_network = mixin.Mixin(helpers.build_scheme("infrastructure/network"),
                          attributes=attr.AttributeCollection([
                              "occi.network.address",
                              "occi.network.gateway",
-                             "occi.network.allocation"]))
+                             "occi.network.allocation"]),
+                         applies=[NetworkResource.kind])

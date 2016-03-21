@@ -19,7 +19,7 @@ import collections
 from ooi.occi.rendering import headers as header_rendering
 from ooi.occi.rendering import text as text_rendering
 from ooi.occi.rendering import urilist as urilist_rendering
-from ooi.wsgi import utils
+from ooi import utils
 
 
 _MEDIA_TYPE_MAP = collections.OrderedDict([
