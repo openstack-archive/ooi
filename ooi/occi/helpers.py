@@ -24,6 +24,11 @@ def build_scheme(category, prefix=_PREFIX):
     return '%s#' % scheme
 
 
+def check_single_type(obj, obj_type):
+    if obj is not None and not isinstance(obj, obj_type):
+        raise TypeError('object must be of class %s' % obj_type)
+
+
 def check_type(obj_list, obj_type):
     if not isinstance(obj_list, (list, tuple)):
         raise TypeError('must be a list or tuple of objects')

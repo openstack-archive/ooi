@@ -28,14 +28,14 @@ class Kind(category.Category):
     """
 
     def __init__(self, scheme, term, title, attributes=None, location=None,
-                 related=[], actions=[]):
+                 parent=None, actions=[]):
         super(Kind, self).__init__(scheme, term, title, attributes=attributes,
                                    location=location)
 
-        helpers.check_type(related, Kind)
+        helpers.check_single_type(parent, Kind)
         helpers.check_type(actions, action.Action)
 
-        self.related = related
+        self.parent = parent
         self.actions = actions
 
     def _class_name(self):
