@@ -65,6 +65,18 @@ class BaseRendererTest(ooi.tests.base.TestCase):
         knd = kind.Kind("scheme", "term", "title")
         self.get_render_and_assert(knd)
 
+    def test_kind_attributes(self):
+        attr = attribute.MutableAttribute("org.example", "foo",
+                                          description="bar",
+                                          default="baz")
+        knd = kind.Kind("scheme", "term", "title",
+                        attributes=attribute.AttributeCollection({
+                            "org.example": attr}
+                        ))
+        r = self.renderer.get_renderer(knd)
+        observed = r.render()
+        self.assertKindAttr(knd, attr, observed)
+
     def test_mixin(self):
         mxn = mixin.Mixin("scheme", "term", "title")
         self.get_render_and_assert(mxn)
