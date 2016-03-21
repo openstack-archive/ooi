@@ -59,8 +59,9 @@ class CategoryRenderer(HeaderRenderer):
         ret = []
         ret.append(('%(term)s; scheme="%(scheme)s"; class="%(class)s"; '
                     'title="%(title)s"') % d)
-        for rel in getattr(self.obj, 'related', []):
-            d = {"scheme": rel.scheme, "term": rel.term}
+        parent = getattr(self.obj, 'parent', None)
+        if parent is not None:
+            d = {"scheme": parent.scheme, "term": parent.term}
             ret.append('rel="%(scheme)s%(term)s"' % d)
         ret.extend(self._render_location(env))
         # FIXME(enolfc): missing attributes and actions

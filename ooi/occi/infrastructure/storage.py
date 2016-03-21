@@ -43,7 +43,7 @@ class StorageResource(resource.Resource):
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'storage',
                      'storage resource', attributes, 'storage/',
                      actions=actions,
-                     related=[resource.Resource.kind])
+                     parent=resource.Resource.kind)
 
     def __init__(self, title, summary=None, id=None, size=None, state=None):
         mixins = []
