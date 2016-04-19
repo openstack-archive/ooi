@@ -47,3 +47,64 @@ def join_url(base, parts):
             p = p[1:]
         url = urlparse.urljoin(url, p)
     return url
+
+
+def make_body(resource, parameters):
+    """Creates body request using the parameters.
+
+    :param resource: kind of resource
+    :param parameters: list of parameters
+    """
+    content = {}
+    for key in parameters.keys():
+        content[key] = parameters[key]
+    if resource:
+        body = {resource: content}
+    else:
+        body = content
+    return body
+
+
+def get_query_string(parameters):
+    """Creates query string.
+
+    :param parameters: list of parameters
+    """
+    query_string = ""
+    if parameters is None:
+        return None
+
+    for key in parameters.keys():
+        query_string = ("%s%s=%s&" %
+                        (query_string, key, parameters[key]))
+
+    # delete last character
+    return query_string[:-1]
+
+
+def translate_parameters(translation, parameters):
+    """Translates parameter names to OS
+
+    :param translation: list of names for translation
+    :param parameters: list of parameters
+    """
+    if not parameters:
+        return None
+    out = {}
+    for key in parameters.keys():
+        if key in translation:
+            out[translation[key]] = parameters[key]
+    return out
+
+
+def network_status(neutron_status):
+    """Translate neutron network status.
+
+    :param neutron_status: neutron status
+    """
+    if neutron_status == "ACTIVE":
+        return "active"
+    elif neutron_status == "SUSPENDED":
+        return "suspended"
+    else:
+        return "inactive"
