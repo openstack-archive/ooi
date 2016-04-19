@@ -35,3 +35,16 @@ def vm_state(nova_status):
 # TODO(enolfc): Do really implement this.
 def vol_state(nova_status):
     return "online"
+
+
+def network_status(neutron_status):
+    """Translate neutron network status.
+
+    :param neutron_status: neutron status
+    """
+    if neutron_status == "ACTIVE":
+        return "active"
+    elif neutron_status == "SUSPENDED":
+        return "suspended"
+    else:
+        return "inactive"
