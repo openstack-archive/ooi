@@ -70,16 +70,11 @@ def get_query_string(parameters):
 
     :param parameters: list of parameters
     """
-    query_string = ""
     if parameters is None:
-        return None
-
-    for key in parameters.keys():
-        query_string = ("%s%s=%s&" %
-                        (query_string, key, parameters[key]))
-
-    # delete last character
-    return query_string[:-1]
+        query_string = None
+    else:
+        query_string = urlparse.urlencode(parameters)
+    return query_string
 
 
 def translate_parameters(translation, parameters):
@@ -95,16 +90,3 @@ def translate_parameters(translation, parameters):
         if key in translation:
             out[translation[key]] = parameters[key]
     return out
-
-
-def network_status(neutron_status):
-    """Translate neutron network status.
-
-    :param neutron_status: neutron status
-    """
-    if neutron_status == "ACTIVE":
-        return "active"
-    elif neutron_status == "SUSPENDED":
-        return "suspended"
-    else:
-        return "inactive"

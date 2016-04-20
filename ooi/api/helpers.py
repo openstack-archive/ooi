@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2015 Spanish National Research Council
+# Copyright 2016 LIP - Lisbon
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -22,6 +23,7 @@ import six.moves.urllib.parse as urlparse
 
 from ooi import exception
 from ooi.log import log as logging
+from ooi.openstack import helpers as os_helpers
 from ooi import utils
 
 import webob.exc
@@ -613,20 +615,6 @@ class OpenStackHelper(BaseHelper):
             raise exception_from_response(response)
 
 
-# Copyright 2016 LIP
-#
-# Licensed under the Apache License, Version 2.0 (the "License"); you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#      http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
-
 class OpenStackNeutron(BaseHelper):
     """Class to interact with the neutron API."""
 
@@ -677,7 +665,7 @@ class OpenStackNeutron(BaseHelper):
         for net in networks:
             ooi_net = {}
             status = net.get("status", None)
-            ooi_net["state"] = utils.network_status(status)
+            ooi_net["state"] = os_helpers.network_status(status)
             public = net.get('router:external', None)
             if public:
                 ooi_net["id"] = 'PUBLIC'
@@ -914,8 +902,7 @@ class OpenStackNeutron(BaseHelper):
         Returns the port information
 
         :param req: the incoming network
-        :param net_id: network id
-        :param device_id: device to connect
+        :param parameters: list of parameters
         """
         param_device_owner = {'device_owner': 'compute:nova'}
         attributes_port = utils.translate_parameters(
@@ -930,7 +917,7 @@ class OpenStackNeutron(BaseHelper):
             p['device_id'],
             p["fixed_ips"][0]["ip_address"],
             mac=p["mac_address"],
-            state=utils.network_status(p["status"]))
+            state=os_helpers.network_status(p["status"]))
         return link
 
     def delete_port(self, req, mac):
@@ -939,8 +926,7 @@ class OpenStackNeutron(BaseHelper):
         Returns the port information
 
         :param req: the incoming network
-        :param net_id: network id
-        :param device_id: device to connect
+        :param mac: interface mac
         """
         attributes_port = {
             "mac_address": mac
@@ -950,7 +936,9 @@ class OpenStackNeutron(BaseHelper):
             'ports', attributes_port
         )
         if ports.__len__() == 0:
-            raise exception.LinkNotFound()
+            raise exception.LinkNotFound(
+                "Interface %s not found" % mac
+            )
         out = self.delete_resource(req,
                                    'ports',
                                    ports[0]['id'])
@@ -1216,7 +1204,7 @@ class OpenStackNeutron(BaseHelper):
                     port['device_id'],
                     port["fixed_ips"][0]["ip_address"],
                     mac=port["mac_address"],
-                    state=utils.network_status(port["status"]))
+                    state=os_helpers.network_status(port["status"]))
                 link_list.append(link_private)
                 # Query public links associated to the port
                 floating_ips = self.list_resources(req,
@@ -1268,7 +1256,7 @@ class OpenStackNeutron(BaseHelper):
                         p['device_id'],
                         p["fixed_ips"][0]["ip_address"],
                         mac=p["mac_address"],
-                        state=utils.network_status(p["status"]))
+                        state=os_helpers.network_status(p["status"]))
                     return link_private
             raise exception.NotFound()
         except Exception:
