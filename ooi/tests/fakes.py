@@ -144,6 +144,12 @@ floating_ips = {
     ],
 }
 
+networks = {
+    tenants["baz"]["id"]: [
+        {"id": uuid.uuid4().hex},
+        {"id": uuid.uuid4().hex}
+        ]
+}
 servers = {
     tenants["foo"]["id"]: [
         {

@@ -24,8 +24,6 @@ from ooi.occi import validator as occi_validator
 from ooi.openstack import network as os_network
 
 
-FLOATING_PREFIX = "floating"
-FIXED_PREFIX = "fixed"
 PUBLIC_NETWORK = "PUBLIC"
 
 

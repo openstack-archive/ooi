@@ -34,11 +34,7 @@ from ooi.openstack import network as os_network
 from ooi.openstack import templates
 
 
-def _create_network_link(addr, comp):
-    if addr["OS-EXT-IPS:type"] == "floating":
-        net_id = network_api.FLOATING_PREFIX
-    else:
-        net_id = network_api.FIXED_PREFIX
+def _create_network_link(addr, comp, net_id):
     net = network.NetworkResource(title="network", id=net_id)
     return os_network.OSNetworkInterface(comp, net,
                                          addr["OS-EXT-IPS-MAC:mac_addr"],
@@ -46,13 +42,20 @@ def _create_network_link(addr, comp):
 
 
 class Controller(ooi.api.base.Controller):
-    def __init__(self, *args, **kwargs):
-        super(Controller, self).__init__(*args, **kwargs)
+    def __init__(self, app, openstack_version, neutron_endpoint=None):
+        super(Controller, self).__init__(app, openstack_version)
         self.compute_actions = compute.ComputeResource.actions
         self.os_helper = ooi.api.helpers.OpenStackHelper(
             self.app,
             self.openstack_version
         )
+        if neutron_endpoint:
+            self.os_network_helper = ooi.api.helpers.OpenStackNeutron(
+                neutron_endpoint
+            )
+        else:
+            self.os_network_helper = None
+            raise exception.NetworkNotSuported
 
     def _get_compute_resources(self, servers):
         occi_compute_resources = []
@@ -244,7 +247,14 @@ class Controller(ooi.api.base.Controller):
         if addresses:
             for addr_set in addresses.values():
                 for addr in addr_set:
-                    comp.add_link(_create_network_link(addr, comp))
+                    # TODO(jorgesece): pool could be the networ_id
+                    if addr["OS-EXT-IPS:type"] == "floating":
+                        net_id = network_api.PUBLIC_NETWORK
+                    else:
+                        net_id = self.os_network_helper.get_network_id(
+                            req, addr['OS-EXT-IPS-MAC:mac_addr']
+                        )
+                    comp.add_link(_create_network_link(addr, comp, net_id))
 
         return [comp]
 
