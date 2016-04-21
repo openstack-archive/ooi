@@ -38,14 +38,14 @@ tenants = {
 
 subnets = [
     {
-        "id": 1,
+        "id": uuid.uuid4().hex,
         "name": "private-subnet",
         "cidr": "33.0.0.1/24",
         "ip_version": "IPv4",
         "gateway_ip": "33.0.0.1",
     },
     {
-        "id": 2,
+        "id": uuid.uuid4().hex,
         "name": "public-subnet",
         "cidr": "44.0.0.1/24",
         "ip_version": "IPv4",
@@ -190,8 +190,6 @@ def create_header_occi(params, category, project=None):
     if category is not None:
         cat = ""
         for c in category:
-            if c.occi_class != 'kind':
-                c.term = 'mixin'
             cat = "%s%s; scheme=%s; class=%s, " % (
                 cat,
                 c.term, c.scheme, c.occi_class)
