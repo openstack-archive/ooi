@@ -185,7 +185,7 @@ def create_header_occi(params, category, project=None):
     att = ""
     if params is not None:
         for k, v in params.items():
-            att = "%s, %s=%s " % (att, k, v)
+            att = "%s, %s=%s" % (att, k, v)
         headers["X_OCCI_Attribute"] = att
     if category is not None:
         cat = ""
