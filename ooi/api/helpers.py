@@ -105,6 +105,13 @@ class BaseHelper(object):
         self.app = app
         self.openstack_version = openstack_version
 
+    @staticmethod
+    def tenant_from_req(req):
+        try:
+            return req.environ["HTTP_X_PROJECT_ID"]
+        except KeyError:
+            raise exception.Forbidden(reason="Cannot find project ID")
+
     def _get_req(self, req, method,
                  path=None,
                  content_type="application/json",
@@ -159,13 +166,6 @@ class BaseHelper(object):
 
 class OpenStackHelper(BaseHelper):
     """Class to interact with the nova API."""
-
-    @staticmethod
-    def tenant_from_req(req):
-        try:
-            return req.environ["HTTP_X_PROJECT_ID"]
-        except KeyError:
-            raise exception.Forbidden(reason="Cannot find project ID")
 
     def _get_index_req(self, req):
         tenant_id = self.tenant_from_req(req)
@@ -612,3 +612,178 @@ class OpenStackHelper(BaseHelper):
         # is actually returning 202 (bug likely)
         if response.status_int not in [202, 204]:
             raise exception_from_response(response)
+
+
+class OpenStackNovaNetwork(BaseHelper):
+    """Class to interact with the neutron API."""
+    translation = {
+        "networks": {"occi.core.title": "label",
+                     "occi.core.id": "id",
+                     "occi.network.address": "cidr",
+                     "occi.network.gateway": "gateway",
+                     "org.openstack.network.shared": "share_address",
+                     },
+        "networks_link": {"occi.core.target": "net_id",
+                          "occi.core.source": "server_id",
+                          },
+    }
+    required = {"networks": {"occi.core.title": "label",
+                             "occi.network.address": "cidr",
+                             }
+                }
+
+    @staticmethod
+    def get_from_response(response, element, default):
+        """Get a JSON element from a valid response or raise an exception.
+
+        This method will extract an element a JSON response
+         (falling back to a default value) if the response has a code
+          of 200, otherwise it will raise a webob.exc.exception
+
+        :param response: The webob.Response object
+        :param element: The element to look for in the JSON body
+        :param default: The default element to be returned if not found.
+        """
+        if response.status_int in [200, 201, 202]:
+            if element:
+                return response.json_body.get(element, default)
+            else:
+                return response.json_body
+        elif response.status_int in [204]:
+            return []
+        else:
+            raise exception_from_response(response)
+
+    @staticmethod
+    def _build_networks(networks):
+        ooi_net_list = []
+        for net in networks:
+            # todo: manage IP_v6 and see public
+            ooi_net = {}
+            ooi_net["address"] = net.get("cidr", None)
+            ooi_net["state"] = "active"
+            ooi_net["id"] = net["id"]
+            ooi_net["name"] = net.get("label", None)
+            ooi_net["gateway"] = net.get("gateway", None)
+            ooi_net_list.append(ooi_net)
+        return ooi_net_list
+
+    @staticmethod
+    def _build_link(net_id, compute_id, ip, mac=None, pool=None,
+                    state='active'):
+        link = {}
+        link['mac'] = mac
+        link['pool'] = pool
+        link['network_id'] = net_id
+        link['compute_id'] = compute_id
+        link['ip'] = ip
+        link['state'] = state
+        return link
+
+    def _make_get_request(self, req, path, parameters=None):
+        """Create GET request
+
+        This method create a GET Request instance
+
+        :param req: the incoming request
+        :param path: element location
+        :param parameters: parameters to filter results
+        :param tenant: include tenant in the query parameters
+        """
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/%s" % (tenant_id, path)
+        query_string = utils.get_query_string(parameters)
+        return self._get_req(req, path=path,
+                             query_string=query_string, method="GET")
+
+    def _make_create_request(self, req, path, resource, parameters):
+        """Create CREATE request
+
+        This method create a CREATE Request instance
+
+        :param req: the incoming request
+        :param path: path
+        :param resource: resource to manage
+        :param parameters: parameters with values
+        """
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/%s" % (tenant_id, path)
+        body = utils.make_body(resource, parameters)
+        return self._get_req(req, path=path,
+                             content_type="application/json",
+                             body=json.dumps(body), method="POST")
+
+    def _make_delete_request(self, req, path, id):
+        """Create DELETE request
+
+        This method create a DELETE Request instance
+
+        :param req: the incoming request
+        :param path: element location
+        """
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/%s/%s" % (tenant_id, path, id)
+        return self._get_req(req, path=path, method="DELETE")
+
+    def _make_put_request(self, req, path, parameters):
+        """Create DELETE request
+
+        This method create a DELETE Request instance
+
+        :param req: the incoming request
+        :param path: element location
+        """
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/%s" % (tenant_id, path)
+        body = utils.make_body(None, parameters)
+        return self._get_req(req, path=path,
+                             content_type="application/json",
+                             body=json.dumps(body), method="PUT")
+
+    def index(self, req, parameters=None):
+        """Get a list of servers for a tenant.
+
+        :param req: the incoming request
+        :param parameters: parameters with tenant
+        """
+        path = "os-networks"
+        os_req = self._make_get_request(req, path, parameters)
+        response = os_req.get_response(self.app)
+        nets = self.get_from_response(response, "networks", [])
+        ooi_networks = self._build_networks(nets)
+        return ooi_networks
+
+    def get_network_details(self, req, id):
+        """Get info from a network.
+
+        It returns json code from the server
+
+        :param req: the incoming network
+        :param id: net identification
+        """
+        path = "os-networks/%s" % id
+        os_req = self._make_get_request(req, path)
+        response = os_req.get_response(self.app)
+        net = self.get_from_response(response, "network", {})
+        ooi_networks = self._build_networks([net])
+        return ooi_networks[0]
+
+    def delete_network(self, req, id):
+        """Delete a network.
+
+        It returns json code from the server
+
+        :param req: the incoming network
+        :param id: net identification
+        :param parameters: parameters with tenant
+        """
+        raise exception.NotImplemented("Nova Netrwork not supported")
+
+    def create_network(self, req, parameters):
+        """Create a network in nova-network.
+
+        :param req: the incoming request
+        :param parameters: parameters with values
+         for the new network
+        """
+        raise exception.NotImplemented("Nova Netrwork not supported")
