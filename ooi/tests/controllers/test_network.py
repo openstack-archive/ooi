@@ -19,7 +19,7 @@ import uuid
 
 import mock
 
-from ooi.api import helpers
+from ooi.api import helpers_neutron
 from ooi.api import network as network_api
 from ooi import exception
 from ooi.occi.infrastructure import network as occi_network
@@ -27,13 +27,13 @@ from ooi.tests import base
 from ooi.tests import fakes_neutron as fakes
 
 
-class TestNetworkController(base.TestController):
+class TestNetworkControllerNeutron(base.TestController):
 
     def setUp(self):
-        super(TestNetworkController, self).setUp()
-        self.controller = network_api.Controller(None)
+        super(TestNetworkControllerNeutron, self).setUp()
+        self.controller = network_api.Controller(neutron_ooi_endpoint="ff")
 
-    @mock.patch.object(helpers.OpenStackNeutron, "list_resources")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
     def test_index(self, m_index):
         test_networks = [
             fakes.networks[fakes.tenants["bar"]["id"]],
@@ -41,7 +41,7 @@ class TestNetworkController(base.TestController):
         ]
         req = fakes.create_req_test(None, None)
         for nets in test_networks:
-            ooi_net = helpers.OpenStackNeutron._build_networks(nets)
+            ooi_net = helpers_neutron.OpenStackNeutron._build_networks(nets)
             m_index.return_value = ooi_net
             result = self.controller.index(req)
             expected = self.controller._get_network_resources(ooi_net)
@@ -49,14 +49,14 @@ class TestNetworkController(base.TestController):
                              expected.__len__())
             m_index.assert_called_with(req, 'networks', None)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "get_network_details")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "get_network_details")
     def test_show(self, m_network):
         test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
         for net in test_networks:
             ret = self.controller.show(None, net["id"])
             self.assertIsInstance(ret, occi_network.NetworkResource)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "create_network")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "create_network")
     def test_create(self, m):
         test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
         for test_net in test_networks:
@@ -78,7 +78,7 @@ class TestNetworkController(base.TestController):
             self.assertIsInstance(net, occi_network.NetworkResource)
             self.assertEqual(net.title, test_net['name'])
 
-    @mock.patch.object(helpers.OpenStackNeutron, "create_resource")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "create_resource")
     def test_create_error(self, m):
         test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
         schema1 = occi_network.NetworkResource.kind.scheme
@@ -90,7 +90,7 @@ class TestNetworkController(base.TestController):
 
         self.assertRaises(exception.Invalid, self.controller.create, req)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "create_network")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "create_network")
     def test_create_no_ip_mixin(self, m):
         test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
         for test_net in test_networks:
@@ -109,7 +109,7 @@ class TestNetworkController(base.TestController):
             self.assertRaises(exception.OCCIMissingType,
                               self.controller.create, req)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "delete_network")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "delete_network")
     def test_delete(self, m_network):
         m_network.return_value = []
         test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
@@ -123,7 +123,9 @@ class TestNetworkController(base.TestController):
         subnet = fakes.subnets
         for net in test_networks:
             net["subnet_info"] = subnet[0]
-        ooi_net = helpers.OpenStackNeutron._build_networks(test_networks)
+        ooi_net = (
+            helpers_neutron.OpenStackNeutron._build_networks(
+                test_networks))
         ret = self.controller._get_network_resources(ooi_net)
         self.assertIsInstance(ret, list)
         self.assertIsNot(ret.__len__(), 0)

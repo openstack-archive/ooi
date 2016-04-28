@@ -18,7 +18,7 @@ import uuid
 
 import mock
 
-from ooi.api import helpers
+from ooi.api import helpers_neutron
 from ooi import exception
 from ooi.tests import base
 from ooi.tests import fakes_neutron as fakes
@@ -29,7 +29,7 @@ class TestNetOpenStackHelper(base.TestCase):
     def setUp(self):
         super(TestNetOpenStackHelper, self).setUp()
         self.version = "version foo bar baz"
-        self.helper = helpers.OpenStackNeutron(self.version)
+        self.helper = helpers_neutron.OpenStackNeutron(self.version)
         self.translation = {"networks": {"occi.core.title": "name",
                                          "occi.core.id": "network_id",
                                          "occi.network.state": "status",
@@ -44,7 +44,7 @@ class TestNetOpenStackHelper(base.TestCase):
                                         }
                             }
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_make_get_request")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_make_get_request")
     def test_index(self, m):
         resp = fakes.create_fake_json_resp({"networks": ["FOO"]}, 200)
         req_mock = mock.MagicMock()
@@ -54,7 +54,7 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual(["FOO"], ret)
         m.assert_called_with(None, "/networks", None)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_get_req")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_get_req")
     def test_index2(self, m):
         resp = fakes.create_fake_json_resp({"networks": ["FOO"]}, 200)
         req_mock = mock.MagicMock()
@@ -65,7 +65,7 @@ class TestNetOpenStackHelper(base.TestCase):
         m.assert_called_with(None, method="GET",
                              path="/networks", query_string=None)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_make_get_request")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_make_get_request")
     def test_index3(self, m):
         id = uuid.uuid4().hex
         resp = fakes.create_fake_json_resp({"networks": [{"id": id}]}, 200)
@@ -76,7 +76,7 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual(id, ret[0]['id'])
         m.assert_called_with(None, "/networks", None)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_make_get_request")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_make_get_request")
     def test_get_network(self, m):
         id = uuid.uuid4().hex
         resp = fakes.create_fake_json_resp(
@@ -88,7 +88,7 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual("active", ret["state"])
         m.assert_called_with(None, "/networks/%s" % id)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_get_req")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_get_req")
     def test_get_network2(self, m):
         id = uuid.uuid4().hex
         resp = fakes.create_fake_json_resp(
@@ -102,7 +102,7 @@ class TestNetOpenStackHelper(base.TestCase):
                              path="/networks/%s" % id,
                              query_string=None)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_make_get_request")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_make_get_request")
     def test_get_subnetwork(self, m):
         id = uuid.uuid4().hex
         resp = fakes.create_fake_json_resp(
@@ -114,7 +114,7 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual(["FOO"], ret)
         m.assert_called_with(None, "/subnets/%s" % id)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_make_get_request")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_make_get_request")
     def test_get_network_with_subnet(self, m):
         id = uuid.uuid4().hex
         address = uuid.uuid4().hex
@@ -130,7 +130,7 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual(address, ret["address"])
         m.assert_called_with(req_mock, "/subnets/2")
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_get_req")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_get_req")
     def test_get_network_with_subnet2(self, m):
         id = uuid.uuid4().hex
         address = '90349034'
@@ -147,7 +147,8 @@ class TestNetOpenStackHelper(base.TestCase):
         m.assert_called_with(req_mock, method="GET",
                              path="/subnets/2", query_string=None)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_make_create_request")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron,
+                       "_make_create_request")
     def test_create_only_network(self, m):
         name = "name_net"
         net_id = uuid.uuid4().hex
@@ -167,7 +168,8 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual(net_id, ret["network_id"])
         m.assert_called_with(None, "networks", parameters)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_make_create_request")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron,
+                       "_make_create_request")
     def test_create_resource_net_subnet(self, m):
         name = "name_net"
         net_id = uuid.uuid4().hex
@@ -198,7 +200,7 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual(subnet_id, ret2["id"])
         m.assert_called_with(None, "subnets", parameters)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_get_req")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_get_req")
     def test_create_resource_net_subnet_req(self, m):
         name = "name_net"
         net_id = uuid.uuid4().hex
@@ -234,7 +236,7 @@ class TestNetOpenStackHelper(base.TestCase):
                                  "subnet", parameters)),
                              method="POST")
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_make_put_request")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_make_put_request")
     def test_add_router_interface(self, m):
         router_id = uuid.uuid4().hex
         subnet_id = uuid.uuid4().hex
@@ -252,7 +254,7 @@ class TestNetOpenStackHelper(base.TestCase):
         param = {"subnet_id": subnet_id}
         m.assert_called_with(None, path, param)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_make_put_request")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_make_put_request")
     def test_remove_router_interface(self, m):
         router_id = uuid.uuid4().hex
         subnet_id = uuid.uuid4().hex
@@ -270,7 +272,7 @@ class TestNetOpenStackHelper(base.TestCase):
         param = {"port_id": port_id}
         m.assert_called_with(None, path, param)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "list_resources")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
     def test_get_public_network(self, m):
         public_id = uuid.uuid4().hex
         m.return_value = [{"id": public_id}]
@@ -279,7 +281,7 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual(public_id, ret)
         m.assert_called_with(None, 'networks', att_public)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "create_resource")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "create_resource")
     def test_add_floating_ip(self, m):
         port_id = uuid.uuid4().hex
         public_net = uuid.uuid4().hex
@@ -296,8 +298,8 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual(ip, ret['floating_ip_address'])
         m.assert_called_with(None, 'floatingips', attributes_port)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "delete_resource")
-    @mock.patch.object(helpers.OpenStackNeutron, "list_resources")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "delete_resource")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
     def test_remove_floating_ip(self, m_list, m_del):
         ip = '1.0.0.0'
         public_net = uuid.uuid4().hex
@@ -313,9 +315,10 @@ class TestNetOpenStackHelper(base.TestCase):
         m_list.assert_called_with(None, 'floatingips', attributes_port)
         m_del.assert_called_with(None, 'floatingips', f_ip)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "create_resource")
-    @mock.patch.object(helpers.OpenStackNeutron, "list_resources")
-    @mock.patch.object(helpers.OpenStackNeutron, "_add_router_interface")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "create_resource")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron,
+                       "_add_router_interface")
     def test_create_full_network(self, add_if, list_net, cre_net):
         name = "name_net"
         net_id = uuid.uuid4().hex
@@ -368,9 +371,10 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual(cidr, ret['address'])
         self.assertEqual(gate_way, ret['gateway'])
 
-    @mock.patch.object(helpers.OpenStackNeutron, "delete_resource")
-    @mock.patch.object(helpers.OpenStackNeutron, "list_resources")
-    @mock.patch.object(helpers.OpenStackNeutron, "_remove_router_interface")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "delete_resource")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron,
+                       "_remove_router_interface")
     def test_delete_network(self, m_if, m_list, m_del):
         net_id = uuid.uuid4().hex
         router_id = uuid.uuid4().hex
@@ -398,7 +402,8 @@ class TestNetOpenStackHelper(base.TestCase):
                           net_id),
                          m_del.call_args_list[2][0])
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_make_delete_request")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron,
+                       "_make_delete_request")
     def test_delete_network_resource_make_mock(self, m):
         resp = fakes.create_fake_json_resp({"network": []}, 204)
         req_mock = mock.MagicMock()
@@ -408,7 +413,7 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual(ret, [])
         m.assert_called_with(None, "/networks", 1)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_get_req")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_get_req")
     def test_response_delete_network_resource(self, m):
         resp = fakes.create_fake_json_resp({"network": []}, 204)
         req_mock = mock.MagicMock()
@@ -420,9 +425,9 @@ class TestNetOpenStackHelper(base.TestCase):
         m.assert_called_with(None, method="DELETE",
                              path="/networks/1")
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_get_public_network")
-    @mock.patch.object(helpers.OpenStackNeutron, "list_resources")
-    @mock.patch.object(helpers.OpenStackNeutron, "_add_floating_ip")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_get_public_network")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_add_floating_ip")
     def test_assign_floating_ip(self, m_add, m_list, m_get_net):
         compute_id = uuid.uuid4().hex
         net_id = uuid.uuid4().hex
@@ -445,19 +450,20 @@ class TestNetOpenStackHelper(base.TestCase):
         m_list.assert_called_with(None, 'ports', param)
         m_add.assert_called_with(None, net_id, port['id'])
 
-    @mock.patch.object(helpers.OpenStackNeutron, "_get_public_network")
-    @mock.patch.object(helpers.OpenStackNeutron, "_remove_floating_ip")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_get_public_network")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "_remove_floating_ip")
     def test_release_floating_ip(self, m_add, m_get_net):
         ip = '22.0.0.1'
         net_id = 'PUBLIC'
-
+        iface = {'net_id': net_id,
+                 'ip': ip}
         m_get_net.return_value = net_id
         m_add.return_value = []
-        ret = self.helper.release_floating_ip(None, ip)
+        ret = self.helper.release_floating_ip(None, iface)
         self.assertEqual([], ret)
         m_add.assert_called_with(None, net_id, ip)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "create_resource")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "create_resource")
     def test_create_port(self, m_create):
         ip = '22.0.0.1'
         net_id = uuid.uuid4().hex
@@ -474,20 +480,24 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual(net_id, ret['network_id'])
         self.assertEqual(mac, ret['mac'])
 
-    @mock.patch.object(helpers.OpenStackNeutron, "list_resources")
-    @mock.patch.object(helpers.OpenStackNeutron, "delete_resource")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "delete_resource")
     def test_delete_port(self, m_delete, m_list):
         port_id = uuid.uuid4().hex
         p = [{'id': port_id}]
         m_list.return_value = p
         m_delete.return_value = []
-        ret = self.helper.delete_port(None, None)
+        iface = {'compute_id': None,
+                 'mac': None}
+        ret = self.helper.delete_port(None, iface)
         self.assertEqual([], ret)
 
-    @mock.patch.object(helpers.OpenStackNeutron, "list_resources")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
     def test_list_port_not_found(self, m_list):
+        iface = {'compute_id': None,
+                 'mac': None}
         m_list.return_value = []
         self.assertRaises(exception.LinkNotFound,
                           self.helper.delete_port,
                           None,
-                          None)
+                          iface)

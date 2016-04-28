@@ -16,7 +16,7 @@
 # under the License.
 
 from ooi.api import base
-from ooi.api import helpers
+from ooi.api import helpers_neutron
 from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import network
@@ -83,10 +83,10 @@ def process_parameters(req, scheme=None):
 
 
 class Controller(base.Controller):
-    def __init__(self, neutron_endpoint):
+    def __init__(self, neutron_ooi_endpoint):
         super(Controller, self).__init__(app=None, openstack_version="v2.0")
-        self.os_helper = helpers.OpenStackNeutron(
-            neutron_endpoint
+        self.os_helper = helpers_neutron.OpenStackNeutron(
+            neutron_ooi_endpoint
         )
 
     @staticmethod

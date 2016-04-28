@@ -17,7 +17,7 @@
 
 import mock
 
-from ooi.api import helpers
+from ooi.api import helpers_neutron
 from ooi.api import network
 from ooi.occi.core import collection
 from ooi.tests import fakes_neutron as fakes
@@ -134,7 +134,7 @@ class TestNetworkController(TestMiddlewareNeutron):
     @mock.patch.object(network.Controller, "index")
     def test_list_networks(self, m):
         tenant = fakes.tenants["foo"]
-        ooi_net = helpers.OpenStackNeutron._build_networks(
+        ooi_net = helpers_neutron.OpenStackNeutron._build_networks(
             fakes.networks[tenant['id']]
         )
         m.return_value = collection.Collection(
@@ -184,7 +184,7 @@ class TestNetworkController(TestMiddlewareNeutron):
         tenant = fakes.tenants["foo"]
 
         for n in fakes.networks[tenant["id"]]:
-            ooi_net = helpers.OpenStackNeutron._build_networks([n])[0]
+            ooi_net = helpers_neutron.OpenStackNeutron._build_networks([n])[0]
             m.return_value = create_occi_results([ooi_net])[0]
             req = self._build_req(path="/network/%s" % n["id"],
                                   tenant_id='X',
