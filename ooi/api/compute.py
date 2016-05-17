@@ -34,11 +34,7 @@ from ooi.openstack import network as os_network
 from ooi.openstack import templates
 
 
-def _create_network_link(addr, comp):
-    if addr["OS-EXT-IPS:type"] == "floating":
-        net_id = network_api.FLOATING_PREFIX
-    else:
-        net_id = network_api.FIXED_PREFIX
+def _create_network_link(addr, comp, net_id):
     net = network.NetworkResource(title="network", id=net_id)
     return os_network.OSNetworkInterface(comp, net,
                                          addr["OS-EXT-IPS-MAC:mac_addr"],
@@ -181,7 +177,7 @@ class Controller(ooi.api.base.Controller):
                                               public_key=key_data)
 
         block_device_mapping_v2 = self._build_block_mapping(req, obj)
-
+        # fixme: add network id
         server = self.os_helper.create_server(
             req,
             name,
@@ -244,7 +240,17 @@ class Controller(ooi.api.base.Controller):
         if addresses:
             for addr_set in addresses.values():
                 for addr in addr_set:
-                    comp.add_link(_create_network_link(addr, comp))
+                    # TODO(jorgesece): pool?
+                    if addr["OS-EXT-IPS:type"] == "floating":
+                        net_id = network_api.PUBLIC_NETWORK
+                    else:
+                        try:
+                            net_id = self.os_helper.get_network_id(
+                                req, addr['OS-EXT-IPS-MAC:mac_addr'], id
+                            )
+                        except webob.exc.HTTPNotFound:
+                            net_id = "FIXED"
+                    comp.add_link(_create_network_link(addr, comp, net_id))
 
         return [comp]
 

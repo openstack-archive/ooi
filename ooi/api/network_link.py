@@ -26,6 +26,34 @@ from ooi.occi import validator as occi_validator
 from ooi.openstack import network as os_network
 
 
+def _get_network_link_resources(link_list):
+    """Create OCCI networkLink instances from json format
+
+    :param link_list: provides by the cloud infrastructure
+    """
+    occi_network_resources = []
+    if link_list:
+        for l in link_list:
+            compute_id = l.get('compute_id')
+            mac = l.get('mac', None)
+            net_pool = l.get('pool', None)
+            ip = l.get('ip', None)
+            state = l.get('state', None)
+            ip_id = l.get('ip_id', None)
+            net_id = l['network_id']
+            n = network.NetworkResource(title="network",
+                                        id=net_id)
+            c = compute.ComputeResource(title="Compute",
+                                        id=compute_id
+                                        )
+            iface = os_network.OSNetworkInterface(c, n, mac, ip,
+                                                  pool=net_pool,
+                                                  ip_id=ip_id,
+                                                  state=state)
+            occi_network_resources.append(iface)
+    return occi_network_resources
+
+
 class Controller(base.Controller):
     def __init__(self, *args, **kwargs):
         super(Controller, self).__init__(*args, **kwargs)
@@ -35,58 +63,57 @@ class Controller(base.Controller):
         )
 
     def index(self, req):
-        floating_ips = self.os_helper.get_floating_ips(req)
-        occi_link_resources = []
-        for ip in floating_ips:
-            if ip["instance_id"]:
-                n = network.NetworkResource(title="network",
-                                            id=network_api.FLOATING_PREFIX)
-                c = compute.ComputeResource(title="Compute",
-                                            id=ip["instance_id"])
-                # TODO(enolfc): get the MAC?
-                iface = os_network.OSNetworkInterface(c, n, "mac", ip["ip"],
-                                                      pool=ip["pool"])
-                occi_link_resources.append(iface)
+        """List networksLinks
 
+        :param req: request object
+        """
+        attributes = network_api.process_parameters(req)
+        link_list = self.os_helper.list_compute_net_links(
+            req,
+            attributes)
+        occi_link_resources = _get_network_link_resources(link_list)
         return collection.Collection(resources=occi_link_resources)
 
-    def _build_os_net_iface(self, req, server_id, addr):
-        ip_id = pool = None
-        if addr["OS-EXT-IPS:type"] == "fixed":
-            net_id = network_api.FIXED_PREFIX
-        else:
-            net_id = network_api.FLOATING_PREFIX
-            floating_ips = self.os_helper.get_floating_ips(req)
-            for ip in floating_ips:
-                if addr["addr"] == ip["ip"]:
-                    ip_id = ip["id"]
-                    pool = ip["pool"]
-                    break
-            else:
-                raise exception.NetworkNotFound(resource_id=addr)
-        c = compute.ComputeResource(title="Compute", id=server_id)
-        n = network.NetworkResource(title="network", id=net_id)
-        # TODO(enolfc): get the MAC?
-        return os_network.OSNetworkInterface(c, n, "mac", addr["addr"],
-                                             ip_id, pool)
-
     def _get_interface_from_id(self, req, id):
+        """Get interface from id
+
+        :param req: request object
+        :param id: network link identification
+        """
         try:
-            server_id, server_addr = id.split('_', 1)
+            server_id, network_id, server_addr = id.split('_', 2)
         except ValueError:
             raise exception.LinkNotFound(link_id=id)
-        s = self.os_helper.get_server(req, server_id)
-        addresses = s.get("addresses", {})
-        for addr_set in addresses.values():
-            for addr in addr_set:
-                if addr["addr"] == server_addr:
-                    return self._build_os_net_iface(req, server_id, addr)
-        raise exception.LinkNotFound(link_id=id)
+        try:
+            link = self.os_helper.get_compute_net_link(
+                req,
+                server_id,
+                network_id,
+                server_addr)
+            occi_instance = _get_network_link_resources([link])[0]
+        except Exception:
+            raise exception.LinkNotFound(link_id=id)
+        return occi_instance
 
     def show(self, req, id):
-        return [self._get_interface_from_id(req, id)]
+        """Get networkLink details
 
-    def create(self, req, body):
+        :param req: request object
+        :param id: networkLink identification
+        """
+        occi_instance = self._get_interface_from_id(req, id)
+
+        return occi_instance
+
+    def create(self, req, body=None):
+        """Create a networkLink
+
+        Creates a link between a server and a network.
+        It could be fixed or floating IP.
+
+        :param req: request object
+        :param body: body request (not used)
+        """
         parser = req.get_parser()(req.headers, req.body)
         scheme = {
             "category": network_link.NetworkInterface.kind,
@@ -107,35 +134,41 @@ class Controller(base.Controller):
             req,
             attrs.get("occi.core.source"),
             compute.ComputeResource.kind)
-
-        # net_id is something like "fixed" or "floating"
-        if net_id == network_api.FIXED_PREFIX:
-            raise exception.Invalid()
-        elif net_id != network_api.FLOATING_PREFIX:
-            raise exception.NetworkNotFound(resource_id=net_id)
-
-        pool_name = None
+        parameters = {"occi.core.target": net_id,
+                      "occi.core.source": server_id}
         if os_network.OSFloatingIPPool.scheme in obj["schemes"]:
-            pool_name = obj["schemes"][os_network.OSFloatingIPPool.scheme][0]
-        # Allocate IP
-        ip = self.os_helper.allocate_floating_ip(req, pool_name)
-
-        # Add it to server
-        self.os_helper.associate_floating_ip(req, server_id, ip["ip"])
-        n = network.NetworkResource(title="network", id=net_id)
-        c = compute.ComputeResource(title="Compute", id=server_id)
-        l = os_network.OSNetworkInterface(c, n, "mac", ip["ip"])
-        return collection.Collection(resources=[l])
+                parameters["pool_name"] = (
+                    obj["schemes"][os_network.OSFloatingIPPool.scheme][0]
+                )
+        # Allocate public IP and associate it ot the server
+        if net_id == network_api.PUBLIC_NETWORK:
+            os_link = self.os_helper.assign_floating_ip(
+                req,
+                parameters)
+        else:
+            # Allocate private network
+            os_link = self.os_helper.create_port(
+                req, parameters)
+        occi_link = _get_network_link_resources([os_link])
+        return collection.Collection(resources=occi_link)
 
     def delete(self, req, id):
+        """Delete networks link
+
+        :param req: current request
+        :param id: identification
+        """
         iface = self._get_interface_from_id(req, id)
-        if iface.target.id == "fixed":
-            raise exception.Invalid()
-
-        # remove floating IP
         server = iface.source.id
-        self.os_helper.remove_floating_ip(req, server, iface.address)
+        if iface.target.id == network_api.PUBLIC_NETWORK:
+            # remove floating IP
+            self.os_helper.remove_floating_ip(req, server,
+                                              iface.address)
 
-        # release IP
-        self.os_helper.release_floating_ip(req, iface.ip_id)
+            # release IP
+            self.os_helper.release_floating_ip(req,
+                                               iface.ip_id)
+        else:
+            self.os_helper.delete_port(
+                req, server, iface.ip_id)
         return []
