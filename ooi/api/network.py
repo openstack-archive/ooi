@@ -24,9 +24,6 @@ from ooi.occi.infrastructure import network
 from ooi.occi import validator as occi_validator
 from ooi.openstack import network as os_network
 
-FLOATING_PREFIX = "floating"
-FIXED_PREFIX = "fixed"
-
 
 def parse_validate_schema(req, scheme=None,
                           required_attr=None):

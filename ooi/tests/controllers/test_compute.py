@@ -178,7 +178,8 @@ class TestComputeController(base.TestController):
     @mock.patch.object(helpers.OpenStackHelper, "get_image")
     @mock.patch.object(helpers.OpenStackHelper, "get_flavor")
     @mock.patch.object(helpers.OpenStackHelper, "get_server")
-    def test_show(self, m_server, m_flavor, m_image, m_vol):
+    @mock.patch.object(helpers.OpenStackHelper, "get_network_id")
+    def test_show(self, m_net_id, m_server, m_flavor, m_image, m_vol):
         for tenant in fakes.tenants.values():
             servers = fakes.servers[tenant["id"]]
             for server in servers:
@@ -187,7 +188,10 @@ class TestComputeController(base.TestController):
                 volumes = fakes.volumes.get(tenant["id"], [])
                 if volumes:
                     volumes = volumes[0]["attachments"]
-
+                net_id = fakes.networks.get(tenant["id"], [])
+                if net_id:
+                    net_id = net_id[0]['id']
+                m_net_id.return_value = net_id
                 m_server.return_value = server
                 m_flavor.return_value = flavor
                 m_image.return_value = image
@@ -205,7 +209,8 @@ class TestComputeController(base.TestController):
     @mock.patch.object(helpers.OpenStackHelper, "get_image")
     @mock.patch.object(helpers.OpenStackHelper, "get_flavor")
     @mock.patch.object(helpers.OpenStackHelper, "get_server")
-    def test_show_no_image(self, m_server, m_flavor, m_image, m_vol):
+    @mock.patch.object(helpers.OpenStackHelper, "get_network_id")
+    def test_show_no_image(self, m_net_id, m_server, m_flavor, m_image, m_vol):
         for tenant in fakes.tenants.values():
             servers = fakes.servers[tenant["id"]]
             for server in servers:
@@ -214,7 +219,10 @@ class TestComputeController(base.TestController):
                 volumes = fakes.volumes.get(tenant["id"], [])
                 if volumes:
                     volumes = volumes[0]["attachments"]
-
+                net_id = fakes.networks.get(tenant["id"], [])
+                if net_id:
+                    net_id = net_id[0]['id']
+                m_net_id.return_value = net_id
                 m_server.return_value = server
                 m_flavor.return_value = flavor
                 m_image.side_effect = webob.exc.HTTPNotFound()
