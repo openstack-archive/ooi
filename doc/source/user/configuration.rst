@@ -37,6 +37,7 @@ First it is needed to add the OCCI filter like this::
     [filter:occi]
     paste.filter_factory = ooi.wsgi:OCCIMiddleware.factory
     openstack_version = /v2
+    neutron_ooi_endpoint = http://127.0.0.1:9696/v2.0
 
 ``openstack_version`` can be configured to any of the supported OpenStack API
 versions, as indicated in Table :ref:`api-versions`. If it is not configured,
@@ -52,6 +53,9 @@ by default it will take the ``/v2.1`` value.
     v2                    ``/v2``               ``[composite:openstack_compute_api_v2]``
     v2.1                  ``/v2.1``             ``[composite:openstack_compute_api_v21]``
     ===================== ===================== =============================================
+
+``neutron_ooi_endpoint`` configures the neutron endpoint. It is an optional parameter that configures
+the network management by using netron. If it not configured, the system will use nova-network.
 
 The next step is to create a ``composite`` section for the OCCI interface. It
 is needed to duplicate the :ref:`corresponding OpenStack API ``composite``<api-versions>` section,
