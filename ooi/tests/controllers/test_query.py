@@ -102,6 +102,72 @@ class TestQueryController(base.TestController):
         ret = self.controller.index(req)
         self.assertItemsEqual(expected, ret)
 
+    @mock.patch.object(query.Controller, "_os_tpls")
+    @mock.patch.object(query.Controller, "_resource_tpls")
+    @mock.patch.object(query.Controller, "_ip_pools")
+    def test_index_neutron(self, m_res, m_os, m_pools):
+        neutron_controller = query.Controller(mock.MagicMock(),
+                                              None, "http://foo")
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+
+        f = fakes.flavors[1]
+        res_tpl = templates.OpenStackResourceTemplate(f["id"], f["name"],
+                                                      f["vcpus"], f["ram"],
+                                                      f["disk"])
+        m_res.return_value = [res_tpl]
+        i = fakes.images["foo"]
+        os_tpl = templates.OpenStackOSTemplate(i["id"], i["name"])
+        m_os.return_value = [os_tpl]
+        ip_pool = os_network.OSFloatingIPPool("foo")
+        m_pools.return_value = [ip_pool]
+
+        expected = [
+            res_tpl,
+            os_tpl,
+            ip_pool,
+            # OCCI Core Kinds:
+            entity.Entity.kind,
+            resource.Resource.kind,
+            link.Link.kind,
+
+            # OCCI infra Compute:
+            compute.ComputeResource.kind,
+            compute.start,
+            compute.stop,
+            compute.restart,
+            compute.suspend,
+
+            # OCCI infra Storage
+            storage.StorageResource.kind,
+            storage_link.StorageLink.kind,
+            storage.online,
+            storage.offline,
+            storage.backup,
+            storage.snapshot,
+            storage.resize,
+
+            # OCCI infra network
+            network.NetworkResource.kind,
+            network.up,
+            network.down,
+            os_network.neutron_network,
+            network.ip_network,
+            network_link.NetworkInterface.kind,
+            network_link.ip_network_interface,
+
+            # OCCI infra compute mixins
+            infra_templates.os_tpl,
+            infra_templates.resource_tpl,
+
+            # OpenStack Contextualization
+            contextualization.user_data,
+            contextualization.public_key,
+        ]
+
+        ret = neutron_controller.index(req)
+        self.assertItemsEqual(expected, ret)
+
     @mock.patch.object(helpers.OpenStackHelper, "get_flavors")
     def test_get_resource_tpls(self, m_get_flavors):
         m_get_flavors.return_value = fakes.flavors.values()

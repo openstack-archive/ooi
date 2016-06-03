@@ -160,3 +160,8 @@ class OSNetworkResource(network.NetworkResource):
     @allocation.setter
     def allocation(self, value):
         self.attributes["occi.network.network.allocation"] = value
+
+
+neutron_network = mixin.Mixin(helpers.build_scheme("infrastructure/network"),
+                              "neutron", "Network component",
+                              )
