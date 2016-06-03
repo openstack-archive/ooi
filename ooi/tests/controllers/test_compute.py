@@ -26,6 +26,7 @@ from ooi.api import helpers
 from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute as occi_compute
+from ooi.occi.infrastructure import network as occi_network
 from ooi.occi.infrastructure import storage as occi_storage
 from ooi.openstack import contextualization
 from ooi.openstack import templates
@@ -237,8 +238,10 @@ class TestComputeController(base.TestController):
                 m_vol.assert_called_with(None, server["id"])
 
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
+    @mock.patch.object(compute.Controller, "_get_network_from_req")
     @mock.patch("ooi.occi.validator.Validator")
-    def test_create_server(self, m_validator, m_create):
+    def test_create_server(self, m_validator, m_net,
+                           m_create):
         tenant = fakes.tenants["foo"]
         req = self._build_req(tenant["id"])
         obj = {
@@ -258,16 +261,21 @@ class TestComputeController(base.TestController):
         m_validator.validate.return_value = True
         server = {"id": uuid.uuid4().hex}
         m_create.return_value = server
+        net = [{'uuid': uuid.uuid4().hex}]
+        m_net.return_value = net
         ret = self.controller.create(req, None)
         self.assertIsInstance(ret, collection.Collection)
         m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
                                     key_name=None,
-                                    block_device_mapping_v2=[])
+                                    block_device_mapping_v2=[],
+                                    networks=net)
 
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
+    @mock.patch.object(compute.Controller, "_get_network_from_req")
     @mock.patch("ooi.occi.validator.Validator")
-    def test_create_server_with_context(self, m_validator, m_create):
+    def test_create_server_with_context(self, m_validator, m_net,
+                                        m_create):
         tenant = fakes.tenants["foo"]
         req = self._build_req(tenant["id"])
         obj = {
@@ -290,18 +298,22 @@ class TestComputeController(base.TestController):
         m_validator.validate.return_value = True
         server = {"id": uuid.uuid4().hex}
         m_create.return_value = server
+        net = [{'uuid': uuid.uuid4().hex}]
+        m_net.return_value = net
         ret = self.controller.create(req, None)  # noqa
         self.assertIsInstance(ret, collection.Collection)
         m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data="bazonk",
                                     key_name=None,
-                                    block_device_mapping_v2=[])
+                                    block_device_mapping_v2=[],
+                                    networks=net)
 
     @mock.patch.object(helpers.OpenStackHelper, "keypair_create")
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
+    @mock.patch.object(compute.Controller, "_get_network_from_req")
     @mock.patch("ooi.occi.validator.Validator")
-    def test_create_server_with_sshkeys(self, m_validator, m_server,
-                                        m_keypair):
+    def test_create_server_with_sshkeys(self, m_validator, m_net,
+                                        m_server, m_keypair):
         tenant = fakes.tenants["foo"]
         req = self._build_req(tenant["id"])
         obj = {
@@ -322,6 +334,8 @@ class TestComputeController(base.TestController):
         server = {"id": uuid.uuid4().hex}
         m_server.return_value = server
         m_keypair.return_value = None
+        net = [{'uuid': uuid.uuid4().hex}]
+        m_net.return_value = net
         ret = self.controller.create(req, None)  # noqa
         self.assertIsInstance(ret, collection.Collection)
         m_keypair.assert_called_with(mock.ANY, "wtfoo",
@@ -329,14 +343,17 @@ class TestComputeController(base.TestController):
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
                                     key_name="wtfoo",
-                                    block_device_mapping_v2=[])
+                                    block_device_mapping_v2=[],
+                                    networks=net)
 
     @mock.patch.object(helpers.OpenStackHelper, "keypair_delete")
     @mock.patch.object(helpers.OpenStackHelper, "keypair_create")
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
+    @mock.patch.object(compute.Controller, "_get_network_from_req")
     @mock.patch("ooi.occi.validator.Validator")
-    def test_create_server_with_no_sshkey_name(self, m_validator, m_server,
-                                               m_keypair, m_keypair_delete):
+    def test_create_server_with_no_sshkey_name(self, m_validator, m_net,
+                                               m_server, m_keypair,
+                                               m_keypair_delete):
         tenant = fakes.tenants["foo"]
         req = self._build_req(tenant["id"])
         obj = {
@@ -356,6 +373,8 @@ class TestComputeController(base.TestController):
         server = {"id": uuid.uuid4().hex}
         m_server.return_value = server
         m_keypair.return_value = None
+        net = [{'uuid': uuid.uuid4().hex}]
+        m_net.return_value = net
         ret = self.controller.create(req, None)  # noqa
         self.assertIsInstance(ret, collection.Collection)
         m_keypair.assert_called_with(mock.ANY, mock.ANY,
@@ -363,7 +382,8 @@ class TestComputeController(base.TestController):
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
                                     key_name=mock.ANY,
-                                    block_device_mapping_v2=[])
+                                    block_device_mapping_v2=[],
+                                    networks=net)
         m_keypair_delete.assert_called_with(mock.ANY, mock.ANY)
 
     def test_build_block_mapping_no_links(self):
@@ -451,9 +471,10 @@ class TestComputeController(base.TestController):
 
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
     @mock.patch.object(compute.Controller, "_build_block_mapping")
+    @mock.patch.object(compute.Controller, "_get_network_from_req")
     @mock.patch("ooi.occi.validator.Validator")
-    def test_create_server_with_storage_link(self, m_validator, m_block,
-                                             m_server):
+    def test_create_server_with_storage_link(self, m_validator, m_net,
+                                             m_block, m_server):
         tenant = fakes.tenants["foo"]
         req = self._build_req(tenant["id"])
         obj = {
@@ -471,10 +492,144 @@ class TestComputeController(base.TestController):
         server = {"id": uuid.uuid4().hex}
         m_server.return_value = server
         m_block.return_value = "mapping"
+        net = [{'uuid': uuid.uuid4().hex}]
+        m_net.return_value = net
         ret = self.controller.create(req, None)  # noqa
         self.assertIsInstance(ret, collection.Collection)
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
                                     key_name=mock.ANY,
-                                    block_device_mapping_v2="mapping")
+                                    block_device_mapping_v2="mapping",
+                                    networks=net)
         m_block.assert_called_with(req, obj)
+
+    @mock.patch("ooi.api.helpers.get_id_with_kind")
+    def test_get_network_from_req(self, m_get_id):
+        net_id = uuid.uuid4().hex
+        obj = {
+            'links': {
+                'l1': {
+                    'rel': '%s%s' % (occi_network.NetworkResource.kind.scheme,
+                                     occi_network.NetworkResource.kind.term),
+                    'occi.core.target': net_id,
+                }
+            },
+        }
+        m_get_id.return_value = (None, net_id)
+        ret = self.controller._get_network_from_req(None, obj)
+        expected = [
+            {
+                "uuid": net_id,
+            }
+        ]
+        self.assertEqual(expected, ret)
+        m_get_id.assert_called_with(None, net_id,
+                                    occi_network.NetworkResource.kind)
+
+    @mock.patch("ooi.api.helpers.get_id_with_kind")
+    def test_get_network_from_req_several_links(self, m_get_id):
+        net_id_1 = uuid.uuid4().hex
+        net_id_2 = uuid.uuid4().hex
+        obj = {
+            'links': {
+                'l1': {
+                    'rel': '%s%s' % (occi_network.NetworkResource.kind.scheme,
+                                     occi_network.NetworkResource.kind.term),
+                    'occi.core.target': net_id_1,
+                },
+                'l2': {
+                    'rel': '%s%s' % (occi_network.NetworkResource.kind.scheme,
+                                     occi_network.NetworkResource.kind.term),
+                    'occi.core.target': net_id_2,
+                }
+            },
+        }
+        m_get_id.side_effect = [(None, net_id_1),
+                                (None, net_id_2)
+                                ]
+        ret = self.controller._get_network_from_req(None, obj)
+        expected = [
+            {"uuid": net_id_1},
+            {"uuid": net_id_2}
+        ]
+        self.assertEqual(expected, ret)
+        self.assertEqual(2, m_get_id.call_count)
+        self.assertEqual((None, mock.ANY,
+                          occi_network.NetworkResource.kind),
+                         m_get_id.call_args_list[1][0])
+        self.assertEqual((None, mock.ANY,
+                          occi_network.NetworkResource.kind),
+                         m_get_id.call_args_list[0][0]
+                         )
+        self.assertNotEqual(m_get_id.call_args_list[0][0][1],
+                            m_get_id.call_args_list[1][0][1])
+        self.assertIn(m_get_id.call_args_list[0][0][1],
+                      [net_id_1, net_id_2]
+                      )
+        self.assertIn(m_get_id.call_args_list[1][0][1],
+                      [net_id_1, net_id_2]
+                      )
+
+    @mock.patch.object(helpers.OpenStackHelper, "create_server")
+    @mock.patch.object(compute.Controller, "_get_network_from_req")
+    @mock.patch("ooi.occi.validator.Validator")
+    def test_create_server_with_network_link(self, m_validator,
+                                             m_net, m_server):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        obj = {
+            "attributes": {
+                "occi.core.title": "foo instance",
+            },
+            "schemes": {
+                templates.OpenStackOSTemplate.scheme: ["foo"],
+                templates.OpenStackResourceTemplate.scheme: ["bar"],
+            },
+        }
+        req.get_parser = mock.MagicMock()
+        req.get_parser.return_value.return_value.parse.return_value = obj
+        m_validator.validate.return_value = True
+        server = {"id": uuid.uuid4().hex}
+        m_server.return_value = server
+        net = [{'uuid': uuid.uuid4().hex}]
+        m_net.return_value = net
+        ret = self.controller.create(req, None)
+        self.assertIsInstance(ret, collection.Collection)
+        m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
+                                    user_data=None,
+                                    key_name=mock.ANY,
+                                    block_device_mapping_v2=[],
+                                    networks=net)
+        m_net.assert_called_with(req, obj)
+
+    @mock.patch.object(helpers.OpenStackHelper, "create_server")
+    @mock.patch.object(compute.Controller, "_get_network_from_req")
+    @mock.patch("ooi.occi.validator.Validator")
+    def test_create_server_with_network_link_several(self, m_validator,
+                                                     m_net, m_server):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        obj = {
+            "attributes": {
+                "occi.core.title": "foo instance",
+            },
+            "schemes": {
+                templates.OpenStackOSTemplate.scheme: ["foo"],
+                templates.OpenStackResourceTemplate.scheme: ["bar"],
+            },
+        }
+        req.get_parser = mock.MagicMock()
+        req.get_parser.return_value.return_value.parse.return_value = obj
+        m_validator.validate.return_value = True
+        server = {"id": uuid.uuid4().hex}
+        m_server.return_value = server
+        net = [{'uuid': uuid.uuid4().hex}, {'uuid': uuid.uuid4().hex}]
+        m_net.return_value = net
+        ret = self.controller.create(req, None)
+        self.assertIsInstance(ret, collection.Collection)
+        m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
+                                    user_data=None,
+                                    key_name=mock.ANY,
+                                    block_device_mapping_v2=[],
+                                    networks=net)
+        m_net.assert_called_with(req, obj)

@@ -323,7 +323,8 @@ class OpenStackHelper(BaseHelper):
     def _get_create_server_req(self, req, name, image, flavor,
                                user_data=None,
                                key_name=None,
-                               block_device_mapping_v2=None):
+                               block_device_mapping_v2=None,
+                               networks=None):
         tenant_id = self.tenant_from_req(req)
         path = "/%s/servers" % tenant_id
         # TODO(enolfc): add here the correct metadata info
@@ -334,15 +335,14 @@ class OpenStackHelper(BaseHelper):
             "imageRef": image,
             "flavorRef": flavor,
         }}
-        # FIXME(jorgesece): Add network ID (Bug 1524935)
-        # if net_id:
-        # body['server']['network'] = {'uuid': net_id}
         if user_data is not None:
             body["server"]["user_data"] = user_data
         if key_name is not None:
             body["server"]["key_name"] = key_name
         if block_device_mapping_v2:
             body["server"]["block_device_mapping_v2"] = block_device_mapping_v2
+        if networks:
+            body["server"]["networks"] = networks
 
         return self._get_req(req,
                              path=path,
@@ -352,7 +352,8 @@ class OpenStackHelper(BaseHelper):
 
     def create_server(self, req, name, image, flavor,
                       user_data=None, key_name=None,
-                      block_device_mapping_v2=None):
+                      block_device_mapping_v2=None,
+                      networks=None):
         """Create a server.
 
         :param req: the incoming request
@@ -369,7 +370,8 @@ class OpenStackHelper(BaseHelper):
             flavor,
             user_data=user_data,
             key_name=key_name,
-            block_device_mapping_v2=block_device_mapping_v2)
+            block_device_mapping_v2=block_device_mapping_v2,
+            networks=networks)
         response = req.get_response(self.app)
         # We only get one server
         return self.get_from_response(response, "server", {})

@@ -127,6 +127,18 @@ class Controller(ooi.api.base.Controller):
             })
         return mappings
 
+    def _get_network_from_req(self, req, obj):
+        networks = []
+        for l in obj.get("links", {}).values():
+            if l["rel"] == network.NetworkResource.kind.type_id:
+                _, net_id = ooi.api.helpers.get_id_with_kind(
+                    req,
+                    l.get("occi.core.target"),
+                    network.NetworkResource.kind)
+                net = {'uuid': net_id}
+                networks.append(net)
+        return networks
+
     def create(self, req, body):
         parser = req.get_parser()(req.headers, req.body)
         scheme = {
@@ -141,6 +153,7 @@ class Controller(ooi.api.base.Controller):
             ],
             "optional_links": [
                 storage.StorageResource.kind,
+                network.NetworkResource.kind,
             ]
 
         }
@@ -176,7 +189,7 @@ class Controller(ooi.api.base.Controller):
                                               public_key=key_data)
 
         block_device_mapping_v2 = self._build_block_mapping(req, obj)
-        # FIXME(jorgesece): indicates network ID to solve Bug 1524935.
+        networks = self._get_network_from_req(req, obj)
         server = self.os_helper.create_server(
             req,
             name,
@@ -184,7 +197,9 @@ class Controller(ooi.api.base.Controller):
             flavor,
             user_data=user_data,
             key_name=key_name,
-            block_device_mapping_v2=block_device_mapping_v2)
+            block_device_mapping_v2=block_device_mapping_v2,
+            networks=networks
+        )
         # The returned JSON does not contain the server name
         server["name"] = name
         occi_compute_resources = self._get_compute_resources([server])
