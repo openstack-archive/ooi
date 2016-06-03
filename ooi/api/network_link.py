@@ -16,7 +16,6 @@
 
 from ooi.api import base
 from ooi.api import helpers
-from ooi.api import network as network_api
 from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
@@ -35,7 +34,7 @@ def _get_network_link_resources(link_list):
     occi_network_resources = []
     if link_list:
         for l in link_list:
-            compute_id = l.get('compute_id')
+            compute_id = l['compute_id']
             mac = l.get('mac', None)
             net_pool = l.get('pool', None)
             ip = l.get('ip', None)
@@ -68,10 +67,7 @@ class Controller(base.Controller):
 
         :param req: request object
         """
-        attributes = network_api.process_parameters(req)
-        link_list = self.os_helper.list_compute_net_links(
-            req,
-            attributes)
+        link_list = self.os_helper.list_compute_net_links(req)
         occi_link_resources = _get_network_link_resources(link_list)
         return collection.Collection(resources=occi_link_resources)
 
