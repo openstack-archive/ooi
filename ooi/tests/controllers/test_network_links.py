@@ -59,7 +59,7 @@ class TestNetworkLinkController(base.TestController):
                                           os_network.OSNetworkInterface)
         else:
             self.assertEqual([], ret.resources)
-        mock_list.assert_called_with(req, None)
+        mock_list.assert_called_with(req)
 
     @mock.patch.object(helpers.OpenStackHelper, "list_compute_net_links")
     def test_index_Empty(self, mock_list):
