@@ -31,8 +31,12 @@ from ooi.openstack import templates
 
 
 class Controller(base.Controller):
-    def __init__(self, *args, **kwargs):
-        super(Controller, self).__init__(*args, **kwargs)
+    def __init__(self, app, openstack_version,
+                 neutron_ooi_endpoint=None):
+        self.neutron_ooi_endpoint = neutron_ooi_endpoint
+        super(Controller, self).__init__(
+            app=app,
+            openstack_version=openstack_version)
         self.os_helper = ooi.api.helpers.OpenStackHelper(
             self.app,
             self.openstack_version
@@ -87,6 +91,8 @@ class Controller(base.Controller):
         # OCCI infra network
         l.append(network.NetworkResource.kind)
         l.extend(network.NetworkResource.actions)
+        if self.neutron_ooi_endpoint:
+            l.append(os_network.neutron_network)
         l.append(network.ip_network)
         l.append(network_link.NetworkInterface.kind)
         l.append(network_link.ip_network_interface)
