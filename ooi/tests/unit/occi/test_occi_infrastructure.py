@@ -42,8 +42,9 @@ class TestOCCICompute(base.TestCase):
         self.assertIn("occi.compute.cores", c.attributes)
         self.assertIn("occi.compute.hostname", c.attributes)
         self.assertIn("occi.compute.memory", c.attributes)
-        self.assertIn("occi.compute.speed", c.attributes)
+        self.assertIn("occi.compute.share", c.attributes)
         self.assertIn("occi.compute.state", c.attributes)
+        self.assertIn("occi.compute.state.message", c.attributes)
         self.assertEqual(resource.Resource.kind, c.kind.parent)
         self.assertEqual(c.kind.location, "compute/")
         # TODO(aloga): We need to check that the attributes are actually set
@@ -62,7 +63,8 @@ class TestOCCICompute(base.TestCase):
         self.assertIsNone(c.cores)
         self.assertIsNone(c.hostname)
         self.assertIsNone(c.memory)
-        self.assertIsNone(c.speed)
+        self.assertIsNone(c.share)
+        self.assertIsNone(c.message)
 
     def test_setters(self):
         c = compute.ComputeResource("foo")
@@ -73,22 +75,23 @@ class TestOCCICompute(base.TestCase):
         self.assertEqual(5, c.attributes["occi.compute.cores"].value)
         c.hostname = "foobar"
         self.assertEqual("foobar", c.attributes["occi.compute.hostname"].value)
-        c.speed = 8
-        self.assertEqual(8, c.attributes["occi.compute.speed"].value)
+        c.share = 8
+        self.assertEqual(8, c.attributes["occi.compute.share"].value)
         c.memory = 4
         self.assertEqual(4, c.attributes["occi.compute.memory"].value)
 
     def test_getters(self):
-        c = compute.ComputeResource("foo", state="baz")
+        c = compute.ComputeResource("foo", state="baz", message="msg")
         self.assertEqual("baz", c.state)
+        self.assertEqual("msg", c.message)
         c.attributes["occi.compute.architecture"].value = "bar"
         self.assertEqual("bar", c.architecture)
         c.attributes["occi.compute.cores"].value = 5
         self.assertEqual(5, c.cores)
         c.attributes["occi.compute.hostname"].value = "foobar"
         self.assertEqual("foobar", c.hostname)
-        c.attributes["occi.compute.speed"].value = 8
-        self.assertEqual(8, c.speed)
+        c.attributes["occi.compute.share"].value = 8
+        self.assertEqual(8, c.share)
         c.attributes["occi.compute.memory"].value = 9
         self.assertEqual(9, c.memory)
 
@@ -106,6 +109,7 @@ class TestOCCIStorage(base.TestCase):
         self.assertIn("occi.core.title", s.attributes)
         self.assertIn("occi.storage.size", s.attributes)
         self.assertIn("occi.storage.state", s.attributes)
+        self.assertIn("occi.storage.state.message", s.attributes)
         self.assertEqual(resource.Resource.kind, s.kind.parent)
         self.assertEqual(s.kind.location, "storage/")
         # TODO(aloga): We need to check that the attributes are actually set
@@ -122,6 +126,7 @@ class TestOCCIStorage(base.TestCase):
         self.assertEqual("This is a summary", s.summary)
         self.assertIsNone(s.size)
         self.assertIsNone(s.state)
+        self.assertIsNone(s.message)
 
     def test_setters(self):
         s = storage.StorageResource("foo")
@@ -129,9 +134,11 @@ class TestOCCIStorage(base.TestCase):
         self.assertEqual(3, s.attributes["occi.storage.size"].value)
 
     def test_getters(self):
-        s = storage.StorageResource("foo", size=5, state="foobar")
+        s = storage.StorageResource("foo", size=5, state="foobar",
+                                    message="msg")
         self.assertEqual(5, s.size)
         self.assertEqual("foobar", s.state)
+        self.assertEqual("msg", s.message)
 
 
 class TestOCCIStorageLink(base.TestCase):
@@ -144,6 +151,7 @@ class TestOCCIStorageLink(base.TestCase):
         self.assertIn("occi.storagelink.mountpoint", s.attributes)
         self.assertIn("occi.storagelink.deviceid", s.attributes)
         self.assertIn("occi.storagelink.state", s.attributes)
+        self.assertIn("occi.storagelink.state.message", s.attributes)
         self.assertEqual(link.Link.kind, s.kind.parent)
         self.assertEqual(s.kind.location, "storagelink/")
 
@@ -162,6 +170,7 @@ class TestOCCIStorageLink(base.TestCase):
         self.assertIsNone(l.deviceid)
         self.assertIsNone(l.mountpoint)
         self.assertIsNone(l.state)
+        self.assertIsNone(l.message)
 
     def test_setters(self):
         c = compute.ComputeResource("foo",
@@ -186,10 +195,12 @@ class TestOCCIStorageLink(base.TestCase):
                                     summary="This is a summary",
                                     id=uuid.uuid4().hex)
         l = storage_link.StorageLink(c, s, deviceid="/dev/vdc",
-                                     mountpoint="/mnt", state="foobar")
+                                     mountpoint="/mnt", state="foobar",
+                                     message="msg")
         self.assertEqual("/dev/vdc", l.deviceid)
         self.assertEqual("/mnt", l.mountpoint)
         self.assertEqual("foobar", l.state)
+        self.assertEqual("msg", l.message)
 
 
 class TestTemplates(base.TestCase):
@@ -217,6 +228,7 @@ class TestOCCINetwork(base.TestCase):
         self.assertIn("occi.network.vlan", n.attributes)
         self.assertIn("occi.network.label", n.attributes)
         self.assertIn("occi.network.state", n.attributes)
+        self.assertIn("occi.network.state.message", n.attributes)
         self.assertEqual(resource.Resource.kind, n.kind.parent)
         self.assertEqual(n.kind.location, "network/")
         # TODO(aloga): We need to check that the attributes are actually set
@@ -234,6 +246,7 @@ class TestOCCINetwork(base.TestCase):
         self.assertIsNone(n.vlan)
         self.assertIsNone(n.label)
         self.assertIsNone(n.state)
+        self.assertIsNone(n.message)
 
     def test_setters(self):
         n = network.NetworkResource("foo")
@@ -244,10 +257,11 @@ class TestOCCINetwork(base.TestCase):
 
     def test_getters(self):
         n = network.NetworkResource("foo", vlan="bar", label="baz",
-                                    state="foobar")
+                                    state="foobar", message="msg")
         self.assertEqual("bar", n.vlan)
         self.assertEqual("baz", n.label)
         self.assertEqual("foobar", n.state)
+        self.assertEqual("msg", n.message)
 
 
 class TestNetworkMixins(base.TestCase):
@@ -283,6 +297,7 @@ class TestOCCINetworkInterface(base.TestCase):
         self.assertIn("occi.networkinterface.interface", l.attributes)
         self.assertIn("occi.networkinterface.mac", l.attributes)
         self.assertIn("occi.networkinterface.state", l.attributes)
+        self.assertIn("occi.networkinterface.state.message", l.attributes)
         self.assertEqual(link.Link.kind, l.kind.parent)
         self.assertEqual(l.kind.location, "networklink/")
 
@@ -299,6 +314,7 @@ class TestOCCINetworkInterface(base.TestCase):
         self.assertIsNone(l.interface)
         self.assertIsNone(l.mac)
         self.assertIsNone(l.state)
+        self.assertIsNone(l.message)
 
     def test_setters(self):
         c = compute.ComputeResource("foo",
@@ -320,7 +336,9 @@ class TestOCCINetworkInterface(base.TestCase):
                                     summary="This is a summary",
                                     id=uuid.uuid4().hex)
         l = network_link.NetworkInterface([], c, n, interface="eth1",
-                                          mac="00:01:02:03:04:05", state="foo")
+                                          mac="00:01:02:03:04:05", state="foo",
+                                          message="msg")
         self.assertEqual("eth1", l.interface)
         self.assertEqual("00:01:02:03:04:05", l.mac)
         self.assertEqual("foo", l.state)
+        self.assertEqual("msg", l.message)

@@ -37,22 +37,35 @@ resize = action.Action(helpers.build_scheme('infrastructure/storage/action'),
 
 
 class StorageResource(resource.Resource):
-    attributes = attr.AttributeCollection(["occi.storage.size",
-                                           "occi.storage.state"])
+    attributes = attr.AttributeCollection({
+        "occi.storage.size": attr.MutableAttribute(
+            "occi.storage.size", required=True,
+            description="Storage size of the instance in gigabytes"),
+        "occi.storage.state": attr.InmutableAttribute(
+            "occi.storage.state", description="Current state of the instance"),
+        "occi.storage.state.message": attr.InmutableAttribute(
+            "occi.storage.state.message",
+            description=("Human-readable explanation of the current instance "
+                         "state")),
+    })
     actions = (online, offline, backup, snapshot, resize)
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'storage',
                      'storage resource', attributes, 'storage/',
                      actions=actions,
                      parent=resource.Resource.kind)
 
-    def __init__(self, title, summary=None, id=None, size=None, state=None):
+    def __init__(self, title, summary=None, id=None, size=None, state=None,
+                 message=None):
         mixins = []
         super(StorageResource, self).__init__(title, mixins, summary=summary,
                                               id=id)
-        self.attributes["occi.storage.size"] = attr.MutableAttribute(
-            "occi.storage.size", size)
-        self.attributes["occi.storage.state"] = attr.InmutableAttribute(
-            "occi.storage.state", state)
+        self.size = size
+        self.attributes["occi.storage.state"] = (
+            attr.InmutableAttribute.from_attr(
+                self.attributes["occi.storage.state"], state))
+        self.attributes["occi.storage.state.message"] = (
+            attr.InmutableAttribute.from_attr(
+                self.attributes["occi.storage.state.message"], message))
 
     @property
     def size(self):
@@ -65,3 +78,7 @@ class StorageResource(resource.Resource):
     @property
     def state(self):
         return self.attributes["occi.storage.state"].value
+
+    @property
+    def message(self):
+        return self.attributes["occi.storage.state.message"].value

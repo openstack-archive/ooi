@@ -29,9 +29,19 @@ down = action.Action(helpers.build_scheme('infrastructure/network/action'),
 
 
 class NetworkResource(resource.Resource):
-    attributes = attr.AttributeCollection(["occi.network.vlan",
-                                           "occi.network.label",
-                                           "occi.network.state"])
+    attributes = attr.AttributeCollection({
+        "occi.network.vlan": attr.MutableAttribute(
+            "occi.network.vlan", description="802.1q VLAN identifier"),
+        "occi.network.label": attr.MutableAttribute(
+            "occi.network.label", description="Tag based VLANs"),
+        "occi.network.state": attr.InmutableAttribute(
+            "occi.network.state", description="Current state of the instance"),
+        "occi.network.state.message": attr.InmutableAttribute(
+            "occi.network.state.message",
+            description=("Human-readable explanation of the current instance "
+                         "state")),
+    })
+
     actions = (up, down)
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'network',
                      'network resource', attributes, 'network/',
@@ -39,15 +49,17 @@ class NetworkResource(resource.Resource):
                      parent=resource.Resource.kind)
 
     def __init__(self, title, summary=None, id=None, vlan=None, label=None,
-                 state=None, mixins=[]):
+                 state=None, message=None, mixins=[]):
         super(NetworkResource, self).__init__(title, mixins, summary=summary,
                                               id=id)
-        self.attributes["occi.network.vlan"] = attr.MutableAttribute(
-            "occi.network.vlan", vlan)
-        self.attributes["occi.network.label"] = attr.MutableAttribute(
-            "occi.network.label", label)
-        self.attributes["occi.network.state"] = attr.InmutableAttribute(
-            "occi.network.state", state)
+        self.vlan = vlan
+        self.label = label
+        self.attributes["occi.network.state"] = (
+            attr.InmutableAttribute.from_attr(
+                self.attributes["occi.network.state"], state))
+        self.attributes["occi.network.state.message"] = (
+            attr.InmutableAttribute(
+                self.attributes["occi.network.state.message"], message))
 
     @property
     def vlan(self):
@@ -69,11 +81,24 @@ class NetworkResource(resource.Resource):
     def state(self):
         return self.attributes["occi.network.state"].value
 
+    @property
+    def message(self):
+        return self.attributes["occi.network.state.message"].value
 
-ip_network = mixin.Mixin(helpers.build_scheme("infrastructure/network"),
-                         "ipnetwork", "IP Networking Mixin",
-                         attributes=attr.AttributeCollection([
-                             "occi.network.address",
-                             "occi.network.gateway",
-                             "occi.network.allocation"]),
-                         applies=[NetworkResource.kind])
+
+ip_network = mixin.Mixin(
+    helpers.build_scheme("infrastructure/network"),
+    "ipnetwork", "IP Networking Mixin",
+    attributes=attr.AttributeCollection({
+        "occi.network.address": attr.MutableAttribute(
+            "occi.network.address",
+            description="Internet Protocol (IP) network address"),
+        "occi.network.gateway": attr.MutableAttribute(
+            "occi.network.gateway",
+            description="Internet Protocol (IP) network address"),
+        "occi.network.allocation": attr.MutableAttribute(
+            "occi.network.allocation",
+            description="Address allocation mechanism: dynamic, static",
+        ),
+    }),
+    applies=[NetworkResource.kind])

@@ -21,11 +21,45 @@ import copy
 import six
 
 
+class ObjectAttributeType(object):
+    type_name = "Object"
+
+    def check_type(self, value):
+        pass
+
+
+class ListAttributeType(ObjectAttributeType):
+    type_name = "List"
+
+    def check_type(self, value):
+        if not isinstance(value, list):
+            raise TypeError("Expecting list value")
+
+
+class HashAttributeType(ObjectAttributeType):
+    type_name = "Hash"
+
+    def check_type(self, value):
+        if not isinstance(value, dict):
+            raise TypeError("Expecting hash value")
+
+
 @six.add_metaclass(abc.ABCMeta)
 class Attribute(object):
-    def __init__(self, name, value):
+    def __init__(self, name, value=None, required=False, default=None,
+                 description=None, attr_type=None):
         self._name = name
         self._value = value
+        self.required = required
+        self.default = default
+        self.description = description
+        if not attr_type:
+            self.attr_type = ObjectAttributeType()
+        elif type(attr_type) not in [ObjectAttributeType, ListAttributeType,
+                                     HashAttributeType]:
+            raise TypeError("Unexpected attribute type")
+        else:
+            self.attr_type = attr_type
 
     @property
     def name(self):
@@ -39,11 +73,16 @@ class Attribute(object):
 class MutableAttribute(Attribute):
     @Attribute.value.setter
     def value(self, value):
+        self.attr_type.check_type(value)
         self._value = value
 
 
 class InmutableAttribute(Attribute):
-    pass
+    @classmethod
+    def from_attr(cls, attr, value=None):
+        return cls(attr.name, value=value, required=attr.required,
+                   default=attr.default, description=attr.description,
+                   attr_type=attr.attr_type)
 
 
 class AttributeCollection(object):

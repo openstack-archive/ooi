@@ -22,27 +22,46 @@ from ooi.occi import helpers
 
 
 class NetworkInterface(link.Link):
-    attributes = attr.AttributeCollection(["occi.networkinterface.interface",
-                                           "occi.networkinterface.mac",
-                                           "occi.networkinterface.state"])
+    attributes = attr.AttributeCollection({
+        "occi.networkinterface.interface": attr.InmutableAttribute(
+            "occi.networkinterface.interface",
+            description=("Identifier that relates the link to the link's "
+                         "device interface.")),
+        "occi.networkinterface.mac": attr.MutableAttribute(
+            "occi.networkinterface.mac",
+            description=("MAC address associated with the link's device "
+                         "interface.")),
+        "occi.networkinterface.state": attr.InmutableAttribute(
+            "occi.networkinterface.state",
+            description="Current state of the instance"),
+        "occi.networkinterface.state.message": attr.InmutableAttribute(
+            "occi.networkinterface.state.message",
+            description=("Human-readable explanation of the current instance "
+                         "state")),
+    })
+
     kind = kind.Kind(helpers.build_scheme('infrastructure'),
                      'networkinterface', 'network link resource',
                      attributes, 'networklink/',
                      parent=link.Link.kind)
 
     def __init__(self, mixins, source, target, id=None, interface=None,
-                 mac=None, state=None):
+                 mac=None, state=None, message=None):
 
         super(NetworkInterface, self).__init__(None, mixins, source,
                                                target, id)
 
         self.attributes["occi.networkinterface.interface"] = (
-            attr.InmutableAttribute("occi.networkinterface.interface",
-                                    interface))
-        self.attributes["occi.networkinterface.mac"] = attr.MutableAttribute(
-            "occi.networkinterface.mac", mac)
+            attr.InmutableAttribute.from_attr(
+                self.attributes["occi.networkinterface.interface"], interface))
+        self.mac = mac
         self.attributes["occi.networkinterface.state"] = (
-            attr.InmutableAttribute("occi.networkinterface.state", state))
+            attr.InmutableAttribute.from_attr(
+                self.attributes["occi.networkinterface.state"], state))
+        self.attributes["occi.networkinterface.state.message"] = (
+            attr.InmutableAttribute.from_attr(
+                self.attributes["occi.networkinterface.state.message"],
+                message))
 
     @property
     def interface(self):
@@ -60,11 +79,23 @@ class NetworkInterface(link.Link):
     def state(self):
         return self.attributes["occi.networkinterface.state"].value
 
+    @property
+    def message(self):
+        return self.attributes["occi.networkinterface.state.message"].value
+
 ip_network_interface = mixin.Mixin(
     helpers.build_scheme("infrastructure/networkinterface"),
     "ipnetworkinterface", "IP Network interface Mixin",
-    attributes=attr.AttributeCollection([
-        "occi.networkinterface.address",
-        "occi.networkinterface.gateway",
-        "occi.networkinterface.allocation"]),
+    attributes=attr.AttributeCollection({
+        "occi.networkinterface.address": attr.MutableAttribute(
+            "occi.networkinterface.address",
+            description="Internet Protocol (IP) network address of the link"),
+        "occi.networkinterface.gateway": attr.MutableAttribute(
+            "occi.networkinterface.gateway",
+            description="Internet Protocol (IP) network address"),
+        "occi.networkinterface.allocation": attr.MutableAttribute(
+            "occi.networkinterface.allocation",
+            description="Address allocation mechanism: dynamic, static",
+        ),
+    }),
     applies=[NetworkInterface.kind])
