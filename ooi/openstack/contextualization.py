@@ -26,7 +26,7 @@ class OpenStackUserData(mixin.Mixin):
     def __init__(self, user_data=None):
         attrs = [
             attribute.InmutableAttribute("org.openstack.compute.user_data",
-                                         user_data),
+                                         user_data, required=True),
         ]
 
         attrs = attribute.AttributeCollection({a.name: a for a in attrs})
@@ -50,7 +50,8 @@ class OpenStackPublicKey(mixin.Mixin):
             attribute.InmutableAttribute(
                 "org.openstack.credentials.publickey.name", name),
             attribute.InmutableAttribute(
-                "org.openstack.credentials.publickey.data", data),
+                "org.openstack.credentials.publickey.data", data,
+                required=True),
         ]
 
         attrs = attribute.AttributeCollection({a.name: a for a in attrs})

@@ -33,7 +33,11 @@ class Resource(entity.Entity):
     attributes that Link sub-types inherit.
     """
 
-    attributes = attribute.AttributeCollection(["occi.core.summary"])
+    attributes = attribute.AttributeCollection({
+        "occi.core.summary": attribute.MutableAttribute(
+            "occi.core.summary", description=("A summarizing description of "
+                                              "the resource instance."))
+    })
 
     kind = kind.Kind(helpers.build_scheme('core'), 'resource',
                      'resource', attributes, 'resource/',
@@ -41,8 +45,7 @@ class Resource(entity.Entity):
 
     def __init__(self, title, mixins, id=None, summary=None):
         super(Resource, self).__init__(title, mixins, id=id)
-        self.attributes["occi.core.summary"] = attribute.MutableAttribute(
-            "occi.core.summary", summary)
+        self.summary = summary
         self._links = []
 
     def __eq__(self, other):

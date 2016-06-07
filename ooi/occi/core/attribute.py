@@ -18,14 +18,42 @@ import abc
 import collections
 import copy
 
+import enum
 import six
+
+
+class AttributeType(enum.Enum):
+    object_type = 1
+    list_type = 2
+    hash_type = 3
+
+    def __init__(self, attr_type):
+        self.attr_type = attr_type
+
+    def check_type(self, value):
+        if self.attr_type == AttributeType.list_type.value:
+            if not isinstance(value, list):
+                raise TypeError("Expecting list value")
+        elif self.attr_type == AttributeType.hash_type.value:
+            if not isinstance(value, dict):
+                raise TypeError("Expecting hash value")
 
 
 @six.add_metaclass(abc.ABCMeta)
 class Attribute(object):
-    def __init__(self, name, value):
+    def __init__(self, name, value=None, required=False, default=None,
+                 description=None, attr_type=None):
         self._name = name
         self._value = value
+        self.required = required
+        self.default = default
+        self.description = description
+        if not attr_type:
+            self.attr_type = AttributeType.object_type
+        elif not isinstance(attr_type, AttributeType):
+            raise TypeError("Unexpected attribute type")
+        else:
+            self.attr_type = attr_type
 
     @property
     def name(self):
@@ -39,11 +67,16 @@ class Attribute(object):
 class MutableAttribute(Attribute):
     @Attribute.value.setter
     def value(self, value):
+        self.attr_type.check_type(value)
         self._value = value
 
 
 class InmutableAttribute(Attribute):
-    pass
+    @classmethod
+    def from_attr(cls, attr, value=None):
+        return cls(attr.name, value=value, required=attr.required,
+                   default=attr.default, description=attr.description,
+                   attr_type=attr.attr_type)
 
 
 class AttributeCollection(object):

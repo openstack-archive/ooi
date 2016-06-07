@@ -27,18 +27,23 @@ class Link(entity.Entity):
     Resource instance with another.
     """
 
-    attributes = attribute.AttributeCollection(["occi.core.source",
-                                                "occi.core.target"])
+    attributes = attribute.AttributeCollection({
+        "occi.core.source": attribute.MutableAttribute(
+            "occi.core.source", required=True,
+            description="The Resource instance the link originates from"),
+        "occi.core.target": attribute.MutableAttribute(
+            "occi.core.target", required=True,
+            description=("The unique identifier of an Object this Link "
+                         "instance points to")),
+    })
 
     kind = kind.Kind(helpers.build_scheme("core"), 'link', 'link',
                      attributes, 'link/')
 
     def __init__(self, title, mixins, source, target, id=None):
         super(Link, self).__init__(title, mixins, id)
-        self.attributes["occi.core.source"] = attribute.MutableAttribute(
-            "occi.core.source", source)
-        self.attributes["occi.core.target"] = attribute.MutableAttribute(
-            "occi.core.target", target)
+        self.source = source
+        self.target = target
 
     @property
     def source(self):

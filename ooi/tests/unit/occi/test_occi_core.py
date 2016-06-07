@@ -32,6 +32,22 @@ class TestAttributes(base.TestCase):
         attr = attribute.Attribute("occi.foo.bar", "bar")
         self.assertEqual("bar", attr.value)
         self.assertEqual("occi.foo.bar", attr.name)
+        self.assertEqual(False, attr.required)
+        self.assertEqual(None, attr.default)
+        self.assertEqual(None, attr.description)
+
+    def test_default_value(self):
+        attr = attribute.Attribute("occi.foo.bar", default="bar")
+        self.assertEqual(None, attr.value)
+        self.assertEqual("bar", attr.default)
+
+    def test_required(self):
+        attr = attribute.Attribute("occi.foo.bar", required=True)
+        self.assertEqual(True, attr.required)
+
+    def test_description(self):
+        attr = attribute.Attribute("occi.foo.bar", description="foo")
+        self.assertEqual("foo", attr.description)
 
     def test_mutable(self):
         attr = attribute.MutableAttribute("occi.foo.bar", "bar")
@@ -45,6 +61,34 @@ class TestAttributes(base.TestCase):
             attr.value = "bazonk"
 
         self.assertRaises(AttributeError, set_val)
+
+    def test_attribute_type_list(self):
+        attr = attribute.MutableAttribute(
+            "occi.foo.bar", "bar", attr_type=attribute.AttributeType.list_type)
+        attr.value = ['2']
+
+        def set_object_val():
+            attr.value = "object"
+
+        def set_hash_val():
+            attr.value = {}
+
+        self.assertRaises(TypeError, set_object_val)
+        self.assertRaises(TypeError, set_hash_val)
+
+    def test_attribute_type_hash(self):
+        attr = attribute.MutableAttribute(
+            "occi.foo.bar", "bar", attr_type=attribute.AttributeType.hash_type)
+        attr.value = {'foo': 'bar'}
+
+        def set_object_val():
+            attr.value = "object"
+
+        def set_list_val():
+            attr.value = []
+
+        self.assertRaises(TypeError, set_object_val)
+        self.assertRaises(TypeError, set_list_val)
 
 
 class TestAttributeCollection(base.TestCase):
