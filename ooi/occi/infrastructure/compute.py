@@ -34,12 +34,30 @@ suspend = action.Action(helpers.build_scheme('infrastructure/compute/action'),
 
 
 class ComputeResource(resource.Resource):
-    attributes = attr.AttributeCollection(["occi.compute.architecture",
-                                           "occi.compute.cores",
-                                           "occi.compute.hostname",
-                                           "occi.compute.speed",
-                                           "occi.compute.memory",
-                                           "occi.compute.state"])
+    attributes = attr.AttributeCollection({
+        "occi.compute.architecture": attr.MutableAttribute(
+            "occi.compute.architecture",
+            description="CPU architecture of the instance"),
+        "occi.compute.cores": attr.MutableAttribute(
+            "occi.compute.cores",
+            description="Number of virtual cores assigned to the instance"),
+        "occi.compute.hostname": attr.MutableAttribute(
+            "occi.compute.hostname",
+            description="Fully Qualified DNS hostname for the instance"),
+        "occi.compute.share": attr.MutableAttribute(
+            "occi.compute.share",
+            description="Relative number of CPU shares for the instance"),
+        "occi.compute.memory": attr.MutableAttribute(
+            "occi.compute.memory",
+            description="Maximum RAM in gigabytes allocated to the instance"),
+        "occi.compute.state": attr.InmutableAttribute(
+            "occi.compute.state", description="Current state of the instance"),
+        "occi.compute.state.message": attr.InmutableAttribute(
+            "occi.compute.state.message",
+            description=("Human-readable explanation of the current instance "
+                         "state")),
+    })
+
     actions = (start, stop, restart, suspend)
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'compute',
                      'compute resource', attributes, 'compute/',
@@ -47,24 +65,23 @@ class ComputeResource(resource.Resource):
                      parent=resource.Resource.kind)
 
     def __init__(self, title, summary=None, id=None, architecture=None,
-                 cores=None, hostname=None, speed=None, memory=None,
-                 state=None, mixins=[]):
+                 cores=None, hostname=None, share=None, memory=None,
+                 state=None, message=None, mixins=[]):
 
         super(ComputeResource, self).__init__(title, mixins, summary=summary,
                                               id=id)
 
-        self.attributes["occi.compute.architecture"] = attr.MutableAttribute(
-            "occi.compute.architecture", architecture)
-        self.attributes["occi.compute.cores"] = attr.MutableAttribute(
-            "occi.compute.cores", cores)
-        self.attributes["occi.compute.hostname"] = attr.MutableAttribute(
-            "occi.compute.hostname", hostname)
-        self.attributes["occi.compute.speed"] = attr.MutableAttribute(
-            "occi.compute.speed", speed)
-        self.attributes["occi.compute.memory"] = attr.MutableAttribute(
-            "occi.compute.memory", memory)
-        self.attributes["occi.compute.state"] = attr.InmutableAttribute(
-            "occi.compute.state", state)
+        self.architecture = architecture
+        self.cores = cores
+        self.hostname = hostname
+        self.share = share
+        self.memory = memory
+        self.attributes["occi.compute.state"] = (
+            attr.InmutableAttribute.from_attr(
+                self.attributes["occi.compute.state"], state))
+        self.attributes["occi.compute.state.message"] = (
+            attr.InmutableAttribute(
+                self.attributes["occi.compute.state.message"], message))
 
     @property
     def architecture(self):
@@ -91,12 +108,12 @@ class ComputeResource(resource.Resource):
         self.attributes["occi.compute.hostname"].value = value
 
     @property
-    def speed(self):
-        return self.attributes["occi.compute.speed"].value
+    def share(self):
+        return self.attributes["occi.compute.share"].value
 
-    @speed.setter
-    def speed(self, value):
-        self.attributes["occi.compute.speed"].value = value
+    @share.setter
+    def share(self, value):
+        self.attributes["occi.compute.share"].value = value
 
     @property
     def memory(self):
@@ -109,3 +126,7 @@ class ComputeResource(resource.Resource):
     @property
     def state(self):
         return self.attributes["occi.compute.state"].value
+
+    @property
+    def message(self):
+        return self.attributes["occi.compute.state.message"].value
