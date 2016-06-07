@@ -38,9 +38,10 @@ class OpenStackResourceTemplate(templates.OCCIResourceTemplate):
         attrs = [
             attribute.InmutableAttribute("occi.compute.cores", cores),
             attribute.InmutableAttribute("occi.compute.memory", memory),
-            attribute.InmutableAttribute("occi.compute.disk", disk),
-            attribute.InmutableAttribute("occi.compute.ephemeral", ephemeral),
-            attribute.InmutableAttribute("occi.compute.swap", swap),
+            attribute.InmutableAttribute("org.openstack.flavor.disk", disk),
+            attribute.InmutableAttribute("org.openstack.flavor.ephemeral",
+                                         ephemeral),
+            attribute.InmutableAttribute("org.openstack.flavor.swap", swap),
             attribute.InmutableAttribute("org.openstack.flavor.name", name)
         ]
 
@@ -64,15 +65,15 @@ class OpenStackResourceTemplate(templates.OCCIResourceTemplate):
 
     @property
     def disk(self):
-        return self.attributes["occi.compute.disk"].value
+        return self.attributes["org.openstack.flavor.disk"].value
 
     @property
     def ephemeral(self):
-        return self.attributes["occi.compute.ephemeral"].value
+        return self.attributes["org.openstack.flavor.ephemeral"].value
 
     @property
     def swap(self):
-        return self.attributes["occi.compute.swap"].value
+        return self.attributes["org.openstack.flavor.swap"].value
 
     @property
     def name(self):
