@@ -801,13 +801,14 @@ class OpenStackHelper(BaseHelper):
                         link_list.append(link)
         if not link_list:
             for ip in floating_ips:
-                link = self._build_link(os_helpers.PUBLIC_NETWORK,
-                                        ip['instance_id'],
-                                        ip['ip'],
-                                        ip_id=ip["id"],
-                                        pool=ip["pool"]
-                                        )
-                link_list.append(link)
+                if ip["instance_id"]:
+                    link = self._build_link(os_helpers.PUBLIC_NETWORK,
+                                            ip['instance_id'],
+                                            ip['ip'],
+                                            ip_id=ip["id"],
+                                            pool=ip["pool"]
+                                            )
+                    link_list.append(link)
         return link_list
 
     def create_port(self, req, network_id, device_id):
