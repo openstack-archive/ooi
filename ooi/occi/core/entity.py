@@ -58,8 +58,12 @@ class Entity(object):
     sub-type of Entity is identified by a unique Kind instance
     """
 
-    attributes = attribute.AttributeCollection(["occi.core.id",
-                                                "occi.core.title"])
+    attributes = attribute.AttributeCollection({
+        "occi.core.id": attribute.InmutableAttribute(
+            "occi.core.id", description="A unique identifier"),
+        "occi.core.title": attribute.MutableAttribute(
+            "occi.core.title", description="The display name of the instance"),
+    })
 
     kind = kind.Kind(helpers.build_scheme('core'), 'entity',
                      'entity', attributes, 'entity/')
@@ -76,10 +80,10 @@ class Entity(object):
         if id is None:
             id = uuid.uuid4().hex
 
-        self.attributes["occi.core.id"] = attribute.InmutableAttribute(
-            "occi.core.id", id)
-        self.attributes["occi.core.title"] = attribute.MutableAttribute(
-            "occi.core.title", title)
+        self.attributes["occi.core.id"] = (
+            attribute.InmutableAttribute.from_attr(
+                self.attributes["occi.core.id"], id))
+        self.title = title
 
     @property
     def id(self):

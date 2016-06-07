@@ -23,9 +23,15 @@ import six
 
 @six.add_metaclass(abc.ABCMeta)
 class Attribute(object):
-    def __init__(self, name, value):
+    def __init__(self, name, value=None, required=False, default=None,
+                 description=None):
         self._name = name
         self._value = value
+        self.required = required
+        self.default = default
+        self.description = description
+        # FIXME(enolfc): implement other types
+        self.attr_type = "Object"
 
     @property
     def name(self):
@@ -43,7 +49,10 @@ class MutableAttribute(Attribute):
 
 
 class InmutableAttribute(Attribute):
-    pass
+    @classmethod
+    def from_attr(cls, attr, value=None):
+        return cls(attr.name, value=value, required=attr.required,
+                   default=attr.default, description=attr.description)
 
 
 class AttributeCollection(object):
