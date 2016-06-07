@@ -30,9 +30,19 @@ class OSFloatingIPPool(mixin.Mixin):
 
 
 class OSNetworkInterface(network_link.NetworkInterface):
-    attributes = attr.AttributeCollection(["occi.networkinterface.address",
-                                           "occi.networkinterface.gateway",
-                                           "occi.networkinterface.allocation"])
+    # TODO(enolfc): these are duplicated in the ipnetwork_interface mixin
+    attributes = attr.AttributeCollection({
+        "occi.networkinterface.address": attr.MutableAttribute(
+            "occi.networkinterface.address",
+            description="Internet Protocol (IP) network address of the link"),
+        "occi.networkinterface.gateway": attr.MutableAttribute(
+            "occi.networkinterface.gateway",
+            description="Internet Protocol (IP) network address"),
+        "occi.networkinterface.allocation": attr.MutableAttribute(
+            "occi.networkinterface.allocation",
+            description="Address allocation mechanism: dynamic, static",
+        ),
+    })
 
     def __init__(self, source, target, mac, address, ip_id=None,
                  pool=None, state='active'):
@@ -44,13 +54,9 @@ class OSNetworkInterface(network_link.NetworkInterface):
                                                  link_id, "eth0", mac,
                                                  state)
         self.ip_id = ip_id
-        self.attributes["occi.networkinterface.address"] = (
-            attr.MutableAttribute("occi.networkinterface.address", address))
-        self.attributes["occi.networkinterface.gateway"] = (
-            attr.MutableAttribute("occi.networkinterface.gateway", None))
-        self.attributes["occi.networkinterface.allocation"] = (
-            attr.MutableAttribute("occi.networkinterface.allocation",
-                                  "dynamic"))
+        self.address = address
+        self.gateway = None
+        self.allocation = "dynamic"
 
     @property
     def address(self):
@@ -98,13 +104,22 @@ os_network = OSNetwork()
 
 
 class OSNetworkResource(network.NetworkResource):
-
-    attributes = attr.AttributeCollection([
-        "org.openstack.network.ip_version",
-        "occi.network.address",
-        "occi.network.gateway",
-        "occi.network.allocation",
-    ])
+    # TODO(enolfc): most of these are duplicated in the ipnetwork mixin
+    attributes = attr.AttributeCollection({
+        "occi.network.address": attr.MutableAttribute(
+            "occi.network.address", required=True,
+            description="Internet Protocol (IP) network address"),
+        "occi.network.gateway": attr.MutableAttribute(
+            "occi.network.gateway",
+            description="Internet Protocol (IP) network address"),
+        "occi.network.allocation": attr.MutableAttribute(
+            "occi.network.allocation",
+            description="Address allocation mechanism: dynamic, static",
+        ),
+        "org.openstack.network.ip_version": attr.MutableAttribute(
+            "org.openstack.network.ip_version",
+            description="Internet Protocol (IP) version"),
+    })
 
     def __init__(self, title=None, summary=None,
                  id=None, vlan=None, label=None, state=None,
@@ -116,18 +131,10 @@ class OSNetworkResource(network.NetworkResource):
                              label=label, state=state,
                              mixins=[network.ip_network, OSNetwork()])
         # subnet
-        self.attributes["org.openstack.network.ip_version"] = (
-            attr.MutableAttribute(
-                "org.openstack.network.ip_version", ip_version))
-        self.attributes["occi.network.address"] = (
-            attr.MutableAttribute(
-                "occi.network.address", address))
-        self.attributes["occi.network.gateway"] = (
-            attr.MutableAttribute(
-                "occi.network.gateway", gateway))
-        self.attributes["occi.network.allocation"] = (
-            attr.MutableAttribute(
-                "occi.network.allocation", allocation))
+        self.address = address
+        self.gateway = gateway
+        self.ip_version = ip_version
+        self.allocation = allocation
 
     @property
     def ip_version(self):

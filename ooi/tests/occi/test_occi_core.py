@@ -32,6 +32,22 @@ class TestAttributes(base.TestCase):
         attr = attribute.Attribute("occi.foo.bar", "bar")
         self.assertEqual("bar", attr.value)
         self.assertEqual("occi.foo.bar", attr.name)
+        self.assertEqual(False, attr.required)
+        self.assertEqual(None, attr.default)
+        self.assertEqual(None, attr.description)
+
+    def test_default_value(self):
+        attr = attribute.Attribute("occi.foo.bar", default="bar")
+        self.assertEqual(None, attr.value)
+        self.assertEqual("bar", attr.default)
+
+    def test_required(self):
+        attr = attribute.Attribute("occi.foo.bar", required=True)
+        self.assertEqual(True, attr.required)
+
+    def test_description(self):
+        attr = attribute.Attribute("occi.foo.bar", description="foo")
+        self.assertEqual("foo", attr.description)
 
     def test_mutable(self):
         attr = attribute.MutableAttribute("occi.foo.bar", "bar")
