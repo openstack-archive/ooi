@@ -119,9 +119,13 @@ class OCCIMiddleware(object):
         self.mapper = routes.Mapper()
         self._setup_routes()
 
-    def _create_resource(self, controller):
+    def _create_resource(self, controller, neutron_ooi_endpoint=None):
+        if neutron_ooi_endpoint:
             return Resource(controller(self.application,
-                                       self.openstack_version))
+                                       self.openstack_version,
+                                       neutron_ooi_endpoint))
+        return Resource(controller(self.application,
+                                   self.openstack_version))
 
     def _create_resource_network(self, controller, neutron_ooi_endpoint=None):
         if neutron_ooi_endpoint:
@@ -196,7 +200,10 @@ class OCCIMiddleware(object):
         """
         self.mapper.redirect("", "/")
 
-        self.resources["query"] = self._create_resource(query.Controller)
+        self.resources["query"] = self._create_resource(
+            query.Controller,
+            self.neutron_ooi_endpoint
+        )
         self.mapper.connect("query", "/-/",
                             controller=self.resources["query"],
                             action="index")
