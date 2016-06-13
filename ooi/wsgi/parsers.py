@@ -13,14 +13,19 @@
 # under the License.
 
 import collections
+import copy
+import json
 import shlex
+
+from six.moves import urllib
 
 from ooi import exception
 
 
 _MEDIA_TYPE_MAP = collections.OrderedDict([
     ('text/plain', 'text'),
-    ('text/occi', 'header')
+    ('text/occi', 'header'),
+    ('application/occi+json', 'json'),
 ])
 
 
@@ -188,9 +193,61 @@ class HeaderParser(TextParser):
         return self._parse(self.headers)
 
 
+class JsonParser(BaseParser):
+    def parse_categories(self, obj):
+        kind = action = None
+        mixins = collections.Counter()
+        schemes = collections.defaultdict(list)
+        if "kind" in obj:
+            sch, term = urllib.parse.urldefrag(obj["kind"])
+            schemes[sch + "#"].append(term)
+            kind = obj["kind"]
+            for m in obj.get("mixins", []):
+                mixins[m] += 1
+                sch, term = urllib.parse.urldefrag(m)
+                schemes[sch + "#"].append(term)
+        if "action" in obj:
+            action = obj["action"]
+            sch, term = urllib.parse.urldefrag(obj["action"])
+            schemes[sch + "#"].append(term)
+        if action and kind:
+            raise exception.OCCIInvalidSchema("Action and kind together?")
+        return {
+            "category": kind or action,
+            "mixins": mixins,
+            "schemes": schemes,
+        }
+
+    def parse_attributes(self, obj):
+        if "attributes" in obj:
+            return copy.copy(obj["attributes"])
+        return {}
+
+    def parse_links(self, obj):
+        links = {}
+        for l in obj.get("links", []):
+            attrs = copy.copy(l.get("attributes", {}))
+            try:
+                links[l["target"]["location"]] = attrs
+            except KeyError:
+                raise exception.OCCIInvalidSchema("Unable to parse link")
+        return links
+
+    def parse(self):
+        try:
+            obj = json.loads(self.body or "")
+        except ValueError:
+            raise exception.OCCIInvalidSchema("Unable to parse JSON")
+        r = self.parse_categories(obj)
+        r['attributes'] = self.parse_attributes(obj)
+        r['links'] = self.parse_links(obj)
+        return r
+
+
 _PARSERS_MAP = {
     "text": TextParser,
     "header": HeaderParser,
+    "json": JsonParser,
 }
 
 
