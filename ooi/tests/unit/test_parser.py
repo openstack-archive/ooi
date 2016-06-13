@@ -167,3 +167,48 @@ class TestTextParser(TestHeaderParser):
     def _get_parser(self, headers, body):
         new_body = [': '.join([hdr, headers[hdr]]) for hdr in headers]
         return parsers.TextParser({}, '\n'.join(new_body))
+
+
+class TestJsonParser(BaseParserTest, base.TestCase):
+    def _get_parser(self, headers, body):
+        return parsers.JsonParser(headers, body)
+
+    def _get_kind(self, kind):
+        return '"kind": "%(scheme)s%(term)s"' % kind
+
+    def get_test_kind(self, kind):
+        body = "{ %s }" % self._get_kind(kind)
+        return {}, body
+
+    def get_test_mixins(self, kind, mixins):
+        body = [self._get_kind(kind)]
+        body.append('"mixins": [ %s ]'
+                    % ','.join(['"%(scheme)s%(term)s"' % m for m in mixins]))
+        return {}, "{ %s }" % ",".join(body)
+
+    def _get_attribute_value(self, value):
+        if isinstance(value, bool):
+            return str(value).lower()
+        elif isinstance(value, numbers.Number):
+            return "%s" % value
+        else:
+            return '"%s"' % value
+
+    def get_test_attributes(self, kind, attributes):
+        body = [self._get_kind(kind)]
+        attrs = []
+        for n, v in attributes.items():
+            attrs.append('"%s": %s' % (n, self._get_attribute_value(v)))
+        body.append('"attributes": { %s }' % ",".join(attrs))
+        return {}, "{ %s }" % ",".join(body)
+
+    def get_test_link(self, kind, link):
+        body = [self._get_kind(kind)]
+        attrs = []
+        for n, v in link["attributes"].items():
+            attrs.append('"%s": %s' % (n, self._get_attribute_value(v)))
+        target = '"location": "%s"' % link["id"]
+        l = ('"links": [{"attributes": { %s }, "target": { %s } }]'
+             % (",".join(attrs), target))
+        body.append(l)
+        return {}, "{ %s }" % ",".join(body)
