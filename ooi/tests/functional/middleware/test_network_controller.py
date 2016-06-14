@@ -147,8 +147,8 @@ class TestNetNeutronController(test_middleware.TestMiddleware):
                         '"http://schemas.ogf.org/occi/infrastructure/'
                         'network#";'
                         'class="mixin",',
-            'X-OCCI-Attribute': '"occi.core.title"="%s",'
-                                '"occi.network.address"="%s"' %
+            'X-OCCI-Attribute': 'occi.core.title="%s",'
+                                'occi.network.address="%s"' %
                                 (name, address)
         }
         req = self._build_req(path="/network",
@@ -295,8 +295,8 @@ class TestNetNovaController(test_middleware.TestMiddleware):
                         '"http://schemas.ogf.org/occi/'
                         'infrastructure/network#";'
                         'class="mixin",',
-            'X-OCCI-Attribute': '"occi.core.title"="%s",'
-                                '"occi.network.address"="%s"' %
+            'X-OCCI-Attribute': 'occi.core.title="%s",'
+                                'occi.network.address="%s"' %
                                 (name, address)
         }
         req = self._build_req(path="/network",

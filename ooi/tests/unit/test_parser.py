@@ -13,6 +13,7 @@
 # under the License.
 
 import collections
+import numbers
 
 
 from ooi import exception
@@ -60,13 +61,15 @@ class BaseParserTest(object):
         self.assertEqual({}, res["attributes"])
 
     def test_attributes(self):
+        expected_attrs = {"foo": "bar", "baz": 1234, "bazonk": "foo=123",
+                          "boolt": True, "enum": "whatev", "boolf": False,
+                          "float": 3.14}
         h, b = self.get_test_attributes(
             {"term": "foo", "scheme": "http://example.com/scheme#"},
-            [("foo", '"bar"'), ("baz", 1234), ("bazonk", '"foo=123"')]
+            expected_attrs
         )
         parser = self._get_parser(h, b)
         res = parser.parse()
-        expected_attrs = {"foo": "bar", "baz": "1234", "bazonk": "foo=123"}
         self.assertEqual(expected_attrs, res["attributes"])
 
     def test_link(self):
@@ -74,12 +77,12 @@ class BaseParserTest(object):
             {"term": "foo", "scheme": "http://example.com/scheme#"},
             {
                 "id": "bar",
-                "attributes": [("foo", "bar"), ("bazonk", '"foo=123"')]
+                "attributes": {"foo": 1234, "bazonk": "foo=123"}
             }
         )
         parser = self._get_parser(h, b)
         res = parser.parse()
-        expected_links = {"bar": {"foo": "bar", "bazonk": "foo=123"}}
+        expected_links = {"bar": {"foo": 1234, "bazonk": "foo=123"}}
         self.assertEqual(expected_links, res["links"])
 
 
@@ -103,17 +106,27 @@ class TestHeaderParser(BaseParserTest, base.TestCase):
         h["Category"] = ",".join(c)
         return h, b
 
+    def _get_attribute_value(self, value):
+        if isinstance(value, bool):
+            return '"%s"' % str(value).lower()
+        elif isinstance(value, numbers.Number):
+            return "%s" % value
+        else:
+            return '"%s"' % value
+
     def get_test_attributes(self, kind, attributes):
         h, b = self.get_test_kind(kind)
-        attrs = ["%s=%s" % (a[0], a[1]) for a in attributes]
+        attrs = []
+        for n, v in attributes.items():
+            attrs.append("%s=%s" % (n, self._get_attribute_value(v)))
         h["X-OCCI-Attribute"] = ", ".join(attrs)
         return h, b
 
     def get_test_link(self, kind, link):
         h, b = self.get_test_kind(kind)
         l = ["<%(id)s>" % link]
-        for a in link["attributes"]:
-            l.append('"%s"=%s' % (a[0], a[1]))
+        for n, v in link["attributes"].items():
+            l.append('"%s"=%s' % (n, self._get_attribute_value(v)))
         h["Link"] = "; ".join(l)
         return h, b
 

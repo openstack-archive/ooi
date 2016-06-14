@@ -108,13 +108,36 @@ class TextParser(BaseParser):
             "schemes": schemes,
         }
 
+    def parse_attribute_value(self, value):
+        v = value.strip()
+        # quoted: string or bool
+        if v[0] == '"':
+            v = v.strip('"')
+            if v == "true":
+                return True
+            elif v == "false":
+                return False
+            else:
+                return v
+        # unquoted: number or enum-val
+        try:
+            return int(v)
+        except ValueError:
+            try:
+                return float(v)
+            except ValueError:
+                return v
+
     def parse_attributes(self, headers):
         attrs = {}
         try:
             header_attrs = headers["X-OCCI-Attribute"]
             for attr in _quoted_split(header_attrs):
-                l = _split_unquote(attr)
-                attrs[l[0].strip()] = l[1]
+                try:
+                    n, v = attr.split("=", 1)
+                    attrs[n.strip()] = self.parse_attribute_value(v)
+                except ValueError:
+                    raise exception.OCCIInvalidSchema("Unable to parse")
         except KeyError:
             pass
         return attrs
@@ -131,8 +154,11 @@ class TextParser(BaseParser):
             if ll[0][1] != "<" and ll[0][-1] != ">":
                 raise exception.OCCIInvalidSchema("Unable to parse link")
             link_dest = ll[0][1:-1]
+            d = {}
             try:
-                d = dict([_split_unquote(i) for i in ll[1:]])
+                for attr in ll[1:]:
+                    n, v = attr.split("=", 1)
+                    d[n.strip().strip('"')] = self.parse_attribute_value(v)
             except ValueError:
                 raise exception.OCCIInvalidSchema("Unable to parse link")
             links[link_dest] = d
