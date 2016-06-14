@@ -15,6 +15,8 @@
 # under the License.
 
 
+import numbers
+
 from ooi import exception
 from ooi.tests.parsers import base
 from ooi.wsgi import parsers
@@ -40,17 +42,27 @@ class TestHeaderParser(base.BaseParserTest):
         h["Category"] = ",".join(c)
         return h, b
 
+    def _get_attribute_value(self, value):
+        if isinstance(value, bool):
+            return '"%s"' % str(value).lower()
+        elif isinstance(value, numbers.Number):
+            return "%s" % value
+        else:
+            return '"%s"' % value
+
     def get_test_attributes(self, kind, attributes):
         h, b = self.get_test_kind(kind)
-        attrs = ["%s=%s" % (a[0], a[1]) for a in attributes]
+        attrs = []
+        for n, v in attributes.items():
+            attrs.append("%s=%s" % (n, self._get_attribute_value(v)))
         h["X-OCCI-Attribute"] = ", ".join(attrs)
         return h, b
 
     def get_test_link(self, kind, link):
         h, b = self.get_test_kind(kind)
         l = ["<%(id)s>" % link]
-        for a in link["attributes"]:
-            l.append('"%s"=%s' % (a[0], a[1]))
+        for n, v in link["attributes"].items():
+            l.append('"%s"=%s' % (n, self._get_attribute_value(v)))
         h["Link"] = "; ".join(l)
         return h, b
 
