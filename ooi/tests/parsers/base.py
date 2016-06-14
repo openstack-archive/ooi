@@ -63,11 +63,15 @@ class BaseParserTest(base.TestCase):
     def test_attributes(self):
         h, b = self.get_test_attributes(
             {"term": "foo", "scheme": "http://example.com/scheme#"},
-            [("foo", '"bar"'), ("baz", 1234), ("bazonk", '"foo=123"')]
+            [("foo", '"bar"'), ("baz", 1234), ("bazonk", '"foo=123"'),
+             ("boolt", '"true"'), ("enum", "whatev"), ("boolf", '"false"'),
+             ("float", 3.14)]
         )
         parser = self._get_parser(h, b)
         res = parser.parse()
-        expected_attrs = {"foo": "bar", "baz": "1234", "bazonk": "foo=123"}
+        expected_attrs = {"foo": "bar", "baz": 1234, "bazonk": "foo=123",
+                          "boolt": True, "enum": "whatev", "boolf": False,
+                          "float": 3.14}
         self.assertEqual(expected_attrs, res["attributes"])
 
     def test_link(self):
@@ -75,10 +79,10 @@ class BaseParserTest(base.TestCase):
             {"term": "foo", "scheme": "http://example.com/scheme#"},
             {
                 "id": "bar",
-                "attributes": [("foo", "bar"), ("bazonk", '"foo=123"')]
+                "attributes": [("foo", 1234), ("bazonk", '"foo=123"')]
             }
         )
         parser = self._get_parser(h, b)
         res = parser.parse()
-        expected_links = {"bar": {"foo": "bar", "bazonk": "foo=123"}}
+        expected_links = {"bar": {"foo": 1234, "bazonk": "foo=123"}}
         self.assertEqual(expected_links, res["links"])
