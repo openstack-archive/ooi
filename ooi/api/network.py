@@ -62,9 +62,7 @@ def process_parameters(req, scheme=None,
         attributes = {}
         if 'X_PROJECT_ID' in req.headers:
             attributes["X_PROJECT_ID"] = req.headers["X_PROJECT_ID"]
-        if "attributes" in parameters:
-            for k, v in parameters.get("attributes", None).items():
-                attributes[k.strip()] = v.strip()
+        attributes.update(parameters.get("attributes", {}))
         if not attributes:
             attributes = None
     except Exception:
