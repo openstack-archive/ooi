@@ -60,7 +60,8 @@ class TestHeaderParser(base.BaseParserTest):
 
     def get_test_link(self, kind, link):
         h, b = self.get_test_kind(kind)
-        l = ["<%(id)s>" % link]
+        l = [('<%(id)s>; "rel"="%(kind)s"; '
+              'occi.core.target="%(target)s"') % link]
         for n, v in link["attributes"].items():
             l.append('"%s"=%s' % (n, self._get_attribute_value(v)))
         h["Link"] = "; ".join(l)

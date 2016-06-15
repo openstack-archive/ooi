@@ -58,8 +58,8 @@ class TestJsonParser(base.BaseParserTest):
         attrs = []
         for n, v in link["attributes"].items():
             attrs.append('"%s": %s' % (n, self._get_attribute_value(v)))
-        target = '"location": "%s"' % link["id"]
-        l = ('"links": [{"attributes": { %s }, "target": { %s } }]'
-             % (",".join(attrs), target))
+        target = '"location": "%(target)s", "kind": "%(kind)s"' % link
+        l = ('"links": [{"attributes": { %s }, "target": { %s }, "id": "%s" }]'
+             % (",".join(attrs), target, link["id"]))
         body.append(l)
         return {}, "{ %s }" % ",".join(body)

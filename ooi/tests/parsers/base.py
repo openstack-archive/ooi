@@ -73,14 +73,25 @@ class BaseParserTest(base.TestCase):
         self.assertEqual(expected_attrs, res["attributes"])
 
     def test_link(self):
+        attrs = {"foo": 1234, "bazonk": "foo=123"}
         h, b = self.get_test_link(
             {"term": "foo", "scheme": "http://example.com/scheme#"},
             {
-                "id": "bar",
-                "attributes": {"foo": 1234, "bazonk": "foo=123"}
+                "id": "link_id",
+                "target": "/bar",
+                "kind": "http://example.com/scheme#link",
+                "attributes": attrs,
             }
         )
         parser = self._get_parser(h, b)
         res = parser.parse()
-        expected_links = {"bar": {"foo": 1234, "bazonk": "foo=123"}}
+        expected_links = {
+            "http://example.com/scheme#link": [
+                {
+                    "id": "link_id",
+                    "target": "/bar",
+                    "attributes": attrs,
+                }
+            ]
+        }
         self.assertEqual(expected_links, res["links"])
