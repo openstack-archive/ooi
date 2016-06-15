@@ -389,7 +389,7 @@ class TestComputeController(base.TestController):
         self.assertEqual([], ret)
 
     def test_build_block_mapping_invalid_rel(self):
-        obj = {'links': {'foo': {'rel': 'bar'}}}
+        obj = {"links": {"foo": [{"target": "bar"}]}}
         ret = self.controller._build_block_mapping(None, obj)
         self.assertEqual([], ret)
 
@@ -398,12 +398,13 @@ class TestComputeController(base.TestController):
         vol_id = uuid.uuid4().hex
         image_id = uuid.uuid4().hex
         obj = {
-            'links': {
-                'l1': {
-                    'rel': ('http://schemas.ogf.org/occi/infrastructure#'
-                            'storage'),
-                    'occi.core.target': vol_id,
-                }
+            "links": {
+                "http://schemas.ogf.org/occi/infrastructure#storage": [
+                    {
+                        "id": "l1",
+                        "target": vol_id,
+                    }
+                ]
             },
             "schemes": {
                 templates.OpenStackOSTemplate.scheme: [image_id],
@@ -434,13 +435,16 @@ class TestComputeController(base.TestController):
         vol_id = uuid.uuid4().hex
         image_id = uuid.uuid4().hex
         obj = {
-            'links': {
-                'l1': {
-                    'rel': ('http://schemas.ogf.org/occi/infrastructure#'
-                            'storage'),
-                    'occi.core.target': vol_id,
-                    'occi.storagelink.deviceid': 'baz'
-                }
+            "links": {
+                "http://schemas.ogf.org/occi/infrastructure#storage": [
+                    {
+                        "id": "l1",
+                        "target": vol_id,
+                        "attributes": {
+                            "occi.storagelink.deviceid": "baz"
+                        }
+                    }
+                ]
             },
             "schemes": {
                 templates.OpenStackOSTemplate.scheme: [image_id],
@@ -505,12 +509,14 @@ class TestComputeController(base.TestController):
     def test_get_network_from_req(self, m_get_id):
         net_id = uuid.uuid4().hex
         obj = {
-            'links': {
-                'l1': {
-                    'rel': '%s%s' % (occi_network.NetworkResource.kind.scheme,
-                                     occi_network.NetworkResource.kind.term),
-                    'occi.core.target': net_id,
-                }
+            "links": {
+                "%s%s" % (occi_network.NetworkResource.kind.scheme,
+                          occi_network.NetworkResource.kind.term): [
+                    {
+                        "id": "l1",
+                        "target": net_id,
+                    }
+                ]
             },
         }
         m_get_id.return_value = (None, net_id)
@@ -529,17 +535,18 @@ class TestComputeController(base.TestController):
         net_id_1 = uuid.uuid4().hex
         net_id_2 = uuid.uuid4().hex
         obj = {
-            'links': {
-                'l1': {
-                    'rel': '%s%s' % (occi_network.NetworkResource.kind.scheme,
-                                     occi_network.NetworkResource.kind.term),
-                    'occi.core.target': net_id_1,
-                },
-                'l2': {
-                    'rel': '%s%s' % (occi_network.NetworkResource.kind.scheme,
-                                     occi_network.NetworkResource.kind.term),
-                    'occi.core.target': net_id_2,
-                }
+            "links": {
+                "%s%s" % (occi_network.NetworkResource.kind.scheme,
+                          occi_network.NetworkResource.kind.term): [
+                    {
+                        "id": "l1",
+                        "target": net_id_1,
+                    },
+                    {
+                        "id": "l2",
+                        "target": net_id_2,
+                    }
+                ]
             },
         }
         m_get_id.side_effect = [(None, net_id_1),

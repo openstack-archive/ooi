@@ -148,7 +148,7 @@ class TextParser(BaseParser):
         return attrs
 
     def parse_links(self, headers):
-        links = {}
+        links = collections.defaultdict(list)
         try:
             header_links = headers["Link"]
         except KeyError:
@@ -158,15 +158,31 @@ class TextParser(BaseParser):
             # remove the "<" and ">"
             if ll[0][1] != "<" and ll[0][-1] != ">":
                 raise exception.OCCIInvalidSchema("Unable to parse link")
-            link_dest = ll[0][1:-1]
-            d = {}
+            link_id = ll[0][1:-1]
+            target_location = None
+            target_kind = None
+            attrs = {}
             try:
                 for attr in ll[1:]:
                     n, v = attr.split("=", 1)
-                    d[n.strip().strip('"')] = self.parse_attribute_value(v)
+                    n = n.strip().strip('"')
+                    v = self.parse_attribute_value(v)
+                    if n == "rel":
+                        target_kind = v
+                        continue
+                    elif n == "occi.core.target":
+                        target_location = v
+                        continue
+                    attrs[n] = v
             except ValueError:
                 raise exception.OCCIInvalidSchema("Unable to parse link")
-            links[link_dest] = d
+            if not (target_kind and target_location):
+                raise exception.OCCIInvalidSchema("Unable to parse link")
+            links[target_kind].append({
+                "target": target_location,
+                "attributes": attrs,
+                "id": link_id,
+            })
         return links
 
     def _convert_to_headers(self):
@@ -224,11 +240,16 @@ class JsonParser(BaseParser):
         return {}
 
     def parse_links(self, obj):
-        links = {}
+        links = collections.defaultdict(list)
         for l in obj.get("links", []):
-            attrs = copy.copy(l.get("attributes", {}))
             try:
-                links[l["target"]["location"]] = attrs
+                d = {
+                    "target": l["target"]["location"],
+                    "attributes": copy.copy(l.get("attributes", {})),
+                }
+                if "id" in l:
+                    d["id"] = l["id"]
+                links[l["target"]["kind"]].append(d)
             except KeyError:
                 raise exception.OCCIInvalidSchema("Unable to parse link")
         return links

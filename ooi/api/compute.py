@@ -97,22 +97,23 @@ class Controller(ooi.api.base.Controller):
 
     def _build_block_mapping(self, req, obj):
         mappings = []
-        for l in obj.get("links", {}).values():
-            if l["rel"] == storage.StorageResource.kind.type_id:
-                _, vol_id = ooi.api.helpers.get_id_with_kind(
-                    req,
-                    l.get("occi.core.target"),
-                    storage.StorageResource.kind)
-                mapping = {
-                    "source_type": "volume",
-                    "uuid": vol_id,
-                    "delete_on_termination": False,
-                }
-                try:
-                    mapping['device_name'] = l['occi.storagelink.deviceid']
-                except KeyError:
-                    pass
-                mappings.append(mapping)
+        links = obj.get("links", {})
+        for l in links.get(storage.StorageResource.kind.type_id, []):
+            _, vol_id = ooi.api.helpers.get_id_with_kind(
+                req,
+                l.get("target"),
+                storage.StorageResource.kind)
+            mapping = {
+                "source_type": "volume",
+                "uuid": vol_id,
+                "delete_on_termination": False,
+            }
+            try:
+                device_name = l['attributes']['occi.storagelink.deviceid']
+                mapping['device_name'] = device_name
+            except KeyError:
+                pass
+            mappings.append(mapping)
         # this needs to be there if we have a mapping
         if mappings:
             image = obj["schemes"][templates.OpenStackOSTemplate.scheme][0]
@@ -127,14 +128,14 @@ class Controller(ooi.api.base.Controller):
 
     def _get_network_from_req(self, req, obj):
         networks = []
-        for l in obj.get("links", {}).values():
-            if l["rel"] == network.NetworkResource.kind.type_id:
-                _, net_id = ooi.api.helpers.get_id_with_kind(
-                    req,
-                    l.get("occi.core.target"),
-                    network.NetworkResource.kind)
-                net = {'uuid': net_id}
-                networks.append(net)
+        links = obj.get("links", {})
+        for l in links.get(network.NetworkResource.kind.type_id, []):
+            _, net_id = ooi.api.helpers.get_id_with_kind(
+                req,
+                l.get("target"),
+                network.NetworkResource.kind)
+            net = {'uuid': net_id}
+            networks.append(net)
         return networks
 
     def create(self, req, body):
