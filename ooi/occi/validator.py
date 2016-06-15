@@ -68,18 +68,14 @@ class Validator(object):
         return unmatched
 
     def _validate_optional_links(self, expected, links):
-        for uri, l in links.items():
-            try:
-                rel = l['rel']
-            except KeyError:
-                raise exception.OCCIMissingType(type_id=uri)
-            for ex in expected:
-                if rel == ex.type_id:
-                    break
+        expected_types = [e.type_id for e in expected]
+        for l in links.keys():
+            if l in expected_types:
+                break
             else:
-                expected_types = ', '.join([e.type_id for e in expected])
-                raise exception.OCCISchemaMismatch(expected=expected_types,
-                                                   found=l['rel'])
+                raise exception.OCCISchemaMismatch(
+                    expected=', '.join(expected_types),
+                    found=l)
 
     def validate_attributes(self, required):
         """Validate required attributes

@@ -73,16 +73,27 @@ class BaseParserTest(object):
         self.assertEqual(expected_attrs, res["attributes"])
 
     def test_link(self):
+        attrs = {"foo": 1234, "bazonk": "foo=123"}
         h, b = self.get_test_link(
             {"term": "foo", "scheme": "http://example.com/scheme#"},
             {
-                "id": "bar",
-                "attributes": {"foo": 1234, "bazonk": "foo=123"}
+                "id": "link_id",
+                "target": "/bar",
+                "kind": "http://example.com/scheme#link",
+                "attributes": attrs,
             }
         )
         parser = self._get_parser(h, b)
         res = parser.parse()
-        expected_links = {"bar": {"foo": 1234, "bazonk": "foo=123"}}
+        expected_links = {
+            "http://example.com/scheme#link": [
+                {
+                    "id": "link_id",
+                    "target": "/bar",
+                    "attributes": attrs,
+                }
+            ]
+        }
         self.assertEqual(expected_links, res["links"])
 
 
@@ -124,7 +135,8 @@ class TestHeaderParser(BaseParserTest, base.TestCase):
 
     def get_test_link(self, kind, link):
         h, b = self.get_test_kind(kind)
-        l = ["<%(id)s>" % link]
+        l = [('<%(id)s>; "rel"="%(kind)s"; '
+              'occi.core.target="%(target)s"') % link]
         for n, v in link["attributes"].items():
             l.append('"%s"=%s' % (n, self._get_attribute_value(v)))
         h["Link"] = "; ".join(l)
@@ -207,8 +219,8 @@ class TestJsonParser(BaseParserTest, base.TestCase):
         attrs = []
         for n, v in link["attributes"].items():
             attrs.append('"%s": %s' % (n, self._get_attribute_value(v)))
-        target = '"location": "%s"' % link["id"]
-        l = ('"links": [{"attributes": { %s }, "target": { %s } }]'
-             % (",".join(attrs), target))
+        target = '"location": "%(target)s", "kind": "%(kind)s"' % link
+        l = ('"links": [{"attributes": { %s }, "target": { %s }, "id": "%s" }]'
+             % (",".join(attrs), target, link["id"]))
         body.append(l)
         return {}, "{ %s }" % ",".join(body)
