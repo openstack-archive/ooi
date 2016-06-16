@@ -326,6 +326,38 @@ class TestComputeController(test_middleware.TestMiddleware):
         self.assertExpectedResult(expected, resp)
         self.assertDefaults(resp)
 
+    def test_create_vm_with_network(self):
+        tenant = fakes.tenants["foo"]
+        target = utils.join_url(self.application_url + "/",
+                                "network/%s" % uuid.uuid4().hex)
+        app = self.get_app()
+        headers = {
+            'Category': (
+                'compute;'
+                'scheme="http://schemas.ogf.org/occi/infrastructure#";'
+                'class="kind",'
+                'foo;'
+                'scheme="http://schemas.openstack.org/template/resource#";'
+                'class="mixin",'
+                'bar;'
+                'scheme="http://schemas.openstack.org/template/os#";'
+                'class="mixin"'),
+            'Link': (
+                '</bar>;'
+                'rel="http://schemas.ogf.org/occi/infrastructure#network";'
+                'occi.core.target="%s"') % target
+        }
+        req = self._build_req("/compute", tenant["id"], method="POST",
+                              headers=headers)
+        resp = req.get_response(app)
+
+        expected = [("X-OCCI-Location",
+                     utils.join_url(self.application_url + "/",
+                                    "compute/%s" % "foo"))]
+        self.assertEqual(200, resp.status_code)
+        self.assertExpectedResult(expected, resp)
+        self.assertDefaults(resp)
+
     def test_vm_links(self):
         tenant = fakes.tenants["baz"]
 
@@ -358,11 +390,11 @@ class TestComputeController(test_middleware.TestMiddleware):
             for addr_set in addresses.values():
                 for addr in addr_set:
                     ip = addr["addr"]
-                    link_id = '_'.join([server["id"], ip])
                     if addr["OS-EXT-IPS:type"] == "fixed":
-                        net_id = "fixed"
+                        net_id = fakes.ports[tenant["id"]][0]["net_id"]
                     else:
-                        net_id = "floating"
+                        net_id = "PUBLIC"
+                    link_id = '_'.join([server["id"], net_id, ip])
                     target = utils.join_url(self.application_url + "/",
                                             "network/%s" % net_id)
                     self.assertResultIncludesLink(link_id, source, target,

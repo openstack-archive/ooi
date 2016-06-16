@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2015 Spanish National Research Council
+# Copyright 2016 LIP - Lisbon
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -17,6 +18,7 @@
 from ooi.occi import helpers
 
 _PREFIX = "http://schemas.openstack.org/"
+PUBLIC_NETWORK = "PUBLIC"
 
 
 def build_scheme(category):
@@ -35,3 +37,14 @@ def vm_state(nova_status):
 # TODO(enolfc): Do really implement this.
 def vol_state(nova_status):
     return "online"
+
+
+def network_status(neutron_status):
+    """Translate neutron network status.
+
+    :param neutron_status: neutron status
+    """
+    if neutron_status == "ACTIVE":
+        return "active"
+    else:
+        return "inactive"

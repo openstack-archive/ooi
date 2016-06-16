@@ -49,6 +49,11 @@ occi_opts = [
                       help='Number of workers for OCCI (ooi) API service. '
                       'The default will be equal to the number of CPUs '
                       'available.'),
+    # NEUTRON
+    config.cfg.StrOpt('neutron_ooi_endpoint',
+                      default=None,
+                      help='Neutron end point which access to'
+                           ' the Neutron Restful API.'),
 ]
 
 CONF = config.cfg.CONF
@@ -104,17 +109,32 @@ class OCCIMiddleware(object):
             return cls(app, **local_conf)
         return _factory
 
-    def __init__(self, application, openstack_version="/v2.1"):
+    def __init__(self, application, openstack_version="/v2.1",
+                 neutron_ooi_endpoint=None):
         self.application = application
         self.openstack_version = openstack_version
-
+        self.neutron_ooi_endpoint = neutron_ooi_endpoint
         self.resources = {}
 
         self.mapper = routes.Mapper()
         self._setup_routes()
 
-    def _create_resource(self, controller):
-        return Resource(controller(self.application, self.openstack_version))
+    def _create_resource(self, controller, neutron_ooi_endpoint=None):
+        if neutron_ooi_endpoint:
+            return Resource(controller(self.application,
+                                       self.openstack_version,
+                                       neutron_ooi_endpoint))
+        return Resource(controller(self.application,
+                                   self.openstack_version))
+
+    def _create_resource_network(self, controller, neutron_ooi_endpoint=None):
+        if neutron_ooi_endpoint:
+            return Resource(controller(
+                neutron_ooi_endpoint=neutron_ooi_endpoint)
+            )
+        else:
+            return Resource(controller(self.application,
+                                       self.openstack_version))
 
     def _setup_resource_routes(self, resource, controller):
         path = "/" + resource
@@ -180,7 +200,10 @@ class OCCIMiddleware(object):
         """
         self.mapper.redirect("", "/")
 
-        self.resources["query"] = self._create_resource(query.Controller)
+        self.resources["query"] = self._create_resource(
+            query.Controller,
+            self.neutron_ooi_endpoint
+        )
         self.mapper.connect("query", "/-/",
                             controller=self.resources["query"],
                             action="index")
@@ -207,8 +230,8 @@ class OCCIMiddleware(object):
         self._setup_resource_routes("networklink",
                                     self.resources["networklink"])
 
-        self.resources["network"] = self._create_resource(
-            ooi.api.network.Controller)
+        self.resources["network"] = self._create_resource_network(
+            ooi.api.network.Controller, self.neutron_ooi_endpoint)
         self._setup_resource_routes("network",
                                     self.resources["network"])
 

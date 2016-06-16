@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2015 Spanish National Research Council
+# Copyright 2016 LIP - Lisbon
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -19,102 +20,291 @@ import uuid
 import mock
 
 from ooi.api import helpers
+from ooi.api import helpers_neutron
 from ooi.api import network as network_api
 from ooi import exception
-from ooi.occi.core import collection
-from ooi.occi.infrastructure import network
+from ooi.occi.infrastructure import network as occi_network
 from ooi.tests import base
-from ooi.tests import fakes
+from ooi.tests import fakes_network as fakes
 
 
-class TestController(base.TestController):
+class TestNetworkControllerNeutron(base.TestController):
+
     def setUp(self):
-        super(TestController, self).setUp()
-        self.controller = network_api.Controller(mock.MagicMock(), None)
+        super(TestNetworkControllerNeutron, self).setUp()
+        self.controller = network_api.Controller(neutron_ooi_endpoint="ff")
 
-    @mock.patch("ooi.api.network._build_network")
-    @mock.patch.object(network_api.Controller, "_floating_index")
-    def test_index(self, m_float, m_build):
-        res = network.NetworkResource(title="foo",
-                                      id="foo",
-                                      state="active",
-                                      mixins=[network.ip_network])
-        res_fixed = network.NetworkResource(title="fixed",
-                                            id="fixed",
-                                            state="active",
-                                            mixins=[network.ip_network])
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
+    def test_index(self, m_index):
+        test_networks = [
+            fakes.networks[fakes.tenants["bar"]["id"]],
+            fakes.networks[fakes.tenants["foo"]["id"]]
+        ]
+        req = fakes.create_req_test(None, None)
+        for nets in test_networks:
+            ooi_net = helpers_neutron.OpenStackNeutron._build_networks(nets)
+            m_index.return_value = ooi_net
+            result = self.controller.index(req)
+            expected = self.controller._get_network_resources(ooi_net)
+            self.assertEqual(result.resources.__len__(),
+                             expected.__len__())
+            m_index.assert_called_with(req, 'networks')
 
-        m_float.return_value = [res]
-        m_build.return_value = res_fixed
-        ret = self.controller.index(None)
-        self.assertIsInstance(ret, collection.Collection)
-        self.assertEqual([res, res_fixed], ret.resources)
-        m_float.assert_called_with(None)
-        m_build.assert_called_with("fixed")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "get_network_details")
+    def test_show(self, m_network):
+        test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
+        for net in test_networks:
+            ret = self.controller.show(None, net["id"])
+            self.assertIsInstance(ret, occi_network.NetworkResource)
 
-    def test_build(self):
-        ret = network_api._build_network("foo")
-        self.assertIsInstance(ret, network.NetworkResource)
-        self.assertEqual("foo", ret.title)
-        self.assertEqual("foo", ret.id)
-        self.assertEqual([network.ip_network], ret.mixins)
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "create_network")
+    def test_create(self, m):
+        test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
+        for test_net in test_networks:
+            parameters = {"occi.core.title": test_net["name"],
+                          "org.openstack.network.ip_version": 4,
+                          "occi.network.address": "0.0.0.0",
+                          }
+            categories = {occi_network.NetworkResource.kind,
+                          occi_network.ip_network}
+            req = fakes.create_req_test_occi(parameters, categories)
+            fake_net = fakes.fake_build_net(
+                parameters['occi.core.title'],
+                parameters['org.openstack.network.ip_version'],
+                parameters['occi.network.address']
+            )
+            m.return_value = fake_net
+            ret = self.controller.create(req)
+            net = ret.resources.pop()
+            self.assertIsInstance(net, occi_network.NetworkResource)
+            self.assertEqual(net.title, test_net['name'])
 
-    def test_build_with_prefix(self):
-        ret = network_api._build_network("foo", prefix="bar")
-        self.assertIsInstance(ret, network.NetworkResource)
-        self.assertEqual("foo", ret.title)
-        self.assertEqual("bar/foo", ret.id)
-        self.assertEqual([network.ip_network], ret.mixins)
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "create_resource")
+    def test_create_error(self, m):
+        test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
+        schema1 = occi_network.NetworkResource.kind.scheme
+        net = test_networks[0]
+        schemes = {schema1: net}
+        parameters = {"occi.core.title": "name",
+                      }
+        req = fakes.create_req_test(parameters, schemes)
 
-    @mock.patch.object(helpers.OpenStackHelper, "get_floating_ip_pools")
-    def test_show(self, m_pools):
-        for tenant in fakes.tenants.values():
-            pools = fakes.pools[tenant["id"]]
-            if not pools:
-                continue
-            m_pools.return_value = pools
-            ret = self.controller.show(None, "floating")[0]
-            self.assertIsInstance(ret, network.NetworkResource)
-            self.assertEqual("floating", ret.title)
-            self.assertEqual("floating", ret.id)
-            self.assertEqual([network.ip_network], ret.mixins)
-            m_pools.assert_called_with(None)
+        self.assertRaises(exception.Invalid, self.controller.create, req)
 
-    @mock.patch.object(helpers.OpenStackHelper, "get_floating_ip_pools")
-    def test_show_not_found(self, m_pools):
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "create_network")
+    def test_create_no_ip_mixin(self, m):
+        test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
+        for test_net in test_networks:
+            parameters = {"occi.core.title": test_net["name"],
+                          "org.openstack.network.ip_version": 4,
+                          "occi.network.address": "0.0.0.0",
+                          }
+            categories = {occi_network.NetworkResource.kind}
+            req = fakes.create_req_test_occi(parameters, categories)
+            fake_net = fakes.fake_build_net(
+                parameters['occi.core.title'],
+                parameters['org.openstack.network.ip_version'],
+                parameters['occi.network.address']
+            )
+            m.return_value = fake_net
+            self.assertRaises(exception.OCCIMissingType,
+                              self.controller.create, req)
+
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "delete_network")
+    def test_delete(self, m_network):
+        m_network.return_value = []
+        test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
+        for net in test_networks:
+            ret = self.controller.delete(None, net["id"])
+            self.assertEqual(ret, [])
+            self.assertEqual(ret.__len__(), 0)
+
+    def test_get_network_resources(self):
+        test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
+        subnet = fakes.subnets
+        for net in test_networks:
+            net["subnet_info"] = subnet[0]
+        ooi_net = (
+            helpers_neutron.OpenStackNeutron._build_networks(
+                test_networks))
+        ret = self.controller._get_network_resources(ooi_net)
+        self.assertIsInstance(ret, list)
+        self.assertIsNot(ret.__len__(), 0)
+        for net_ret in ret:
+            self.assertIsInstance(net_ret, occi_network.NetworkResource)
+
+    def test_filter_attributes(self):
+        parameters = {"occi.core.title": 'name',
+                      "org.openstack.network.ip_version": '4',
+                      "occi.network.address": '00001/24',
+                      "occi.network.gateway": '00001',
+                      }
+        categories = {occi_network.NetworkResource.kind}
+        req = fakes.create_req_test_occi(parameters, categories)
+        occi_scheme = {
+            "category": occi_network.NetworkResource.kind,
+            "optional_mixins": [
+                occi_network.ip_network,
+            ]
+        }
+        ret = network_api.process_parameters(req, occi_scheme)
+        self.assertIsNotNone(ret)
+        self.assertEqual(parameters, ret)
+
+    def test_filter_attributes_empty(self):
+        categories = {occi_network.NetworkResource.kind}
+        req = fakes.create_req_test_occi(None, categories)
+        occi_scheme = {
+            "category": occi_network.NetworkResource.kind,
+            "optional_mixins": [
+                occi_network.ip_network,
+            ]
+        }
+        attributes = network_api.process_parameters(req, occi_scheme)
+        self.assertIsNone(attributes)
+
+    def test_run_action_invalid(self):
         tenant = fakes.tenants["foo"]
-        pools = fakes.pools[tenant["id"]]
-        m_pools.return_value = pools
-        self.assertRaises(exception.NetworkNotFound,
-                          self.controller.show,
-                          None, uuid.uuid4().hex)
+        req = self._build_req(tenant["id"], path="/network?action=start")
+        server_uuid = uuid.uuid4().hex
+        self.assertRaises(exception.InvalidAction,
+                          self.controller.run_action,
+                          req,
+                          server_uuid,
+                          None)
 
-    @mock.patch.object(helpers.OpenStackHelper, "get_floating_ip_pools")
-    def test_show_empty_floating(self, m_pools):
-        m_pools.return_value = []
-        self.assertRaises(exception.NetworkNotFound,
-                          self.controller.show,
-                          None, "floating")
-        m_pools.assert_called_with(None)
+    def test_run_action_up(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"], path="/network?action=up")
+        server_uuid = uuid.uuid4().hex
+        self.assertRaises(exception.NotImplemented,
+                          self.controller.run_action,
+                          req,
+                          server_uuid,
+                          None)
 
-    @mock.patch.object(helpers.OpenStackHelper, "get_floating_ip_pools")
-    def test_show_non_existent(self, m_pools):
-        m_pools.return_value = []
-        self.assertRaises(exception.NetworkNotFound,
-                          self.controller.show,
-                          None, None)
 
-    @mock.patch.object(helpers.OpenStackHelper, "get_floating_ip_pools")
-    def test_floating_ips(self, m_pools):
-        for tenant in fakes.tenants.values():
-            pools = fakes.pools[tenant["id"]]
-            m_pools.return_value = pools
-            ret = self.controller._floating_index(None)
-            if pools:
-                self.assertEqual(1, len(ret))
-                self.assertIsInstance(ret[0], network.NetworkResource)
-                self.assertEqual("floating", ret[0].title)
-                self.assertEqual("floating", ret[0].id)
-            else:
-                self.assertEqual(0, len(ret))
-            m_pools.assert_called_with(None)
+class TestNetworkControllerNova(base.TestController):
+
+    def setUp(self):
+        super(TestNetworkControllerNova, self).setUp()
+        self.controller = network_api.Controller(None)
+
+    @mock.patch.object(helpers.OpenStackHelper, "list_networks")
+    def test_index(self, m_index):
+        test_networks = [
+            fakes.networks[fakes.tenants["bar"]["id"]],
+            fakes.networks[fakes.tenants["foo"]["id"]]
+        ]
+        req = fakes.create_req_test(None, None)
+        for nets in test_networks:
+            ooi_net = helpers.OpenStackHelper._build_networks(nets)
+            m_index.return_value = ooi_net
+            result = self.controller.index(req)
+            expected = self.controller._get_network_resources(ooi_net)
+            self.assertEqual(result.resources.__len__(),
+                             expected.__len__())
+            m_index.assert_called_with(req)
+
+    @mock.patch.object(helpers.OpenStackHelper, "get_network_details")
+    def test_show(self, m_network):
+        test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
+        for net in test_networks:
+            ret = self.controller.show(None, net["id"])
+            self.assertIsInstance(ret, occi_network.NetworkResource)
+
+    @mock.patch.object(helpers.OpenStackHelper, "create_network")
+    def test_create(self, m):
+        test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
+        for test_net in test_networks:
+            parameters = {"occi.core.title": test_net["name"],
+                          "org.openstack.network.ip_version": 4,
+                          "occi.network.address": "0.0.0.0",
+                          }
+            categories = {occi_network.NetworkResource.kind,
+                          occi_network.ip_network}
+            req = fakes.create_req_test_occi(parameters, categories)
+            fake_net = fakes.fake_build_net(
+                parameters['occi.core.title'],
+                parameters['org.openstack.network.ip_version'],
+                parameters['occi.network.address']
+            )
+            m.return_value = fake_net
+            ret = self.controller.create(req)
+            net = ret.resources.pop()
+            self.assertIsInstance(net, occi_network.NetworkResource)
+            self.assertEqual(net.title, test_net['name'])
+
+    @mock.patch.object(helpers.OpenStackHelper, "create_network")
+    def test_create_error(self, m):
+        test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
+        schema1 = occi_network.NetworkResource.kind.scheme
+        net = test_networks[0]
+        schemes = {schema1: net}
+        parameters = {"occi.core.title": "name",
+                      }
+        req = fakes.create_req_test(parameters, schemes)
+
+        self.assertRaises(exception.Invalid, self.controller.create, req)
+
+    @mock.patch.object(helpers.OpenStackHelper, "create_network")
+    def test_create_no_ip_mixin(self, m):
+        test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
+        for test_net in test_networks:
+            parameters = {"occi.core.title": test_net["name"],
+                          "org.openstack.network.ip_version": 4,
+                          "occi.network.address": "0.0.0.0",
+                          }
+            categories = {occi_network.NetworkResource.kind}
+            req = fakes.create_req_test_occi(parameters, categories)
+            fake_net = fakes.fake_build_net(
+                parameters['occi.core.title'],
+                parameters['org.openstack.network.ip_version'],
+                parameters['occi.network.address']
+            )
+            m.return_value = fake_net
+            self.assertRaises(exception.OCCIMissingType,
+                              self.controller.create, req)
+
+    @mock.patch.object(helpers.OpenStackHelper, "delete_network")
+    def test_delete(self, m_network):
+        m_network.return_value = []
+        test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
+        for net in test_networks:
+            ret = self.controller.delete(None, net["id"])
+            self.assertEqual(ret, [])
+            self.assertEqual(ret.__len__(), 0)
+
+    def test_get_network_resources(self):
+        test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
+        subnet = fakes.subnets
+        for net in test_networks:
+            net["subnet_info"] = subnet[0]
+        ooi_net = (
+            helpers_neutron.OpenStackNeutron._build_networks(
+                test_networks))
+        ret = self.controller._get_network_resources(ooi_net)
+        self.assertIsInstance(ret, list)
+        self.assertIsNot(ret.__len__(), 0)
+        for net_ret in ret:
+            self.assertIsInstance(net_ret, occi_network.NetworkResource)
+
+    def test_run_action_invalid(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"], path="/network?action=start")
+        server_uuid = uuid.uuid4().hex
+        self.assertRaises(exception.InvalidAction,
+                          self.controller.run_action,
+                          req,
+                          server_uuid,
+                          None)
+
+    def test_run_action_up(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"], path="/network?action=up")
+        server_uuid = uuid.uuid4().hex
+        self.assertRaises(exception.NotImplemented,
+                          self.controller.run_action,
+                          req,
+                          server_uuid,
+                          None)

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2015 Spanish National Research Council
+# Copyright 2016 LIP - Lisbon
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -47,3 +48,47 @@ def join_url(base, parts):
             p = p[1:]
         url = urlparse.urljoin(url, p)
     return url
+
+
+def make_body(resource, parameters):
+    """Creates body request using the parameters.
+
+    :param resource: kind of resource
+    :param parameters: list of parameters
+    """
+    content = {}
+    for key in parameters.keys():
+        content[key] = parameters[key]
+    if resource:
+        body = {resource: content}
+    else:
+        body = content
+    return body
+
+
+def get_query_string(parameters):
+    """Creates query string.
+
+    :param parameters: list of parameters
+    """
+    if parameters is None:
+        query_string = None
+    else:
+        query_string = urlparse.urlencode(parameters)
+    return query_string
+
+
+def translate_parameters(translation, parameters):
+    """Translates parameter names to OS
+
+    :param translation: list of names for translation
+    :param parameters: list of parameters
+    """
+    if not parameters:
+        return None
+    out = {}
+    for key in parameters.keys():
+        if key in translation:
+            if parameters[key]:
+                out[translation[key]] = parameters[key]
+    return out

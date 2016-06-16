@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2015 Spanish National Research Council
+# Copyright 2016 LIP - Lisbon
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -22,6 +23,7 @@ import six.moves.urllib.parse as urlparse
 
 from ooi import exception
 from ooi.log import log as logging
+from ooi.openstack import helpers as os_helpers
 from ooi import utils
 
 import webob.exc
@@ -87,15 +89,15 @@ def exception_from_response(response):
         503: webob.exc.HTTPServiceUnavailable,
     }
     code = response.status_int
+    exc = exceptions.get(code, webob.exc.HTTPInternalServerError)
     try:
         message = response.json_body.popitem()[1].get("message")
+        exc = exc(explanation=message)
     except Exception:
         LOG.exception("Unknown error happenened processing response %s"
                       % response)
         return webob.exc.HTTPInternalServerError()
-
-    exc = exceptions.get(code, webob.exc.HTTPInternalServerError)
-    return exc(explanation=message)
+    return exc
 
 
 class BaseHelper(object):
@@ -126,8 +128,22 @@ class BaseHelper(object):
                              query if not specified
         :returns: a Request object
         """
-        new_req = webob.Request(copy.copy(req.environ))
-        new_req.script_name = self.openstack_version
+        if hasattr(self, 'neutron_endpoint'):
+            server = self.neutron_endpoint
+            environ = copy.copy(req.environ)
+            try:
+                if "HTTP_X-Auth-Token" not in environ:
+                    env_token = req.environ["keystone.token_auth"]
+                    token = env_token.get_auth_ref(None)['auth_token']
+                    environ = {"HTTP_X-Auth-Token": token}
+            except Exception:
+                raise webob.exc.HTTPUnauthorized
+
+            new_req = webob.Request.blank(path=path,
+                                          environ=environ, base_url=server)
+        else:
+            new_req = webob.Request(copy.copy(req.environ))
+            new_req.script_name = self.openstack_version
         new_req.query_string = query_string
         new_req.method = method
         if path is not None:
@@ -151,13 +167,75 @@ class BaseHelper(object):
         :param default: The default element to be returned if not found.
         """
         if response.status_int in [200, 201, 202]:
-            return response.json_body.get(element, default)
+            if element:
+                return response.json_body.get(element, default)
+            else:
+                return response.json_body
+        elif response.status_int in [204]:
+            return []
         else:
             raise exception_from_response(response)
+
+    def _make_get_request(self, req, path, parameters=None):
+        """Create GET request
+
+        This method creates a GET Request instance
+
+        :param req: the incoming request
+        :param path: element location
+        :param parameters: parameters to filter results
+        :param tenant: include tenant in the query parameters
+        """
+        query_string = utils.get_query_string(parameters)
+        return self._get_req(req, path=path,
+                             query_string=query_string, method="GET")
+
+    def _make_create_request(self, req, resource, parameters):
+        """Create CREATE request
+
+        This method creates a CREATE Request instance
+
+        :param req: the incoming request
+        :param parameters: parameters with values
+        """
+        path = "/%s" % resource
+        single_resource = resource[:-1]
+        body = utils.make_body(single_resource, parameters)
+        return self._get_req(req, path=path,
+                             content_type="application/json",
+                             body=json.dumps(body), method="POST")
+
+    def _make_delete_request(self, req, path, id):
+        """Create DELETE request
+
+        This method creates a DELETE Request instance
+
+        :param req: the incoming request
+        :param path: element location
+        """
+        path = "%s/%s" % (path, id)
+        return self._get_req(req, path=path, method="DELETE")
+
+    def _make_put_request(self, req, path, parameters):
+        """Create DELETE request
+
+        This method creates a DELETE Request instance
+
+        :param req: the incoming request
+        :param path: element location
+        """
+        body = utils.make_body(None, parameters)
+        return self._get_req(req, path=path,
+                             content_type="application/json",
+                             body=json.dumps(body), method="PUT")
 
 
 class OpenStackHelper(BaseHelper):
     """Class to interact with the nova API."""
+    required = {"networks": {"occi.core.title": "label",
+                             "occi.network.address": "cidr",
+                             }
+                }
 
     @staticmethod
     def tenant_from_req(req):
@@ -245,7 +323,8 @@ class OpenStackHelper(BaseHelper):
     def _get_create_server_req(self, req, name, image, flavor,
                                user_data=None,
                                key_name=None,
-                               block_device_mapping_v2=None):
+                               block_device_mapping_v2=None,
+                               networks=None):
         tenant_id = self.tenant_from_req(req)
         path = "/%s/servers" % tenant_id
         # TODO(enolfc): add here the correct metadata info
@@ -256,13 +335,14 @@ class OpenStackHelper(BaseHelper):
             "imageRef": image,
             "flavorRef": flavor,
         }}
-
         if user_data is not None:
             body["server"]["user_data"] = user_data
         if key_name is not None:
             body["server"]["key_name"] = key_name
         if block_device_mapping_v2:
             body["server"]["block_device_mapping_v2"] = block_device_mapping_v2
+        if networks:
+            body["server"]["networks"] = networks
 
         return self._get_req(req,
                              path=path,
@@ -272,7 +352,8 @@ class OpenStackHelper(BaseHelper):
 
     def create_server(self, req, name, image, flavor,
                       user_data=None, key_name=None,
-                      block_device_mapping_v2=None):
+                      block_device_mapping_v2=None,
+                      networks=None):
         """Create a server.
 
         :param req: the incoming request
@@ -289,7 +370,8 @@ class OpenStackHelper(BaseHelper):
             flavor,
             user_data=user_data,
             key_name=key_name,
-            block_device_mapping_v2=block_device_mapping_v2)
+            block_device_mapping_v2=block_device_mapping_v2,
+            networks=networks)
         response = req.get_response(self.app)
         # We only get one server
         return self.get_from_response(response, "server", {})
@@ -611,3 +693,313 @@ class OpenStackHelper(BaseHelper):
         # is actually returning 202 (bug likely)
         if response.status_int not in [202, 204]:
             raise exception_from_response(response)
+
+    @staticmethod
+    def _build_link(net_id, compute_id, ip, ip_id=None, mac=None, pool=None,
+                    state='ACTIVE'):
+        link = {}
+        link['mac'] = mac
+        link['pool'] = pool
+        link['network_id'] = net_id
+        link['compute_id'] = compute_id
+        link['ip'] = ip
+        link['ip_id'] = ip_id
+        link['state'] = os_helpers.vm_state(state)
+        return link
+
+    def _get_ports(self, req, compute_id):
+        result = []
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/servers/%s/os-interface" % (tenant_id, compute_id)
+        os_req = self._get_req(req, path=path, method="GET")
+        response = os_req.get_response(self.app)
+        try:
+            result = self.get_from_response(response,
+                                            "interfaceAttachments", [])
+        except Exception as e:
+            LOG.exception("Interfaces can not be shown: " + e.explanation)
+        return result
+
+    def get_compute_net_link(self, req, compute_id, network_id,
+                             address):
+        """Get a specific network/server link
+
+        It shows a specific link (either private or public ip)
+
+        :param req: the incoming request
+        :param compute_id: server id
+        :param network_id: network id
+        :param address: ip connected
+        """
+
+        s = self.get_server(req, compute_id)
+        pool = None
+        ip_id = None
+        server_addrs = s.get("addresses", {})
+        for addr_set in server_addrs.values():
+            for addr in addr_set:
+                if addr["addr"] == address:
+                    mac = addr["OS-EXT-IPS-MAC:mac_addr"]
+                    if network_id == os_helpers.PUBLIC_NETWORK:
+                        floating_ips = self.get_floating_ips(
+                            req
+                        )
+                        for ip in floating_ips:
+                            if address == ip['ip']:
+                                pool = ip['pool']
+                                ip_id = ip['id']
+                    else:
+                        ports = self._get_ports(req, compute_id)
+                        for p in ports:
+                            if p["net_id"] == network_id:
+                                for ip in p["fixed_ips"]:
+                                    if ip['ip_address'] == address:
+                                        ip_id = p['port_id']
+                    return self._build_link(network_id,
+                                            compute_id,
+                                            address,
+                                            mac=mac,
+                                            pool=pool,
+                                            ip_id=ip_id
+                                            )
+        raise exception.NotFound()
+
+    def list_compute_net_links(self, req):
+        """Get floating IPs for the tenant.
+
+        :param req: the incoming request
+        """
+        floating_ips = self.get_floating_ips(req)
+        float_list = {}
+        for ip in floating_ips:
+            if ip["instance_id"]:
+                float_list.update({ip['fixed_ip']: ip})
+        servers = self.index(req)
+        link_list = []
+        for s in servers:
+            ports = self._get_ports(req, s['id'])
+            for p in ports:
+                for ip in p["fixed_ips"]:
+                    mac = p['mac_addr']
+                    state = p["port_state"]
+                    link = self._build_link(p["net_id"],
+                                            s['id'],
+                                            ip['ip_address'],
+                                            ip_id=p["port_id"],
+                                            mac=mac,
+                                            state=state)
+                    link_list.append(link)
+                    float_ip = float_list.get(ip['ip_address'], None)
+                    if float_ip:
+                        link = self._build_link(p["net_id"],
+                                                float_ip['instance_id'],
+                                                float_ip['ip'],
+                                                ip_id=float_ip["id"],
+                                                mac=mac,
+                                                pool=float_ip["pool"]
+                                                )
+                        link_list.append(link)
+        if not link_list:
+            for ip in floating_ips:
+                if ip["instance_id"]:
+                    link = self._build_link(os_helpers.PUBLIC_NETWORK,
+                                            ip['instance_id'],
+                                            ip['ip'],
+                                            ip_id=ip["id"],
+                                            pool=ip["pool"]
+                                            )
+                    link_list.append(link)
+        return link_list
+
+    def create_port(self, req, network_id, device_id):
+        """Add a port to the subnet
+
+        Returns the port information
+
+        :param req: the incoming network
+        :param network_id: network id
+        :param device_id: device id
+        """
+        param_port = {
+            'net_id': network_id,
+            'server_id': device_id
+        }
+        compute_id = param_port.get("server_id")
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/servers/%s/os-interface" % (tenant_id, compute_id)
+        body = utils.make_body("interfaceAttachment", param_port)
+        os_req = self._get_req(req, path=path,
+                               content_type="application/json",
+                               body=json.dumps(body), method="POST")
+        response = os_req.get_response(self.app)
+        port = self.get_from_response(response, "interfaceAttachment", {})
+        for ip in port["fixed_ips"]:
+            return self._build_link(port["net_id"],
+                                    compute_id,
+                                    ip['ip_address'],
+                                    ip_id=port["port_id"],
+                                    mac=port['mac_addr'],
+                                    state=port["port_state"])
+
+    def delete_port(self, req, compute_id, ip_id):
+        """Delete a port to the subnet
+
+        Returns the port information
+
+        :param req: the incoming network
+        :param compute_id: compute id
+        :param ip_id: ip id
+        """
+        path = "servers/%s/os-interface" % compute_id
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/%s/%s" % (tenant_id, path, ip_id)
+        os_req = self._get_req(req, path=path, method="DELETE")
+        os_req.get_response(self.app)
+        return []
+
+        raise exception.LinkNotFound(
+            "Interface %s not found" % ip_id
+        )
+
+    def get_network_id(self, req, mac, server_id):
+        """Get the Network ID from the mac port
+
+        :param req: the incoming network
+        :param mac: mac port
+        :param server_id: server id
+        """
+        ports = self._get_ports(req, server_id)
+        for p in ports:
+            server_mac = p['mac_addr']
+            if server_mac == mac:
+                return p['net_id']
+
+        raise webob.exc.HTTPNotFound
+
+    def assign_floating_ip(self, req, network_id, device_id,
+                           pool=None):
+        """assign floating ip to a server
+
+        :param req: the incoming request
+        :param network_id: network id
+        :param device_id: device id
+        """
+        # net_id it is not needed if
+        # there is just one port of the VM
+        # FIXME(jorgesece): raise an error if the first port has
+        # already a floating-ip
+        ip = self.allocate_floating_ip(req, pool)
+        # Add it to server
+        self.associate_floating_ip(req, device_id, ip["ip"])
+
+        try:
+            link_public = self._build_link(
+                network_id,
+                device_id,
+                ip["ip"],
+                ip_id=ip["id"],
+                pool=ip["pool"])
+        except Exception:
+            raise exception.OCCIInvalidSchema()
+        return link_public
+
+    @staticmethod
+    def _build_networks(networks):
+        ooi_net_list = []
+        for net in networks:
+            # TODO(jorgesece): manage IP_v6
+            ooi_net = {}
+            ooi_net["address"] = net.get("cidr", None)
+            ooi_net["state"] = "active"
+            ooi_net["id"] = net["id"]
+            ooi_net["name"] = net.get("label", None)
+            ooi_net["gateway"] = net.get("gateway", None)
+            ooi_net_list.append(ooi_net)
+        return ooi_net_list
+
+    def list_networks(self, req):
+        """Get a list of servers for a tenant.
+
+        :param req: the incoming request
+        :param parameters: parameters with tenant
+        """
+        path = "os-networks"
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/%s" % (tenant_id, path)
+        os_req = self._get_req(req, path=path,
+                               method="GET")
+        response = os_req.get_response(self.app)
+        nets = self.get_from_response(response, "networks", [])
+        ooi_networks = self._build_networks(nets)
+        pools = self.get_floating_ip_pools(req)
+        if pools:
+            net = {'id': os_helpers.PUBLIC_NETWORK,
+                   'label': os_helpers.PUBLIC_NETWORK}
+            public_net = self._build_networks([net])[0]
+            ooi_networks.append(public_net)
+        return ooi_networks
+
+    def get_network_details(self, req, id):
+        """Get info from a network.
+
+        It returns json code from the server
+
+        :param req: the incoming network
+        :param id: net identification
+        """
+        if id == os_helpers.PUBLIC_NETWORK:
+            net = {'id': os_helpers.PUBLIC_NETWORK,
+                   'label': 'PUBLIC_to_associate_Floating_IPs'}
+        else:
+            path = "os-networks/%s" % id
+            tenant_id = self.tenant_from_req(req)
+            path = "/%s/%s" % (tenant_id, path)
+            os_req = self._get_req(req, path=path,
+                                   method="GET")
+            response = os_req.get_response(self.app)
+            net = self.get_from_response(response, "network", {})
+        ooi_networks = self._build_networks([net])
+        return ooi_networks[0]
+
+    def create_network(self, req, name, cidr,
+                       gateway=None, ip_version=None):
+        """Create a network in nova-network.
+
+        :param req: the incoming request
+        :param name: network resource to manage
+        :param cidr: parameters with values
+        :param gateway: gateway ip
+        :param ip_version: ip version
+        """
+        net_param = {'label': name,
+                     'cidr': cidr,
+                     'gateway': gateway
+                     }
+        path = "os-networks"
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/%s" % (tenant_id, path)
+        body = utils.make_body('network', net_param)
+        os_req = self._get_req(req, path=path,
+                               content_type="application/json",
+                               body=json.dumps(body), method="POST")
+        response = os_req.get_response(self.app)
+        net = self.get_from_response(
+            response, "network", {})
+        ooi_net = self._build_networks([net])
+        return ooi_net[0]
+
+    def delete_network(self, req, id):
+        """Delete a network.
+
+        It returns json code from the server
+
+        :param req: the incoming network
+        :param id: net identification
+        :param parameters: parameters with tenant
+        """
+        path = "os-networks"
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/%s/%s" % (tenant_id, path, id)
+        os_req = self._get_req(req, path=path, method="DELETE")
+        os_req.get_response(self.app)
+        return []

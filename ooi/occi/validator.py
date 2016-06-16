@@ -83,6 +83,19 @@ class Validator(object):
                 raise exception.OCCISchemaMismatch(expected=expected_types,
                                                    found=l['rel'])
 
+    def validate_attributes(self, required):
+        """Validate required attributes
+
+        :param required: required attributes
+        """
+        attr = self.parsed_obj.get("attributes", {})
+        if required:
+            for at in required:
+                if at not in attr:
+                    raise exception.Invalid(
+                        "Expecting %s attribute" % at
+                    )
+
     def validate(self, schema):
         if "category" in schema:
             self._validate_category(schema["category"])
