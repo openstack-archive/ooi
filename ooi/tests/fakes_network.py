@@ -71,6 +71,26 @@ networks = {
     ]
 }
 
+networks_nova = {
+    tenants["bar"]["id"]: [],
+    tenants["foo"]["id"]: [
+        {
+            "id": uuid.uuid4().hex,
+            "label": "foo",
+            "gateway": "33.0.0.1",
+            "cidr": "33.0.0.1/24",
+            "status": "ACTIVE",
+        },
+        {
+            "id": uuid.uuid4().hex,
+            "label": "bar",
+            "gateway": "44.0.0.1",
+            "cidr": "44.0.0.1/24",
+            "status": "DOWN",
+        },
+    ]
+}
+
 pools = {
     tenants["bar"]["id"]: [],
     tenants["foo"]["id"]: [
@@ -89,6 +109,15 @@ linked_vm_id = uuid.uuid4().hex
 linked_net_id = uuid.uuid4().hex
 
 allocated_ip = "192.168.253.23"
+
+ports = {
+    tenants["foo"]["id"]: [
+        {"id": uuid.uuid4().hex,
+         "device_id": uuid.uuid4().hex,
+         "device_owner": uuid.uuid4().hex
+         }
+    ]
+}
 
 network_links = {
     tenants["bar"]["id"]: [],
@@ -237,3 +266,111 @@ def fake_network_occi(os_list_net):
     for n in os_list_net:
         list_nets.append(fake_build_net(n['name'], id=n['id']))
     return network.Controller._get_network_resources(list_nets)
+
+
+def build_occi_network(network):
+    name = network["name"]
+    network_id = network["id"]
+    subnet_info = network["subnet_info"]
+    status = network["status"].upper()
+    if status in ("ACTIVE",):
+        status = "active"
+    else:
+        status = "inactive"
+
+    app_url = application_url
+    cats = []
+    cats.append('network; '
+                'scheme='
+                '"http://schemas.ogf.org/occi/infrastructure#";'
+                ' class="kind"; title="network resource";'
+                ' rel='
+                '"http://schemas.ogf.org/occi/core#resource";'
+                ' location="%s/network/"' % app_url)
+    cats.append('ipnetwork; '
+                'scheme='
+                '"http://schemas.ogf.org/occi/infrastructure/network#";'
+                ' class="mixin"; title="IP Networking Mixin"')
+    cats.append('osnetwork; '
+                'scheme='
+                '"http://schemas.openstack.org/infrastructure/network#";'
+                ' class="mixin"; title="openstack network"')
+
+    links = []
+    links.append('<%s/network/%s?action=up>; '
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/network/action#up"' %
+                 (application_url, network_id))
+    links.append('<%s/network/%s?action=down>; '
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/network/action#down"' %
+                 (application_url, network_id))
+
+    attrs = [
+        'occi.core.id="%s"' % network_id,
+        'occi.core.title="%s"' % name,
+        'occi.network.state="%s"' % status,
+        'org.openstack.network.ip_version="%s"' % subnet_info["ip_version"],
+        'occi.network.address="%s"' % subnet_info["cidr"],
+        'occi.network.gateway="%s"' % subnet_info["gateway_ip"],
+        ]
+    result = []
+    for c in cats:
+        result.append(("Category", c))
+    for a in attrs:
+        result.append(("X-OCCI-Attribute", a))
+    for l in links:
+        result.append(("Link", l))
+    return result
+
+
+def build_occi_nova(network):
+    name = network["label"]
+    network_id = network["id"]
+    gateway = network["gateway"]
+    cidr = network["cidr"]
+    status = "active"
+
+    app_url = application_url
+    cats = []
+    cats.append('network; '
+                'scheme='
+                '"http://schemas.ogf.org/occi/infrastructure#";'
+                ' class="kind"; title="network resource";'
+                ' rel='
+                '"http://schemas.ogf.org/occi/core#resource";'
+                ' location="%s/network/"' % app_url)
+    cats.append('ipnetwork; '
+                'scheme='
+                '"http://schemas.ogf.org/occi/infrastructure/network#";'
+                ' class="mixin"; title="IP Networking Mixin"')
+    cats.append('osnetwork; '
+                'scheme='
+                '"http://schemas.openstack.org/infrastructure/network#";'
+                ' class="mixin"; title="openstack network"')
+
+    links = []
+    links.append('<%s/network/%s?action=up>; '
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/network/action#up"' %
+                 (application_url, network_id))
+    links.append('<%s/network/%s?action=down>; '
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/network/action#down"' %
+                 (application_url, network_id))
+
+    attrs = [
+        'occi.core.id="%s"' % network_id,
+        'occi.core.title="%s"' % name,
+        'occi.network.state="%s"' % status,
+        'occi.network.address="%s"' % cidr,
+        'occi.network.gateway="%s"' % gateway,
+        ]
+    result = []
+    for c in cats:
+        result.append(("Category", c))
+    for a in attrs:
+        result.append(("X-OCCI-Attribute", a))
+    for l in links:
+        result.append(("Link", l))
+    return result

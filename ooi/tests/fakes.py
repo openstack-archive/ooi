@@ -156,24 +156,26 @@ networks = {
 ports = {
     tenants["foo"]["id"]: [
         {
-            "id": uuid.uuid4().hex,
+            "port_id": uuid.uuid4().hex,
             "fixed_ips":
                 [{"ip_address": uuid.uuid4().hex}],
             "mac_addr": uuid.uuid4().hex,
             "port_state": "DOWN",
-            "net_id": uuid.uuid4().hex
+            "net_id": uuid.uuid4().hex,
+            "server_id": linked_vm_id
         },
     ],
     tenants["bar"]["id"]: [],
     tenants["baz"]["id"]: [
         {
-            "id": uuid.uuid4().hex,
+            "port_id": uuid.uuid4().hex,
             "fixed_ips": [
-                {"ip_address": uuid.uuid4().hex}
+                {"ip_address": "192.168.253.1"}
             ],
             "mac_addr": uuid.uuid4().hex,
             "port_state": "ACTIVE",
-            "net_id": uuid.uuid4().hex
+            "net_id": uuid.uuid4().hex,
+            "server_id": linked_vm_id
         },
 
     ],
@@ -562,6 +564,26 @@ class FakeApp(object):
         ip = {"floating_ip": {"ip": allocated_ip, "id": 1}}
         return create_fake_json_resp(ip, 202)
 
+    def _do_create_port(self, req):
+        tenant = req.path_info.split('/')[1]
+        body = req.json_body.copy()
+        server = body["interfaceAttachment"]["server_id"]
+        net = body["interfaceAttachment"]["net_id"]
+        port = ports[tenant]
+        p = {"interfaceAttachment": {
+            "port_id": uuid.uuid4().hex,
+            "fixed_ips":
+                [{"ip_address":
+                    port[0]["fixed_ips"]
+                    [0]["ip_address"]
+                  }],
+            "mac_addr": port[0]["mac_addr"],
+            "port_state": "DOWN",
+            "net_id": net,
+            "server_id": server
+        }}
+        return create_fake_json_resp(p, 200)
+
     def _do_post(self, req):
         if req.path_info.endswith("servers"):
             return self._do_create_server(req)
@@ -577,6 +599,8 @@ class FakeApp(object):
             return self._do_create_attachment(req)
         elif req.path_info.endswith("os-floating-ips"):
             return self._do_allocate_ip(req)
+        elif req.path_info.endswith("os-interface"):
+            return self._do_create_port(req)
         raise Exception
 
     def _do_delete(self, req):
@@ -586,6 +610,7 @@ class FakeApp(object):
             r"/[^/]+/os-floating-ips/[^/]+$": 202,
             r"/[^/]+/servers/[^/]+$": 204,
             r"/[^/]+/os-volumes/[^/]+$": 204,
+            r"/[^/]+/servers/[^/]+/os-interface/[^/]+$": 204,
         }
         for p, st in tested_paths.items():
             if re.match(p, req.path_info):

@@ -26,62 +26,6 @@ from ooi import utils
 from ooi import wsgi
 
 
-def build_occi_network(network):
-    name = network["name"]
-    network_id = network["id"]
-    subnet_info = network["subnet_info"]
-    status = network["status"].upper()
-    if status in ("ACTIVE",):
-        status = "active"
-    else:
-        status = "inactive"
-
-    app_url = fakes.application_url
-    cats = []
-    cats.append('network; '
-                'scheme='
-                '"http://schemas.ogf.org/occi/infrastructure#";'
-                ' class="kind"; title="network resource";'
-                ' rel='
-                '"http://schemas.ogf.org/occi/core#resource";'
-                ' location="%s/network/"' % app_url)
-    cats.append('ipnetwork; '
-                'scheme='
-                '"http://schemas.ogf.org/occi/infrastructure/network#";'
-                ' class="mixin"; title="IP Networking Mixin"')
-    cats.append('osnetwork; '
-                'scheme='
-                '"http://schemas.openstack.org/infrastructure/network#";'
-                ' class="mixin"; title="openstack network"')
-
-    links = []
-    links.append('<%s/network/%s?action=up>; '
-                 'rel="http://schemas.ogf.org/occi/'
-                 'infrastructure/network/action#up"' %
-                 (fakes.application_url, network_id))
-    links.append('<%s/network/%s?action=down>; '
-                 'rel="http://schemas.ogf.org/occi/'
-                 'infrastructure/network/action#down"' %
-                 (fakes.application_url, network_id))
-
-    attrs = [
-        'occi.core.id="%s"' % network_id,
-        'occi.core.title="%s"' % name,
-        'occi.network.state="%s"' % status,
-        'org.openstack.network.ip_version="%s"' % subnet_info["ip_version"],
-        'occi.network.address="%s"' % subnet_info["cidr"],
-        'occi.network.gateway="%s"' % subnet_info["gateway_ip"],
-        ]
-    result = []
-    for c in cats:
-        result.append(("Category", c))
-    for a in attrs:
-        result.append(("X-OCCI-Attribute", a))
-    for l in links:
-        result.append(("Link", l))
-    return result
-
-
 def create_occi_results(data):
     return network.Controller(None)._get_network_resources(data)
 
@@ -190,7 +134,7 @@ class TestNetworkController(TestMiddlewareNeutron):
                                   tenant_id='X',
                                   method="GET")
             resp = req.get_response(self.app)
-            expected = build_occi_network(n)
+            expected = fakes.build_occi_network(n)
             self.assertEqual(200, resp.status_code)
             self.assertDefaults(resp)
             self.assertExpectedResult(expected, resp)
