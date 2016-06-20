@@ -15,6 +15,7 @@
 import collections
 
 from ooi.occi.rendering import headers as header_rendering
+from ooi.occi.rendering import occi_json as json_rendering
 from ooi.occi.rendering import text as text_rendering
 from ooi.occi.rendering import urilist as urilist_rendering
 from ooi import utils
@@ -23,8 +24,8 @@ from ooi import utils
 _MEDIA_TYPE_MAP = collections.OrderedDict([
     ('text/plain', 'text'),
     ('text/occi', 'header'),
-    ('text/uri-list', 'uri-list')
-
+    ('text/uri-list', 'uri-list'),
+    ('application/occi+json', 'json'),
 ])
 
 
@@ -75,10 +76,19 @@ class UriListSerializer(TextSerializer):
         return None, utils.utf8(ret)
 
 
+class JsonSerializer(BaseSerializer):
+    def serialize(self, data):
+        if not data:
+            return None, utils.utf8("")
+        r = json_rendering.get_renderer(data)
+        return None, utils.utf8(r.render(env=self.env))
+
+
 _SERIALIZERS_MAP = {
     "text": TextSerializer,
     "header": HeaderSerializer,
     "uri-list": UriListSerializer,
+    "json": JsonSerializer,
 }
 
 
