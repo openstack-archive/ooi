@@ -32,10 +32,10 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
             "scheme": obj.scheme,
             "title": obj.title
         }
-        self.assertEqual(expected, json.loads(observed))
+        self.assertEqual(expected, json.loads(observed).pop())
 
     def assertCollection(self, obj, observed):
-        observed_json = json.loads(observed)
+        observed_json = json.loads(observed).pop()
         for what, fn in [("kinds", self.assertKind),
                          ("mixins", self.assertMixin),
                          ("actions", self.assertAction),
@@ -43,7 +43,8 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
                          ("resources", self.assertResource)]:
             objs = getattr(obj, what)
             if objs:
-                dumped_objs = [json.dumps(o) for o in observed_json[what]]
+                dumped_objs = ["[ %s ]" % json.dumps(o)
+                               for o in observed_json[what]]
                 map(fn, objs, dumped_objs)
 
     def assertException(self, obj, observed):
@@ -51,7 +52,7 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
             "code": obj.status_code,
             "message": obj.explanation,
         }
-        self.assertEqual(expected, json.loads(observed))
+        self.assertEqual(expected, json.loads(observed).pop())
 
     def assertKind(self, obj, observed):
         expected = {
@@ -59,7 +60,7 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
             "scheme": obj.scheme,
             "title": obj.title,
         }
-        self.assertEqual(expected, json.loads(observed))
+        self.assertEqual(expected, json.loads(observed).pop())
 
     def assertKindAttr(self, obj, attr, observed):
         expected = {
@@ -71,7 +72,7 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
             expected["default"] = attr.default
         if attr.description:
             expected["description"] = attr.description
-        k, v = json.loads(observed)["attributes"].popitem()
+        k, v = json.loads(observed).pop()["attributes"].popitem()
         self.assertEqual(k, attr.name)
         self.assertEqual(expected, v)
 
@@ -89,7 +90,7 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
             },
             "title": obj.title,
         }
-        self.assertEqual(link, json.loads(observed))
+        self.assertEqual(link, json.loads(observed).pop())
 
     def assertMixin(self, obj, observed):
         expected = {
@@ -97,7 +98,7 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
             "scheme": obj.scheme,
             "title": obj.title
         }
-        self.assertEqual(expected, json.loads(observed))
+        self.assertEqual(expected, json.loads(observed).pop())
 
     def assertResource(self, obj, observed):
         expected = {}
@@ -110,7 +111,7 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
             expected["mixins"] = [m.type_id for m in obj.mixins]
         if obj.actions:
             expected["actions"] = [a.type_id for a in obj.actions]
-        self.assertEqual(expected, json.loads(observed))
+        self.assertEqual(expected, json.loads(observed).pop())
 
     def assertResourceActions(self, obj, actions, observed):
         self.assertResource(obj, observed)
@@ -119,7 +120,7 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
         self.assertResource(obj, observed)
 
     def assertResourceAttr(self, obj, attr, observed):
-        observed_json = json.loads(observed)
+        observed_json = json.loads(observed).pop()
         expected = {attr[0]: attr[1]}
         self.assertEqual(expected, observed_json['attributes'])
 
@@ -134,4 +135,4 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
 
     def assertResourceLink(self, obj1, obj2, observed):
         self.assertLink(obj1.links[0],
-                        json.dumps(json.loads(observed)["links"][0]))
+                        json.dumps([json.loads(observed).pop()["links"][0]]))

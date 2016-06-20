@@ -45,7 +45,11 @@ class JsonRenderer(object):
                                   (type(self), type(self.obj)))
 
     def render(self, env={}):
-        return json.dumps(self.render_dict(env))
+        if not isinstance(self.obj, list):
+            self.obj = [self.obj]
+
+        r = [get_renderer(d).render_dict(env) for d in self.obj]
+        return json.dumps(r)
 
 
 class AttributeRenderer(JsonRenderer):
