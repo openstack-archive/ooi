@@ -57,6 +57,14 @@ class BaseRendererTest(ooi.tests.base.TestCase):
         c = collection.Collection(resources=[r1, r2])
         self.get_render_and_assert(c)
 
+    def test_mixed_collection(self):
+        res = resource.Resource("foo", [], uuid.uuid4().hex)
+        knd = kind.Kind("scheme", "term", "title")
+        c = collection.Collection(kinds=[knd], resources=[res])
+        r = self.renderer.get_renderer(c)
+        observed = r.render()
+        self.assertMixedCollection(knd, res, observed)
+
     def test_exception(self):
         exc = webob.exc.HTTPBadRequest()
         self.get_render_and_assert(exc)

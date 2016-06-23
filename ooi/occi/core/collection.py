@@ -20,11 +20,20 @@ class Collection(object):
     be one output or another.  This class should do the magic and render the
     proper information, taking into account what is in the collection.
     """
-    def __init__(self, kinds=[], mixins=[], actions=[],
-                 resources=[], links=[]):
-
+    def __init__(self, kinds=None, mixins=None, actions=None,
+                 resources=None, links=None):
+        if kinds is None:
+            kinds = []
         self.kinds = kinds
+        if mixins is None:
+            mixins = []
         self.mixins = mixins
+        if actions is None:
+            actions = []
         self.actions = actions
+        if resources is None:
+            resources = []
         self.resources = resources
+        if links is None:
+            links = []
         self.links = links
