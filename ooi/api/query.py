@@ -15,6 +15,7 @@
 
 from ooi.api import base
 import ooi.api.helpers
+from ooi.occi.core import collection
 from ooi.occi.core import entity
 from ooi.occi.core import link
 from ooi.occi.core import resource
@@ -72,42 +73,46 @@ class Controller(base.Controller):
         return occi_ip_pools
 
     def index(self, req):
-        l = []
         # OCCI Core Kinds:
-        l.append(entity.Entity.kind)
-        l.append(resource.Resource.kind)
-        l.append(link.Link.kind)
+        kinds = []
+        actions = []
+        mixins = []
+        kinds.append(entity.Entity.kind)
+        kinds.append(resource.Resource.kind)
+        kinds.append(link.Link.kind)
 
         # OCCI infra Compute:
-        l.append(compute.ComputeResource.kind)
-        l.extend(compute.ComputeResource.actions)
+        kinds.append(compute.ComputeResource.kind)
+        actions.extend(compute.ComputeResource.actions)
 
         # OCCI infra Storage
-        l.append(storage.StorageResource.kind)
-        l.append(storage_link.StorageLink.kind)
-        l.extend(storage.StorageResource.actions)
+        kinds.append(storage.StorageResource.kind)
+        kinds.append(storage_link.StorageLink.kind)
+        actions.extend(storage.StorageResource.actions)
 
         # OCCI infra network
-        l.append(network.NetworkResource.kind)
-        l.extend(network.NetworkResource.actions)
+        kinds.append(network.NetworkResource.kind)
+        actions.extend(network.NetworkResource.actions)
         if self.neutron_ooi_endpoint:
-            l.append(os_network.neutron_network)
-        l.append(network.ip_network)
-        l.append(network_link.NetworkInterface.kind)
-        l.append(network_link.ip_network_interface)
+            mixins.append(os_network.neutron_network)
+        mixins.append(network.ip_network)
+        kinds.append(network_link.NetworkInterface.kind)
+        mixins.append(network_link.ip_network_interface)
 
         # OCCI infra compute mixins
-        l.append(infra_templates.os_tpl)
-        l.append(infra_templates.resource_tpl)
+        mixins.append(infra_templates.os_tpl)
+        mixins.append(infra_templates.resource_tpl)
 
         # OpenStack flavors & images
-        l.extend(self._resource_tpls(req))
-        l.extend(self._os_tpls(req))
+        mixins.extend(self._resource_tpls(req))
+        mixins.extend(self._os_tpls(req))
 
         # OpenStack Contextualization
-        l.append(contextualization.user_data)
-        l.append(contextualization.public_key)
+        mixins.append(contextualization.user_data)
+        mixins.append(contextualization.public_key)
 
         # OpenStack Floating IP Pools
-        l.extend(self._ip_pools(req))
-        return l
+        mixins.extend(self._ip_pools(req))
+        return collection.Collection(kinds=kinds,
+                                     mixins=mixins,
+                                     actions=actions)
