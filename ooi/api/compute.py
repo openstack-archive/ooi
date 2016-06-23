@@ -264,7 +264,7 @@ class Controller(ooi.api.base.Controller):
                             net_id = "FIXED"
                     comp.add_link(_create_network_link(addr, comp, net_id))
 
-        return [comp]
+        return comp
 
     def _get_server_floating_ips(self, req, server_id):
         s = self.os_helper.get_server(req, server_id)
