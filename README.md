@@ -1,5 +1,4 @@
-ooi: OpenStack OCCI Interface
-=============================
+# ooi: OpenStack OCCI Interface
 
 ooi is an implementation the Open Grid Forum's
 [Open Cloud Computing Interface (OCCI)](http://www.occi-wg.org)
