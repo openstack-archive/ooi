@@ -200,7 +200,7 @@ class TestComputeController(base.TestController):
 
                 ret = self.controller.show(None, server["id"])
                 # FIXME(aloga): Should we test the resource?
-                self.assertIsInstance(ret[0], occi_compute.ComputeResource)
+                self.assertIsInstance(ret, occi_compute.ComputeResource)
                 m_server.assert_called_with(None, server["id"])
                 m_flavor.assert_called_with(None, flavor["id"])
                 m_image.assert_called_with(None, image["id"])
@@ -231,7 +231,7 @@ class TestComputeController(base.TestController):
 
                 ret = self.controller.show(None, server["id"])
                 # FIXME(aloga): Should we test the resource?
-                self.assertIsInstance(ret[0], occi_compute.ComputeResource)
+                self.assertIsInstance(ret, occi_compute.ComputeResource)
                 m_server.assert_called_with(None, server["id"])
                 m_flavor.assert_called_with(None, flavor["id"])
                 m_image.assert_called_with(None, image["id"])
