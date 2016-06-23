@@ -74,7 +74,7 @@ class TestStorageController(base.TestController):
             vols = fakes.volumes[tenant["id"]]
             for idx, vol in enumerate(vols):
                 m_vol.return_value = vol
-                ret = self.controller.show(None, vol["id"])[0]
+                ret = self.controller.show(None, vol["id"])
                 self.assertIsInstance(ret, storage.StorageResource)
                 self.assertEqual(vol["id"], ret.id)
                 self.assertEqual(vol["displayName"], ret.title)

@@ -55,50 +55,51 @@ class TestQueryController(base.TestController):
         ip_pool = os_network.OSFloatingIPPool("foo")
         m_pools.return_value = [ip_pool]
 
-        expected = [
-            res_tpl,
-            os_tpl,
-            ip_pool,
-            # OCCI Core Kinds:
+        expected_kinds = [
             entity.Entity.kind,
             resource.Resource.kind,
             link.Link.kind,
-
-            # OCCI infra Compute:
             compute.ComputeResource.kind,
+            storage.StorageResource.kind,
+            storage_link.StorageLink.kind,
+            network.NetworkResource.kind,
+            network_link.NetworkInterface.kind,
+        ]
+
+        expected_mixins = [
+            res_tpl,
+            os_tpl,
+            ip_pool,
+            network.ip_network,
+            network_link.ip_network_interface,
+            infra_templates.os_tpl,
+            infra_templates.resource_tpl,
+            contextualization.user_data,
+            contextualization.public_key,
+        ]
+
+        expected_actions = [
             compute.start,
             compute.stop,
             compute.restart,
             compute.suspend,
 
-            # OCCI infra Storage
-            storage.StorageResource.kind,
-            storage_link.StorageLink.kind,
             storage.online,
             storage.offline,
             storage.backup,
             storage.snapshot,
             storage.resize,
 
-            # OCCI infra network
-            network.NetworkResource.kind,
             network.up,
             network.down,
-            network.ip_network,
-            network_link.NetworkInterface.kind,
-            network_link.ip_network_interface,
-
-            # OCCI infra compute mixins
-            infra_templates.os_tpl,
-            infra_templates.resource_tpl,
-
-            # OpenStack Contextualization
-            contextualization.user_data,
-            contextualization.public_key,
         ]
 
         ret = self.controller.index(req)
-        self.assertItemsEqual(expected, ret)
+        self.assertItemsEqual(expected_kinds, ret.kinds)
+        self.assertItemsEqual(expected_mixins, ret.mixins)
+        self.assertItemsEqual(expected_actions, ret.actions)
+        self.assertEqual([], ret.resources)
+        self.assertEqual([], ret.links)
 
     @mock.patch.object(query.Controller, "_os_tpls")
     @mock.patch.object(query.Controller, "_resource_tpls")
@@ -120,51 +121,52 @@ class TestQueryController(base.TestController):
         ip_pool = os_network.OSFloatingIPPool("foo")
         m_pools.return_value = [ip_pool]
 
-        expected = [
-            res_tpl,
-            os_tpl,
-            ip_pool,
-            # OCCI Core Kinds:
+        expected_kinds = [
             entity.Entity.kind,
             resource.Resource.kind,
             link.Link.kind,
-
-            # OCCI infra Compute:
             compute.ComputeResource.kind,
+            storage.StorageResource.kind,
+            storage_link.StorageLink.kind,
+            network.NetworkResource.kind,
+            network_link.NetworkInterface.kind,
+        ]
+
+        expected_mixins = [
+            res_tpl,
+            os_tpl,
+            ip_pool,
+            os_network.neutron_network,
+            network.ip_network,
+            network_link.ip_network_interface,
+            infra_templates.os_tpl,
+            infra_templates.resource_tpl,
+            contextualization.user_data,
+            contextualization.public_key,
+        ]
+
+        expected_actions = [
             compute.start,
             compute.stop,
             compute.restart,
             compute.suspend,
 
-            # OCCI infra Storage
-            storage.StorageResource.kind,
-            storage_link.StorageLink.kind,
             storage.online,
             storage.offline,
             storage.backup,
             storage.snapshot,
             storage.resize,
 
-            # OCCI infra network
-            network.NetworkResource.kind,
             network.up,
             network.down,
-            os_network.neutron_network,
-            network.ip_network,
-            network_link.NetworkInterface.kind,
-            network_link.ip_network_interface,
-
-            # OCCI infra compute mixins
-            infra_templates.os_tpl,
-            infra_templates.resource_tpl,
-
-            # OpenStack Contextualization
-            contextualization.user_data,
-            contextualization.public_key,
         ]
 
         ret = neutron_controller.index(req)
-        self.assertItemsEqual(expected, ret)
+        self.assertItemsEqual(expected_kinds, ret.kinds)
+        self.assertItemsEqual(expected_mixins, ret.mixins)
+        self.assertItemsEqual(expected_actions, ret.actions)
+        self.assertEqual([], ret.resources)
+        self.assertEqual([], ret.links)
 
     @mock.patch.object(helpers.OpenStackHelper, "get_flavors")
     def test_get_resource_tpls(self, m_get_flavors):
