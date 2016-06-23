@@ -23,7 +23,7 @@ import webob
 
 from ooi.api import helpers
 from ooi.tests import fakes_network as fakes
-from ooi.tests.middleware import test_middleware
+from ooi.tests.functional.middleware import test_middleware
 from ooi import utils
 from ooi import wsgi
 
