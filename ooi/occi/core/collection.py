@@ -22,9 +22,8 @@ class Collection(object):
     be one output or another.  This class should do the magic and render the
     proper information, taking into account what is in the collection.
     """
-    def __init__(self, kinds=[], mixins=[], actions=[],
-                 resources=[], links=[]):
-
+    def __init__(self, kinds=(), mixins=(), actions=(),
+                 resources=(), links=()):
         self.kinds = kinds
         self.mixins = mixins
         self.actions = actions
