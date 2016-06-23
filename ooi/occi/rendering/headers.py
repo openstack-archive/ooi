@@ -108,13 +108,22 @@ class MixinRenderer(CategoryRenderer):
 
 class CollectionRenderer(HeaderRenderer):
     def render(self, env={}):
-        app_url = env.get("application_url", "")
         ret = []
-        for what in [self.obj.kinds, self.obj.mixins, self.obj.actions,
-                     self.obj.resources, self.obj.links]:
-            for el in what:
-                url = utils.join_url(app_url, el.location)
-                ret.append(('X-OCCI-Location', '%s' % url))
+        contents = (self.obj.kinds, self.obj.mixins, self.obj.actions,
+                    self.obj.resources, self.obj.links)
+        # Render individual objects if there are more that one type of objects
+        # otherwise render as X-OCCI-Location headers
+        if len([x for x in contents if x]) > 1:
+            for what in contents:
+                for el in what:
+                    renderer = get_renderer(el)
+                    ret.extend(renderer.render(env=env))
+        else:
+            app_url = env.get("application_url", "")
+            for what in contents:
+                for el in what:
+                    url = utils.join_url(app_url, el.location)
+                    ret.append(('X-OCCI-Location', '%s' % url))
         return ret
 
 

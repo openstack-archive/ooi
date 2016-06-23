@@ -46,6 +46,16 @@ class TestOCCITextRendering(test_header.TestOCCIHeaderRendering):
         for attr in attrs:
             self.assertIn("X-OCCI-Attribute: %s" % attr, observed_lines)
 
+    def assertMixedCollection(self, kind, resource, observed):
+        expected = [self.get_category("kind", kind, kind.location)]
+        expected.append(self.get_category("kind", resource.kind,
+                                          resource.kind.location))
+        for a in resource.attributes:
+            if resource.attributes[a].value:
+                expected.append('X-OCCI-Attribute: '
+                                '%s="%s"' % (a, resource.attributes[a].value))
+        self.assertEqual("\n".join(expected).strip(), observed.strip())
+
     def assertCollection(self, obj, observed):
         expected = []
         for what in [obj.kinds, obj.mixins, obj.actions, obj.resources,

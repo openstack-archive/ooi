@@ -14,6 +14,8 @@
 
 import json
 
+import mock
+
 from ooi.occi.core import attribute
 from ooi.occi.rendering import occi_json
 from ooi.tests.unit.occi.renderings import base
@@ -88,6 +90,15 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
             "title": obj.title,
         }
         self.assertEqual(link, json.loads(observed))
+
+    def assertMixedCollection(self, kind, resource, observed):
+        c = mock.MagicMock()
+        c.kinds = [kind]
+        c.resources = [resource]
+        c.mixins = ()
+        c.actions = ()
+        c.links = ()
+        self.assertCollection(c, observed)
 
     def assertMixin(self, obj, observed):
         expected = {

@@ -75,6 +75,18 @@ class TestOCCIHeaderRendering(base.BaseRendererTest):
         for attr in attrs:
             self.assertIn(("X-OCCI-Attribute", attr), observed)
 
+    def assertMixedCollection(self, kind, resource, observed):
+        expected = self.get_category("kind", kind, kind.location)
+        expected.extend(self.get_category("kind", resource.kind,
+                                          resource.kind.location))
+        for a in resource.attributes:
+            # assume string attributes, remove null ones
+            if resource.attributes[a].value:
+                attr = ('X-OCCI-Attribute',
+                        '%s="%s"' % (a, resource.attributes[a].value))
+                expected.append(attr)
+        self.assertItemsEqual(expected, observed)
+
     def assertMixin(self, obj, observed):
         expected = self.get_category("mixin", obj)
         self.assertEqual(expected, observed)
