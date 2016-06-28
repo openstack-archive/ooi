@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # Copyright 2015 Spanish National Research Council
+# Copyright 2015 LIP - INDIGO-DataCloud
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -22,7 +23,7 @@ from ooi.api import network_link
 from ooi import exception
 from ooi.occi.core import collection
 from ooi.tests import fakes_network as fakes
-from ooi.tests.middleware import test_middleware
+from ooi.tests.functional.middleware import test_middleware
 from ooi import utils
 from ooi import wsgi
 
