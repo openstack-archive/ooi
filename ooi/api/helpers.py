@@ -824,7 +824,7 @@ class OpenStackHelper(BaseHelper):
             'net_id': network_id,
             'server_id': device_id
         }
-        compute_id = param_port.get("server_id")
+        compute_id = param_port.pop("server_id")
         tenant_id = self.tenant_from_req(req)
         path = "/%s/servers/%s/os-interface" % (tenant_id, compute_id)
         body = utils.make_body("interfaceAttachment", param_port)
