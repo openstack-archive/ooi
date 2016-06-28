@@ -156,7 +156,7 @@ class Controller(base.Controller):
                 network.ip_network,
             ],
             "optional_mixins": [
-                os_network.OSNetwork()
+                os_network.os_network
             ]
         }
         required = ["occi.core.title",
