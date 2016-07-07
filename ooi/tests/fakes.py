@@ -566,9 +566,10 @@ class FakeApp(object):
         return create_fake_json_resp(ip, 202)
 
     def _do_create_port(self, req):
-        tenant = req.path_info.split('/')[1]
+        req_content = req.path_info.split('/')
+        tenant = req_content[1]
+        server = req_content[3]
         body = req.json_body.copy()
-        server = body["interfaceAttachment"]["server_id"]
         net = body["interfaceAttachment"]["net_id"]
         port = ports[tenant]
         p = {"interfaceAttachment": {

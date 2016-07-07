@@ -1236,6 +1236,10 @@ class TestOpenStackHelperReqs(TestBaseHelper):
             "fixed_ips": [{"ip_address": ip}],
             "mac_addr": mac, "port_state": "ACTIVE"
         }}
+        tenant_id = uuid.uuid4().hex
+        m_tenant.return_value = tenant_id
+        path = "/%s/servers/%s/os-interface" % (tenant_id, device_id)
+        body = {"interfaceAttachment": {"net_id": net_id}}
         response = fakes.create_fake_json_resp(p, 200)
         req_mock = mock.MagicMock()
         req_mock.get_response.return_value = response
@@ -1246,6 +1250,10 @@ class TestOpenStackHelperReqs(TestBaseHelper):
         self.assertEqual(net_id, ret['network_id'])
         self.assertEqual(mac, ret['mac'])
         self.assertEqual(port_id, ret['ip_id'])
+        m_create.assert_called_with(None, path=path,
+                                    content_type="application/json",
+                                    body=json.dumps(body),
+                                    method="POST")
 
     @mock.patch.object(helpers.OpenStackHelper, "_get_ports")
     @mock.patch.object(helpers.OpenStackHelper, "_get_req")
