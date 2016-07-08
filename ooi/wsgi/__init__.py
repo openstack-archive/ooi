@@ -110,11 +110,10 @@ class OCCIMiddleware(object):
             return cls(app, **local_conf)
         return _factory
 
-    def __init__(self, application, openstack_version="/v2.1",
-                 neutron_ooi_endpoint=None):
+    def __init__(self, application, openstack_version="/v2.1"):
         self.application = application
         self.openstack_version = openstack_version
-        self.neutron_ooi_endpoint = neutron_ooi_endpoint
+        self.neutron_ooi_endpoint = CONF.neutron_ooi_endpoint
         self.resources = {}
 
         self.mapper = routes.Mapper()
