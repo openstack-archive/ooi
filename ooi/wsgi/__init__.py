@@ -114,7 +114,10 @@ class OCCIMiddleware(object):
                  neutron_ooi_endpoint=None):
         self.application = application
         self.openstack_version = openstack_version
-        self.neutron_ooi_endpoint = neutron_ooi_endpoint
+        if CONF.neutron_ooi_endpoint:
+            self.neutron_ooi_endpoint = CONF.neutron_ooi_endpoint
+        else:
+            self.neutron_ooi_endpoint = neutron_ooi_endpoint
         self.resources = {}
 
         self.mapper = routes.Mapper()

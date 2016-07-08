@@ -19,6 +19,7 @@ import mock
 
 import uuid
 
+from oslo_config import cfg
 import webob
 
 from ooi.api import helpers
@@ -36,10 +37,16 @@ class TestFunctionalNeutron(test_middleware.TestMiddleware):
         self.schema = 'http://schemas.ogf.org/occi/infrastructure#network'
         self.accept = self.content_type = None
         self.application_url = fakes.application_url
-        self.neutron_endpoint = "foo"
-        self.app = wsgi.OCCIMiddleware(
-            None,
-            neutron_ooi_endpoint=self.neutron_endpoint)
+        neutron_ooi_endpoint = "foo"
+
+        def mock_endpoint(self, bar):
+            if bar == "neutron_ooi_endpoint":
+                return neutron_ooi_endpoint
+
+        with mock.patch.object(cfg.ConfigOpts, "__getattr__",
+                               side_effect=mock_endpoint,
+                               autospec=True):
+            self.app = wsgi.OCCIMiddleware(None)
 
     def assertExpectedResult(self, expected, result):
         expected = ["%s: %s" % e for e in expected]
@@ -208,9 +215,7 @@ class TestFunctionalNova(test_middleware.TestMiddleware):
         self.schema = 'http://schemas.ogf.org/occi/infrastructure#network'
         self.accept = self.content_type = None
         self.application_url = fakes.application_url
-        self.app = wsgi.OCCIMiddleware(
-            None,
-            None)
+        self.app = wsgi.OCCIMiddleware(None)
 
     def assertExpectedResult(self, expected, result):
         expected = ["%s: %s" % e for e in expected]

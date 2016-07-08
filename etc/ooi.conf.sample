@@ -13,3 +13,7 @@
 # Number of workers for OCCI (ooi) API service. The default will be equal to
 # the number of CPUs available. (integer value)
 #ooi_workers = <None>
+
+# Neutron endpoint which configures the network management by using neutron.
+# If this is not set, the system will use nova-network.
+neutron_ooi_endpoint = <None>
