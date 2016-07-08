@@ -9,7 +9,6 @@ use = call:nova.api.openstack.urlmap:urlmap_factory
 [filter:occi]
 paste.filter_factory = ooi.wsgi:OCCIMiddleware.factory
 openstack_version = /v2.0
-neutron_ooi_endpoint = http://127.0.0.1:9696/v2.0
 
 [composite:occi_api_11]
 use = call:nova.api.auth:pipeline_factory

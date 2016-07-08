@@ -18,7 +18,9 @@
 import mock
 
 import uuid
+import warnings
 
+from oslo_config import cfg
 import webob
 
 from ooi.api import helpers
@@ -36,16 +38,37 @@ class TestFunctionalNeutron(test_middleware.TestMiddleware):
         self.schema = 'http://schemas.ogf.org/occi/infrastructure#network'
         self.accept = self.content_type = None
         self.application_url = fakes.application_url
-        self.neutron_endpoint = "foo"
-        self.app = wsgi.OCCIMiddleware(
-            None,
-            neutron_ooi_endpoint=self.neutron_endpoint)
+        neutron_ooi_endpoint = "foo"
+
+        def mock_endpoint(self, bar):
+            if bar == "neutron_ooi_endpoint":
+                return neutron_ooi_endpoint
+
+        with mock.patch.object(cfg.ConfigOpts, "__getattr__",
+                               side_effect=mock_endpoint,
+                               autospec=True):
+            self.app = wsgi.OCCIMiddleware(None)
 
     def assertExpectedResult(self, expected, result):
         expected = ["%s: %s" % e for e in expected]
         # NOTE(aloga): the order of the result does not matter
         results = str(result.text).splitlines()
         self.assertItemsEqual(expected, results)
+
+    def test_deprecated_configuration(self):
+        with warnings.catch_warnings(record=True) as w:
+            neutron_endopoint = "/foo"
+            warnings.simplefilter("always", DeprecationWarning)
+            wsgi.OCCIMiddleware(None,
+                                neutron_ooi_endpoint=neutron_endopoint)
+            expected_message = (
+                "Configuration of neutron_ooi_endpoint"
+                " in api-paste.ini file is deprecated,"
+                " include it in nova.conf")
+            self.assertEqual(1, len(w))
+            self.assertIs(DeprecationWarning,
+                          w[-1].category)
+            self.assertEqual(expected_message, w[-1].message.message)
 
     @mock.patch.object(helpers.BaseHelper, "_get_req")
     def test_list_networks_empty(self, m):
@@ -208,9 +231,7 @@ class TestFunctionalNova(test_middleware.TestMiddleware):
         self.schema = 'http://schemas.ogf.org/occi/infrastructure#network'
         self.accept = self.content_type = None
         self.application_url = fakes.application_url
-        self.app = wsgi.OCCIMiddleware(
-            None,
-            None)
+        self.app = wsgi.OCCIMiddleware(None)
 
     def assertExpectedResult(self, expected, result):
         expected = ["%s: %s" % e for e in expected]

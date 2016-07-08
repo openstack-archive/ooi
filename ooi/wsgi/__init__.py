@@ -41,15 +41,15 @@ occi_opts = [
     config.cfg.StrOpt('ooi_listen',
                       default="0.0.0.0",
                       help='The IP address on which the OCCI (ooi) API '
-                      'will listen.'),
+                           'will listen.'),
     config.cfg.IntOpt('ooi_listen_port',
                       default=8787,
                       help='The port on which the OCCI (ooi) API '
-                      'will listen.'),
+                           'will listen.'),
     config.cfg.IntOpt('ooi_workers',
                       help='Number of workers for OCCI (ooi) API service. '
-                      'The default will be equal to the number of CPUs '
-                      'available.'),
+                           'The default will be equal to the number of CPUs '
+                           'available.'),
     # NEUTRON
     config.cfg.StrOpt('neutron_ooi_endpoint',
                       default=None,
@@ -114,9 +114,19 @@ class OCCIMiddleware(object):
                  neutron_ooi_endpoint=None):
         self.application = application
         self.openstack_version = openstack_version
-        self.neutron_ooi_endpoint = neutron_ooi_endpoint
-        self.resources = {}
 
+        if CONF.neutron_ooi_endpoint:
+            self.neutron_ooi_endpoint = CONF.neutron_ooi_endpoint
+        elif neutron_ooi_endpoint:
+            exception.raise_deprecation_message(
+                "Configuration of neutron_ooi_endpoint"
+                " in api-paste.ini file is deprecated,"
+                " include it in nova.conf")
+            self.neutron_ooi_endpoint = neutron_ooi_endpoint
+        else:
+            self.neutron_ooi_endpoint = None
+
+        self.resources = {}
         self.mapper = routes.Mapper()
         self._setup_routes()
 
@@ -251,7 +261,7 @@ class OCCIMiddleware(object):
             match = re.search(r"\bOCCI/\d\.\d\b", req.user_agent)
             if match and self.occi_string != match.group():
                 return Fault(webob.exc.HTTPNotImplemented(
-                             explanation="%s not supported" % match.group()))
+                    explanation="%s not supported" % match.group()))
 
         match = self.mapper.match(req.path_info, req.environ)
         if not match:
@@ -456,12 +466,12 @@ class ResourceExceptionHandler(object):
 
         if isinstance(ex_value, exception.OCCIException):
             raise Fault(exception.ConvertedException(
-                        code=ex_value.code,
-                        explanation=ex_value.format_message()))
+                code=ex_value.code,
+                explanation=ex_value.format_message()))
         elif isinstance(ex_value, exception.NotImplemented):
             raise Fault(exception.ConvertedException(
-                        code=ex_value.code,
-                        explanation=ex_value.format_message()))
+                code=ex_value.code,
+                explanation=ex_value.format_message()))
         elif isinstance(ex_value, TypeError):
             exc_info = (ex_type, ex_value, ex_traceback)
             LOG.error('Exception handling resource: %s', ex_value,
