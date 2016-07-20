@@ -17,15 +17,9 @@
 
 import uuid
 
-import mock
-
-from ooi.api import network_link
-from ooi import exception
-from ooi.occi.core import collection
-from ooi.tests import fakes_network as fakes
+from ooi.tests import fakes
 from ooi.tests.functional.middleware import test_middleware
 from ooi import utils
-from ooi import wsgi
 
 
 class TestNetInterfaceController(test_middleware.TestMiddleware):
@@ -34,14 +28,11 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
     def setUp(self):
         super(TestNetInterfaceController, self).setUp()
         self.application_url = fakes.application_url
-        self.app = wsgi.OCCIMiddleware(None)
+        self.app = self.get_app()
 
-    @mock.patch.object(network_link.Controller, "index")
-    def test_list_ifaces_empty(self, mock_index):
+    def test_list_ifaces_empty(self):
         tenant = fakes.tenants["bar"]
-        mock_index.return_value = fakes.fake_network_link_occi(
-            fakes.network_links[tenant['id']]
-        )
+
         for url in ("/networklink/", "/networklink"):
             req = self._build_req(url, tenant["id"], method="GET")
 
@@ -54,14 +45,8 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
             self.assertExpectedResult(expected_result, resp)
             self.assertEqual(204, resp.status_code)
 
-    @mock.patch.object(network_link.Controller, "index")
-    def test_list_ifaces(self, mock_index):
-        tenant = fakes.tenants["foo"]
-        mock_index.return_value = collection.Collection(
-            fakes.fake_network_link_occi(
-                fakes.network_links[tenant['id']]
-            )
-        )
+    def test_list_ifaces(self):
+        tenant = fakes.tenants["baz"]
 
         for url in ("/networklink/", "/networklink"):
             req = self._build_req(url, tenant["id"], method="GET")
@@ -70,62 +55,67 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
 
             self.assertEqual(200, resp.status_code)
             expected = []
-            for ip in fakes.network_links[tenant["id"]]:
-                if ip["instance_id"]:
-                    # fixme(jorgesece): test in case of instance None
-                    link_id = '_'.join([ip["instance_id"],
-                                        ip["network_id"],
-                                        ip["ip"]])
+            float_list = {}
+            for floating_ip in fakes.floating_ips[tenant["id"]]:
+                if floating_ip["instance_id"]:
+                    float_list.update({floating_ip['fixed_ip']: floating_ip})
+            instance_vm = fakes.linked_vm_id
+            for p in fakes.ports[tenant["id"]]:
+                for ip in p["fixed_ips"]:
+                    link_id = '_'.join([instance_vm,
+                                        p["net_id"],
+                                        ip["ip_address"]])
                     expected.append(
                         ("X-OCCI-Location",
                          utils.join_url(self.application_url + "/",
                                         "networklink/%s" % link_id))
                     )
+                    float_ip = float_list.get(ip['ip_address'], None)
+                    if float_ip:
+                        link_id = '_'.join([instance_vm,
+                                            "PUBLIC",
+                                            float_ip["ip"]])
+                        expected.append(
+                            ("X-OCCI-Location",
+                             utils.join_url(self.application_url + "/",
+                                            "networklink/%s" % link_id))
+                        )
+
             self.assertExpectedResult(expected, resp)
 
-    @mock.patch.object(network_link.Controller, "show")
-    def test_show_iface(self, m_show):
-        tenant = fakes.tenants["foo"]
-        m_show.return_value = fakes.fake_network_link_occi(
-            fakes.network_links[tenant['id']]
-        )
-
-        for ip in fakes.network_links[tenant["id"]]:
-            if ip["instance_id"] is not None:
-                link_id = '_'.join([ip["instance_id"],
-                                    ip["network_id"],
-                                    ip["ip"]]
+    def test_show_iface(self):
+        tenant = fakes.tenants["baz"]
+        instance_vm = fakes.linked_vm_id
+        for p in fakes.ports[tenant["id"]]:
+            for ip in p["fixed_ips"]:
+                link_id = '_'.join([instance_vm,
+                                    p["net_id"],
+                                    ip["ip_address"]]
                                    )
                 req = self._build_req("/networklink/%s" % link_id,
                                       tenant["id"], method="GET")
 
                 resp = req.get_response(self.app)
                 self.assertContentType(resp)
-    #     net_id = uuid.uuid4().hex
-
                 source = utils.join_url(self.application_url + "/",
-                                        "compute/%s" % ip["instance_id"])
+                                        "compute/%s" % instance_vm)
                 target = utils.join_url(self.application_url + "/",
-                                        "network/%s" % ip['network_id'])
+                                        "network/%s" % p["net_id"])
                 self.assertResultIncludesLinkAttr(link_id, source, target,
                                                   resp)
                 self.assertEqual(200, resp.status_code)
 
-    @mock.patch.object(network_link.Controller, "show")
-    def test_show_invalid_id(self, m_show):
+    def test_show_invalid_id(self):
         tenant = fakes.tenants["foo"]
         link_id = uuid.uuid4().hex
-        m_show.side_effect = exception.LinkNotFound(link_id=link_id)
         req = self._build_req("/networklink/%s" % link_id,
                               tenant["id"], method="GET")
         resp = req.get_response(self.app)
         self.assertEqual(404, resp.status_code)
 
-    @mock.patch.object(network_link.Controller, "create")
-    def test_create_link_invalid(self, m_create):
+    def test_create_link_invalid(self):
         tenant = fakes.tenants["foo"]
-        m_create.side_effect = exception.Invalid
-        net_id = fakes.network_links[tenant['id']][0]['network_id']
+        net_id = fakes.ports[tenant['id']][0]['net_id']
         occi_net_id = utils.join_url(self.application_url + "/",
                                      "network/%s" % net_id)
         headers = {
@@ -133,23 +123,21 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
                 'networkinterface;'
                 'scheme="http://schemas.ogf.org/occi/infrastructure#";'
                 'class="kind"'),
-            'X-OCCI-Attribute': (
-                'occi.core.source="foo", '
-                'occi.core.target="%s"'
-            ) % occi_net_id
+            'X-OCCI-Attribute': ('occi.core.source="foo", '
+                                 'occi.core.target="%s"'
+                                 ) % occi_net_id
         }
         req = self._build_req("/networklink", None, method="POST",
                               headers=headers)
         resp = req.get_response(self.app)
         self.assertEqual(400, resp.status_code)
 
-    @mock.patch.object(network_link.Controller, "create")
-    def test_create_link_no_pool(self, m_create):
+    def test_create_link_no_pool(self):
         tenant = fakes.tenants["foo"]
-        m_create.return_value = fakes.fake_network_link_occi(
-            fakes.network_links[tenant['id']]
-        )[0]
-        net_id = fakes.network_links[tenant['id']][0]['network_id']
+        net_id = fakes.ports[tenant['id']][0]['net_id']
+        occi_compute_id = utils.join_url(
+            self.application_url + "/",
+            "compute/%s" % fakes.linked_vm_id)
         occi_net_id = utils.join_url(self.application_url + "/",
                                      "network/%s" % net_id)
         headers = {
@@ -157,50 +145,44 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
                 'networkinterface;'
                 'scheme="http://schemas.ogf.org/occi/infrastructure#";'
                 'class="kind"'),
-            'X-OCCI-Attribute': (
-                'occi.core.source="foo", '
-                'occi.core.target="%s"'
-            ) % occi_net_id
+            'X-OCCI-Attribute': ('occi.core.source="%s", '
+                                 'occi.core.target="%s"'
+                                 ) % (occi_compute_id, occi_net_id)
         }
-        req = self._build_req("/networklink", None, method="POST",
+        req = self._build_req("/networklink", tenant["id"], method="POST",
                               headers=headers)
         resp = req.get_response(self.app)
         self.assertEqual(200, resp.status_code)
 
-    @mock.patch.object(network_link.Controller, "create")
-    def test_create_link_with_pool(self, m_create):
-        tenant = fakes.tenants["foo"]
-        m_create.return_value = collection.Collection(
-            [fakes.fake_network_link_occi(
-                fakes.network_links[tenant['id']]
-            )[0]])
-        link_info = fakes.network_links[tenant['id']][0]
+    def test_create_link_with_pool(self):
+        tenant = fakes.tenants["baz"]
+        link_info = fakes.ports[tenant['id']][0]
 
         server_url = utils.join_url(self.application_url + "/",
-                                    "compute/%s" % link_info['instance_id'])
+                                    "compute/%s" % link_info['server_id'])
         net_url = utils.join_url(self.application_url + "/",
-                                 "network/%s" % link_info['network_id'])
+                                 "network/%s" % link_info['net_id'])
         pool_name = 'pool'
         headers = {
-            'Category': (
-                'networkinterface;'
-                'scheme="http://schemas.ogf.org/occi/infrastructure#";'
-                'class="kind",'
-                '%s;'
-                'scheme="http://schemas.openstack.org/network/'
-                'floatingippool#"; class="mixin"') % pool_name,
-            'X-OCCI-Attribute': (
-                'occi.core.source="%s", '
-                'occi.core.target="%s"'
-            ) % (server_url, net_url)
+            'Category': ('networkinterface;'
+                         'scheme="http://schemas.ogf.org/occi/'
+                         'infrastructure#";'
+                         'class="kind",'
+                         '%s;'
+                         'scheme="http://schemas.openstack.org/network/'
+                         'floatingippool#"; class="mixin"') % pool_name,
+            'X-OCCI-Attribute': ('occi.core.source="%s", '
+                                 'occi.core.target="%s"'
+                                 ) % (server_url, net_url)
         }
         req = self._build_req("/networklink", tenant["id"], method="POST",
                               headers=headers)
         resp = req.get_response(self.app)
 
-        link_id = '_'.join([link_info['instance_id'],
-                            link_info['network_id'],
-                            link_info['ip']])
+        link_id = '_'.join([link_info['server_id'],
+                            link_info['net_id'],
+                            link_info['fixed_ips'][0]
+                            ["ip_address"]])
         expected = [("X-OCCI-Location",
                      utils.join_url(self.application_url + "/",
                                     "networklink/%s" % link_id))]
@@ -208,39 +190,35 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
         self.assertExpectedResult(expected, resp)
         self.assertDefaults(resp)
 
-    @mock.patch.object(network_link.Controller, "delete")
-    def test_delete_fixed(self, m_delete):
-        tenant = fakes.tenants["foo"]
-        m_delete.return_value = []
+    def test_delete_fixed(self):
+        tenant = fakes.tenants["baz"]
 
-        for n in fakes.network_links[tenant["id"]]:
-            if n["network_id"] != "PUBLIC":
-                if n["instance_id"]:
-                    link_id = '_'.join([n["instance_id"],
-                                        n["network_id"],
-                                        n["ip"]])
-                    req = self._build_req("/networklink/%s" % link_id,
-                                          tenant["id"], method="DELETE")
+        for n in fakes.ports[tenant["id"]]:
+            if n["net_id"] != "PUBLIC":
+                if n["server_id"]:
+                    link_id = '_'.join([n["server_id"],
+                                        n["net_id"],
+                                        n["fixed_ips"]
+                                        [0]["ip_address"]])
+                    req = self._build_req(
+                        "/networklink/%s" % link_id,
+                        tenant["id"], method="DELETE")
                     resp = req.get_response(self.app)
                     self.assertContentType(resp)
                     self.assertEqual(204, resp.status_code)
 
-    @mock.patch.object(network_link.Controller, "delete")
-    def test_delete_public(self, m_delete):
-        tenant = fakes.tenants["public"]
-        m_delete.return_value = []
-
-        for n in fakes.network_links[tenant["id"]]:
-            if n["network_id"] != "PUBLIC":
-                if n["instance_id"]:
-                    link_id = '_'.join([n["instance_id"],
-                                        n["network_id"],
-                                        n["ip"]])
-                    req = self._build_req("/networklink/%s" % link_id,
-                                          tenant["id"], method="DELETE")
-                    resp = req.get_response(self.app)
-                    self.assertContentType(resp)
-                    self.assertEqual(204, resp.status_code)
+    def test_delete_public(self):
+        tenant = fakes.tenants["baz"]
+        for n in fakes.floating_ips[tenant["id"]]:
+            if n["instance_id"]:
+                link_id = '_'.join([n["instance_id"],
+                                    "PUBLIC",
+                                    n["ip"]])
+                req = self._build_req("/networklink/%s" % link_id,
+                                      tenant["id"], method="DELETE")
+                resp = req.get_response(self.app)
+                self.assertContentType(resp)
+                self.assertEqual(204, resp.status_code)
 
     def test_show_non_existant_compute(self):
         tenant = fakes.tenants["foo"]
@@ -260,10 +238,9 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
                 'networkinterface;'
                 'scheme="http://schemas.ogf.org/occi/infrastructure#";'
                 'class="kind"'),
-            'X-OCCI-Attribute': (
-                'occi.core.source="foo", '
-                'occi.core.target="%s"'
-            ) % net_id
+            'X-OCCI-Attribute': ('occi.core.source="foo", '
+                                 'occi.core.target="%s"'
+                                 ) % net_id
         }
         req = self._build_req("/networklink", None, method="POST",
                               headers=headers)
@@ -279,10 +256,9 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
                 'networkinterface;'
                 'scheme="http://schemas.ogf.org/occi/infrastructure#";'
                 'class="kind"'),
-            'X-OCCI-Attribute': (
-                'occi.core.source="%s", '
-                'occi.core.target="bar"'
-            ) % server_id
+            'X-OCCI-Attribute': ('occi.core.source="%s", '
+                                 'occi.core.target="bar"'
+                                 ) % server_id
         }
         req = self._build_req("/networklink", None, method="POST",
                               headers=headers)

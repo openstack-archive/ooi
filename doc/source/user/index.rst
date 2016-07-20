@@ -9,4 +9,5 @@ infrastructure.
 
    installation
    configuration
+   usage
    pipelines/index

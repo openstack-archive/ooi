@@ -821,12 +821,10 @@ class OpenStackHelper(BaseHelper):
         :param device_id: device id
         """
         param_port = {
-            'net_id': network_id,
-            'server_id': device_id
+            'net_id': network_id
         }
-        compute_id = param_port.get("server_id")
         tenant_id = self.tenant_from_req(req)
-        path = "/%s/servers/%s/os-interface" % (tenant_id, compute_id)
+        path = "/%s/servers/%s/os-interface" % (tenant_id, device_id)
         body = utils.make_body("interfaceAttachment", param_port)
         os_req = self._get_req(req, path=path,
                                content_type="application/json",
@@ -835,7 +833,7 @@ class OpenStackHelper(BaseHelper):
         port = self.get_from_response(response, "interfaceAttachment", {})
         for ip in port["fixed_ips"]:
             return self._build_link(port["net_id"],
-                                    compute_id,
+                                    device_id,
                                     ip['ip_address'],
                                     ip_id=port["port_id"],
                                     mac=port['mac_addr'],

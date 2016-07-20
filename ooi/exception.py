@@ -16,9 +16,17 @@
 
 import webob.exc
 
+import warnings
+
 from ooi.log import log as logging
 
 LOG = logging.getLogger(__name__)
+
+warnings.simplefilter("default", DeprecationWarning)
+
+
+def raise_deprecation_message(message):
+    warnings.warn(message, DeprecationWarning, stacklevel=2)
 
 
 class ConvertedException(webob.exc.WSGIHTTPException):
