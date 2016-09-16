@@ -551,7 +551,7 @@ class OpenStackHelper(BaseHelper):
         response = req.get_response(self.app)
         # FIXME(aloga): this should be handled in get_from_response, shouldn't
         # it?
-        if response.status_int not in [204]:
+        if response.status_int not in [202]:
             raise exception_from_response(response)
 
     def _get_volume_create_req(self, req, name, size):

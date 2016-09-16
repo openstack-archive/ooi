@@ -408,7 +408,7 @@ class TestOpenStackHelper(TestBaseHelper):
 
     @mock.patch.object(helpers.OpenStackHelper, "_get_volume_delete_req")
     def test_volume_delete(self, m):
-        resp = fakes.create_fake_json_resp(None, 204)
+        resp = fakes.create_fake_json_resp(None, 202)
         req_mock = mock.MagicMock()
         req_mock.get_response.return_value = resp
         m.return_value = req_mock
