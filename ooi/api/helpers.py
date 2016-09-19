@@ -88,16 +88,26 @@ def exception_from_response(response):
         501: webob.exc.HTTPNotImplemented,
         503: webob.exc.HTTPServiceUnavailable,
     }
+
+    message = ('Unexpected API Error. Please report this at '
+               'http://bugs.launchpad.net/ooi/ and attach the ooi '
+               'API log if possible.')
+
     code = response.status_int
     exc = exceptions.get(code, webob.exc.HTTPInternalServerError)
-    try:
-        message = response.json_body.popitem()[1].get("message")
-        exc = exc(explanation=message)
-    except Exception:
-        LOG.exception("Unknown error happenened processing response %s"
-                      % response)
-        return webob.exc.HTTPInternalServerError()
-    return exc
+
+    if code in exceptions:
+        try:
+            message = response.json_body.popitem()[1].get("message")
+        except Exception:
+            LOG.exception("Unknown error happenened processing response %s"
+                          % response)
+            exc = webob.exc.HTTPInternalServerError
+    else:
+        LOG.error("Nova returned an internal server error %s"
+                   % response)
+
+    return exc(explanation=message)
 
 
 class BaseHelper(object):
