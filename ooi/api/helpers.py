@@ -89,15 +89,22 @@ def exception_from_response(response):
         503: webob.exc.HTTPServiceUnavailable,
     }
     code = response.status_int
-    exc = exceptions.get(code, webob.exc.HTTPInternalServerError)
+
     try:
+        # NOTE(aloga): this is done on purpose. If we get a 500 error,
+        # we want to override the message with our own.
+        exc = exceptions[code]
         message = response.json_body.popitem()[1].get("message")
-        exc = exc(explanation=message)
-    except Exception:
+    except Exception as e:
         LOG.exception("Unknown error happenened processing response %s"
                       % response)
-        return webob.exc.HTTPInternalServerError()
-    return exc
+        LOG.exception(e)
+        exc = webob.exc.HTTPInternalServerError
+        message = ('Unexpected API Error. Please report this at '
+                   'http://bugs.launchpad.net/ooi/ and attach the ooi '
+                   'API log if possible.')
+
+    return exc(explanation=message)
 
 
 class BaseHelper(object):
