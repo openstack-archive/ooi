@@ -611,7 +611,7 @@ class FakeApp(object):
             r"/[^/]+/servers/[^/]+/os-volume_attachments/[^/]+$": 202,
             r"/[^/]+/os-floating-ips/[^/]+$": 202,
             r"/[^/]+/servers/[^/]+$": 204,
-            r"/[^/]+/os-volumes/[^/]+$": 204,
+            r"/[^/]+/os-volumes/[^/]+$": 202,
             r"/[^/]+/servers/[^/]+/os-interface/[^/]+$": 204,
         }
         for p, st in tested_paths.items():

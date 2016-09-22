@@ -114,9 +114,6 @@ class TestExceptionHelper(base.TestCase):
             429: webob.exc.HTTPTooManyRequests,
             501: webob.exc.HTTPNotImplemented,
             503: webob.exc.HTTPServiceUnavailable,
-            # Any other thing should be a 500
-            500: webob.exc.HTTPInternalServerError,
-            507: webob.exc.HTTPInternalServerError,
         }
 
         for code, exception in six.iteritems(code_and_exception):
@@ -125,6 +122,23 @@ class TestExceptionHelper(base.TestCase):
             ret = helpers.exception_from_response(resp)
             self.assertIsInstance(ret, exception)
             self.assertEqual(fault["computeFault"]["message"], ret.explanation)
+
+    def test_unexpected_exception(self):
+        code_and_exception = {
+            500: webob.exc.HTTPInternalServerError,
+            # Any other thing should be a 500
+            507: webob.exc.HTTPInternalServerError,
+        }
+        message = ("Unexpected API Error. Please report this at "
+                   "http://bugs.launchpad.net/ooi/ and attach the "
+                   "ooi API log if possible.")
+
+        for code, exception in six.iteritems(code_and_exception):
+            fault = self.get_fault(code)
+            resp = fakes.create_fake_json_resp(fault, code)
+            ret = helpers.exception_from_response(resp)
+            self.assertIsInstance(ret, exception)
+            self.assertEqual(message, ret.explanation)
 
     def test_error_handling_exception(self):
         fault = {}
@@ -408,7 +422,7 @@ class TestOpenStackHelper(TestBaseHelper):
 
     @mock.patch.object(helpers.OpenStackHelper, "_get_volume_delete_req")
     def test_volume_delete(self, m):
-        resp = fakes.create_fake_json_resp(None, 204)
+        resp = fakes.create_fake_json_resp(None, 202)
         req_mock = mock.MagicMock()
         req_mock.get_response.return_value = resp
         m.return_value = req_mock
