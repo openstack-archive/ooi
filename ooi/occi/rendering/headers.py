@@ -98,7 +98,14 @@ class ActionRenderer(CategoryRenderer):
 
 
 class MixinRenderer(CategoryRenderer):
-    pass
+    # See OCCI 1.2 text rendering 5.5.2 Mixin Instance Attribute Rendering
+    # Specifics: only render as "rel" the first "depends" of mixin
+    def _render_rel(self, env={}):
+        depends = getattr(self.obj, 'depends', [])
+        if depends:
+            d = {"scheme": depends[0].scheme, "term": depends[0].term}
+            return ['rel="%(scheme)s%(term)s"' % d]
+        return []
 
 
 class CollectionRenderer(HeaderRenderer):

@@ -66,4 +66,5 @@ ip_network_interface = mixin.Mixin(
     attributes=attr.AttributeCollection([
         "occi.networkinterface.address",
         "occi.networkinterface.gateway",
-        "occi.networkinterface.allocation"]))
+        "occi.networkinterface.allocation"]),
+    applies=[NetworkInterface.kind])
