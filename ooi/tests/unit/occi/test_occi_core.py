@@ -176,6 +176,28 @@ def TestCoreOCCIKindRelations(TestCoreOCCIKind):
 class TestCoreOCCIMixin(TestCoreOCCIKind):
     obj = mixin.Mixin
 
+    def relation_test(self, relation, rel_type):
+        rel = [rel_type(None, None, None)]
+        kwargs = {relation: rel}
+        o = self.obj(*self.args, **kwargs)
+
+        for i in (self.args):
+            self.assertEqual(i, getattr(o, i))
+        self.assertEqual(rel, getattr(o, relation))
+
+    def test_depends(self):
+        self.relation_test("depends", mixin.Mixin)
+
+    def test_applies(self):
+        self.relation_test("applies", kind.Kind)
+
+    def relation_invalid(self, relation):
+        kwargs = {relation: None}
+        self.assertRaises(TypeError,
+                          self.obj,
+                          *self.args,
+                          **kwargs)
+
 
 class TestCoreOCCIAction(BaseTestCoreOCCICategory):
     obj = action.Action

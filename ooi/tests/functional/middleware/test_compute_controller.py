@@ -48,11 +48,14 @@ def build_occi_server(server):
     cats.append('%s; '
                 'scheme="http://schemas.openstack.org/template/os#"; '
                 'class="mixin"; title="%s"; '
+                'rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"; '
                 'location="%s/os_tpl/%s"'
                 % (image_id, image_id, app_url, image_id)),
     cats.append('%s; '
                 'scheme="http://schemas.openstack.org/template/resource#"; '
                 'class="mixin"; title="Flavor: %s"; '
+                'rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"'
+                '; '
                 'location="%s/resource_tpl/%s"'
                 % (flavor_id, flavor_name, app_url, flavor_id)),
 

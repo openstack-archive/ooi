@@ -75,4 +75,5 @@ ip_network = mixin.Mixin(helpers.build_scheme("infrastructure/network"),
                          attributes=attr.AttributeCollection([
                              "occi.network.address",
                              "occi.network.gateway",
-                             "occi.network.allocation"]))
+                             "occi.network.allocation"]),
+                         applies=[NetworkResource.kind])
