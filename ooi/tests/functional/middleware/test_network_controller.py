@@ -117,10 +117,14 @@ class TestNetNeutronController(test_middleware.TestMiddleware):
             200)
         mock_subnet = mock.Mock(webob.Request)
         mock_subnet.get_response.return_value = subnet_out
+        list_router_out = fakes.create_fake_json_resp(
+            {"routers": []},
+            200)
+        mock_list_router = mock.Mock(webob.Request)
+        mock_list_router.get_response.return_value = list_router_out
         public_out = fakes.create_fake_json_resp(
             {"networks": fakes.networks[tenant['id']]},
             200)
-
         mock_public = mock.Mock(webob.Request)
         mock_public.get_response.return_value = public_out
         router_out = fakes.create_fake_json_resp(
@@ -131,7 +135,76 @@ class TestNetNeutronController(test_middleware.TestMiddleware):
         mock_iface = mock.Mock(webob.Request)
         mock_iface.get_response.return_value = fakes.create_fake_json_resp(
             {"foo": "foo"}, 200)
-        m.side_effect = [mock_net, mock_subnet, mock_public,
+        m.side_effect = [mock_net, mock_subnet, mock_list_router, mock_public,
+                         mock_router, mock_iface
+                         ]
+        name = fakes.networks[tenant["id"]][0]["name"]
+        net_id = fakes.networks[tenant["id"]][0]["id"]
+        address = fakes.networks[tenant["id"]][0]["subnet_info"]["cidr"]
+        headers = {
+            'Category': 'network;'
+                        ' scheme='
+                        '"http://schemas.ogf.org/occi/infrastructure#";'
+                        'class="kind",'
+                        'ipnetwork;'
+                        ' scheme='
+                        '"http://schemas.ogf.org/occi/infrastructure/'
+                        'network#";'
+                        'class="mixin",',
+            'X-OCCI-Attribute': 'occi.core.title="%s",'
+                                'occi.network.address="%s"' %
+                                (name, address)
+        }
+        req = self._build_req(path="/network",
+                              tenant_id='X',
+                              method="POST",
+                              headers=headers)
+
+        m.return_value = fakes.networks[tenant['id']][0]
+        resp = req.get_response(self.app)
+        self.assertEqual(200, resp.status_code)
+        expected = [("X-OCCI-Location",
+                     utils.join_url(self.application_url + "/",
+                                    "network/%s" % net_id))]
+        self.assertExpectedResult(expected, resp)
+
+    @mock.patch.object(helpers.BaseHelper, "_get_req")
+    def test_create_router_exists(self, m):
+        tenant = fakes.tenants["foo"]
+        net_out = fakes.create_fake_json_resp(
+            {"network": fakes.networks[tenant['id']][0]}, 200)
+        mock_net = mock.Mock(webob.Request)
+        mock_net.get_response.return_value = net_out
+        subnet_out = fakes.create_fake_json_resp(
+            {"subnet": fakes.networks[tenant['id']][0]["subnet_info"]},
+            200)
+        mock_subnet = mock.Mock(webob.Request)
+        mock_subnet.get_response.return_value = subnet_out
+        list_router_out = fakes.create_fake_json_resp(
+            {"routers": [
+                {"id": uuid.uuid4().hex,
+                 "external_gateway_info": None},
+                {"id": uuid.uuid4().hex,
+                 "external_gateway_info": {"network_id": uuid.uuid4().hex}},
+            ]
+            },
+            200)
+        mock_list_router = mock.Mock(webob.Request)
+        mock_list_router.get_response.return_value = list_router_out
+        public_out = fakes.create_fake_json_resp(
+            {"networks": fakes.networks[tenant['id']]},
+            200)
+        mock_public = mock.Mock(webob.Request)
+        mock_public.get_response.return_value = public_out
+        router_out = fakes.create_fake_json_resp(
+            {"router": {"id": uuid.uuid4().hex}},
+            200)
+        mock_router = mock.Mock(webob.Request)
+        mock_router.get_response.return_value = router_out
+        mock_iface = mock.Mock(webob.Request)
+        mock_iface.get_response.return_value = fakes.create_fake_json_resp(
+            {"foo": "foo"}, 200)
+        m.side_effect = [mock_net, mock_subnet, mock_list_router, mock_public,
                          mock_router, mock_iface
                          ]
         name = fakes.networks[tenant["id"]][0]["name"]
