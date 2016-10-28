@@ -379,7 +379,9 @@ class TestNetOpenStackHelper(base.TestCase):
                                 },
                                {"id": router_id},
                                {"id": 0}]
-        list_net.return_value = [{'id': public_net}]
+        router_list = []
+        net_list = [{'id': public_net}]
+        list_net.side_effect = [router_list, net_list]
         ret = self.helper.create_network(None,
                                          name=name,
                                          cidr=cidr,
@@ -407,6 +409,66 @@ class TestNetOpenStackHelper(base.TestCase):
         self.assertEqual(cidr, ret['address'])
         self.assertEqual(gate_way, ret['gateway'])
 
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "create_resource")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
+    @mock.patch.object(helpers_neutron.OpenStackNeutron,
+                       "_add_router_interface")
+    def test_create_full_network_router_exists(self, add_if,
+                                               list_net, cre_net):
+        name = "name_net"
+        net_id = uuid.uuid4().hex
+        subnet_id = uuid.uuid4().hex
+        router_id_1 = uuid.uuid4().hex
+        router_id_2 = uuid.uuid4().hex
+        state = "ACTIVE"
+        ip_version = 4
+        cidr = "0.0.0.0/24"
+        gate_way = "0.0.0.1"
+        parameters = {"occi.core.title": name,
+                      "occi.core.id": net_id,
+                      "occi.network.state": state,
+
+                      "org.openstack.network.ip_version": ip_version,
+                      "occi.network.address": cidr,
+                      "occi.network.gateway": gate_way
+                      }
+        cre_net.side_effect = [{'id': net_id,
+                                "status": 'active',
+                                "name": 'xx'},
+                               {"id": subnet_id,
+                                "cidr": cidr,
+                                "gateway_ip": gate_way,
+                                }
+                               ]
+        router_list = [{"id": router_id_1,
+                        "external_gateway_info": None},
+                       {"id": router_id_2,
+                        "external_gateway_info":
+                            {"network_id": net_id}}
+                       ]
+        list_net.return_value = router_list
+        ret = self.helper.create_network(None,
+                                         name=name,
+                                         cidr=cidr,
+                                         gateway=gate_way,
+                                         ip_version=ip_version)
+        self.assertEqual(net_id, ret["id"])
+        param = utils.translate_parameters(
+            self.translation["networks"], parameters)
+        self.assertEqual((None, 'networks',
+                          param),
+                         cre_net.call_args_list[0][0])
+        param_subnet = utils.translate_parameters(
+            self.translation["subnets"], parameters)
+        param_subnet['network_id'] = net_id
+        self.assertEqual((None, 'subnets',
+                          param_subnet),
+                         cre_net.call_args_list[1][0])
+        list_net.assert_called_with(None, "routers")
+        add_if.assert_called_with(None, router_id_2, subnet_id)
+        self.assertEqual(cidr, ret['address'])
+        self.assertEqual(gate_way, ret['gateway'])
+
     @mock.patch.object(helpers_neutron.OpenStackNeutron, "delete_resource")
     @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
     @mock.patch.object(helpers_neutron.OpenStackNeutron,
@@ -424,19 +486,16 @@ class TestNetOpenStackHelper(base.TestCase):
                  }
         port2 = {'id': 2, 'device_owner': 'nova'}
         m_list.return_value = [port1, port2]
-        m_del.side_effect = [{0}, {0}, []]
+        m_del.side_effect = [{0}, []]
         m_if.return_value = []
         ret = self.helper.delete_network(None, net_id)
         self.assertEqual(ret, [])
-        self.assertEqual((None, 'routers',
-                          port1['device_id']),
-                         m_del.call_args_list[0][0])
         self.assertEqual((None, 'ports',
                           port2['id']),
-                         m_del.call_args_list[1][0])
+                         m_del.call_args_list[0][0])
         self.assertEqual((None, 'networks',
                           net_id),
-                         m_del.call_args_list[2][0])
+                         m_del.call_args_list[1][0])
 
     @mock.patch.object(helpers_neutron.OpenStackNeutron,
                        "_make_delete_request")
