@@ -349,25 +349,26 @@ class OpenStackNeutron(helpers.BaseHelper):
                 req, 'subnets', subnet_param)
 
         # INTERFACE and ROUTER information is agnostic to the user
-            net_public = self._get_public_network(req)
-            attributes_router = {"external_gateway_info": {
-                "network_id": net_public}
-            }
-            router = self.create_resource(req,
-                                          'routers',
-                                          attributes_router)
-            try:
-                # create interface to the network
-                self._add_router_interface(req,
-                                           router['id'],
-                                           net['subnet_info']['id']
-                                           )
-            except Exception as ex:
-                self.delete_resource(req,
-                                     'routers',
-                                     router['id']
-                                     )
-                raise ex
+            router = None
+            router_list = self.list_resources(req, "routers")
+            for r in router_list:
+                if r["external_gateway_info"]:
+                    router = r
+                    break
+            if not router:
+                net_public = self._get_public_network(req)
+                attributes_router = {"external_gateway_info": {
+                    "network_id": net_public}
+                }
+                router = self.create_resource(req,
+                                              'routers',
+                                              attributes_router)
+
+            # create interface to the network
+            self._add_router_interface(req,
+                                       router['id'],
+                                       net['subnet_info']['id']
+                                       )
         except Exception as ex:
             self.delete_resource(req,
                                  'networks', net['id'])
@@ -389,8 +390,6 @@ class OpenStackNeutron(helpers.BaseHelper):
                                               port['device_id'],
                                               port['id'],
                                               )
-                self.delete_resource(req,
-                                     'routers', port["device_id"])
             else:
                 self.delete_resource(req,
                                      'ports', port["id"])
