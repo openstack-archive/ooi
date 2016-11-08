@@ -176,9 +176,10 @@ class LinkRenderer(EntityRenderer):
 class ResourceRenderer(EntityRenderer):
     def render(self, env={}):
         ret = super(ResourceRenderer, self).render(env)
-        for a in self.obj.actions:
-            r = ActionRenderer(a)
-            ret.extend(r.render(ass_obj=self.obj, env=env))
+        if self.obj.actions:
+            for a in self.obj.actions:
+                r = ActionRenderer(a)
+                ret.extend(r.render(ass_obj=self.obj, env=env))
         for l in self.obj.links:
             ret.extend(LinkRenderer(l).render_link(env=env))
         return ret

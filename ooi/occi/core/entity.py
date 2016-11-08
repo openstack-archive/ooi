@@ -68,6 +68,8 @@ class Entity(object):
     kind = kind.Kind(helpers.build_scheme('core'), 'entity',
                      'entity', attributes, 'entity/')
 
+    actions = None
+
     def __init__(self, title, mixins, id=None):
         helpers.check_type(mixins, mixin.Mixin)
         self.mixins = mixins
