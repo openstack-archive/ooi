@@ -35,25 +35,32 @@ class ComputeResource(resource.Resource):
     attributes = attr.AttributeCollection({
         "occi.compute.architecture": attr.MutableAttribute(
             "occi.compute.architecture",
-            description="CPU architecture of the instance"),
+            description="CPU architecture of the instance",
+            attr_type=attr.AttributeType.string_type),
         "occi.compute.cores": attr.MutableAttribute(
             "occi.compute.cores",
-            description="Number of virtual cores assigned to the instance"),
+            description="Number of virtual cores assigned to the instance",
+            attr_type=attr.AttributeType.number_type),
         "occi.compute.hostname": attr.MutableAttribute(
             "occi.compute.hostname",
-            description="Fully Qualified DNS hostname for the instance"),
+            description="Fully Qualified DNS hostname for the instance",
+            attr_type=attr.AttributeType.string_type),
         "occi.compute.share": attr.MutableAttribute(
             "occi.compute.share",
-            description="Relative number of CPU shares for the instance"),
+            description="Relative number of CPU shares for the instance",
+            attr_type=attr.AttributeType.number_type),
         "occi.compute.memory": attr.MutableAttribute(
             "occi.compute.memory",
-            description="Maximum RAM in gigabytes allocated to the instance"),
+            description="Maximum RAM in gigabytes allocated to the instance",
+            attr_type=attr.AttributeType.number_type),
         "occi.compute.state": attr.InmutableAttribute(
-            "occi.compute.state", description="Current state of the instance"),
+            "occi.compute.state", description="Current state of the instance",
+            attr_type=attr.AttributeType.string_type),
         "occi.compute.state.message": attr.InmutableAttribute(
             "occi.compute.state.message",
             description=("Human-readable explanation of the current instance "
-                         "state")),
+                         "state"),
+            attr_type=attr.AttributeType.string_type),
     })
 
     actions = (start, stop, restart, suspend)

@@ -15,6 +15,7 @@
 import json
 import uuid
 
+import six
 import webob.dec
 import webob.exc
 
@@ -39,14 +40,14 @@ subnets = [
         "id": uuid.uuid4().hex,
         "name": "private-subnet",
         "cidr": "33.0.0.1/24",
-        "ip_version": "IPv4",
+        "ip_version": 4,
         "gateway_ip": "33.0.0.1",
     },
     {
         "id": uuid.uuid4().hex,
         "name": "public-subnet",
         "cidr": "44.0.0.1/24",
-        "ip_version": "IPv4",
+        "ip_version": 4,
         "gateway_ip": "44.0.0.1",
     },
 ]
@@ -212,8 +213,10 @@ def create_header_occi(params, category, project=None):
     att = ""
     if params is not None:
         for k, v in params.items():
-            # FIXME(enolfc): this assumes all attributes are strings
-            att = "%s, %s=\"%s\"" % (att, k, v)
+            if isinstance(v, six.string_types):
+                att = "%s, %s=\"%s\"" % (att, k, v)
+            else:
+                att = "%s, %s=%s" % (att, k, v)
         headers["X_OCCI_Attribute"] = att
     if category is not None:
         cat = ""
@@ -249,7 +252,7 @@ def fake_network_link_occi(os_list_net):
 
 
 def fake_build_net(name, ip_version=4, address='0.0.0.11', gateway='0.0.0.1',
-                   id=33, state='active'):
+                   id="33", state='active'):
     link = {}
     link['id'] = id
     link['name'] = name
@@ -309,7 +312,7 @@ def build_occi_network(network):
         'occi.core.id="%s"' % network_id,
         'occi.core.title="%s"' % name,
         'occi.network.state="%s"' % status,
-        'org.openstack.network.ip_version="%s"' % subnet_info["ip_version"],
+        'org.openstack.network.ip_version=%s' % subnet_info["ip_version"],
         'occi.network.address="%s"' % subnet_info["cidr"],
         'occi.network.gateway="%s"' % subnet_info["gateway_ip"],
         ]

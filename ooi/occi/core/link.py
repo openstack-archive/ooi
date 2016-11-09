@@ -28,11 +28,13 @@ class Link(entity.Entity):
     attributes = attribute.AttributeCollection({
         "occi.core.source": attribute.MutableAttribute(
             "occi.core.source", required=True,
-            description="The Resource instance the link originates from"),
+            description="The Resource instance the link originates from",
+            attr_type=attribute.AttributeType.object_type),
         "occi.core.target": attribute.MutableAttribute(
             "occi.core.target", required=True,
             description=("The unique identifier of an Object this Link "
-                         "instance points to")),
+                         "instance points to"),
+            attr_type=attribute.AttributeType.object_type),
     })
 
     kind = kind.Kind(helpers.build_scheme("core"), 'link', 'link',

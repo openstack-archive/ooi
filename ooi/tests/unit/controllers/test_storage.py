@@ -87,7 +87,7 @@ class TestStorageController(base.TestController):
         tenant = fakes.tenants["foo"]
         req = self._build_req(tenant["id"])
         name = "foo volume"
-        size = "10"
+        size = 10
         obj = {
             "attributes": {
                 "occi.core.title": name,

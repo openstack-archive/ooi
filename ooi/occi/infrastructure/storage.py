@@ -38,13 +38,16 @@ class StorageResource(resource.Resource):
     attributes = attr.AttributeCollection({
         "occi.storage.size": attr.MutableAttribute(
             "occi.storage.size", required=True,
-            description="Storage size of the instance in gigabytes"),
+            description="Storage size of the instance in gigabytes",
+            attr_type=attr.AttributeType.number_type),
         "occi.storage.state": attr.InmutableAttribute(
-            "occi.storage.state", description="Current state of the instance"),
+            "occi.storage.state", description="Current state of the instance",
+            attr_type=attr.AttributeType.string_type),
         "occi.storage.state.message": attr.InmutableAttribute(
             "occi.storage.state.message",
             description=("Human-readable explanation of the current instance "
-                         "state")),
+                         "state"),
+            attr_type=attr.AttributeType.string_type),
     })
     actions = (online, offline, backup, snapshot, resize)
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'storage',

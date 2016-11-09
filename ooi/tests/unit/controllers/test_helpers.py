@@ -675,7 +675,7 @@ class TestOpenStackHelper(TestBaseHelper):
         req_mock.get_response.return_value = resp
         m.return_value = req_mock
         name = uuid.uuid4().hex
-        size = "10"
+        size = 10
         ret = self.helper.volume_create(None, name, size)
         self.assertEqual("FOO", ret)
         m.assert_called_with(None, name, size)
@@ -689,7 +689,7 @@ class TestOpenStackHelper(TestBaseHelper):
         req_mock.get_response.return_value = resp
         m.return_value = req_mock
         name = uuid.uuid4().hex
-        size = "10"
+        size = 10
         m_exc.return_value = webob.exc.HTTPInternalServerError()
         self.assertRaises(webob.exc.HTTPInternalServerError,
                           self.helper.volume_create,
@@ -1081,7 +1081,7 @@ class TestOpenStackHelperReqs(TestBaseHelper):
         tenant = fakes.tenants["foo"]
         req = self._build_req(tenant["id"])
         name = "foo server"
-        size = "10"
+        size = 10
 
         body = {
             "volume": {

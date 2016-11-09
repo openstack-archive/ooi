@@ -29,15 +29,19 @@ down = action.Action(helpers.build_scheme('infrastructure/network/action'),
 class NetworkResource(resource.Resource):
     attributes = attr.AttributeCollection({
         "occi.network.vlan": attr.MutableAttribute(
-            "occi.network.vlan", description="802.1q VLAN identifier"),
+            "occi.network.vlan", description="802.1q VLAN identifier",
+            attr_type=attr.AttributeType.string_type),
         "occi.network.label": attr.MutableAttribute(
-            "occi.network.label", description="Tag based VLANs"),
+            "occi.network.label", description="Tag based VLANs",
+            attr_type=attr.AttributeType.string_type),
         "occi.network.state": attr.InmutableAttribute(
-            "occi.network.state", description="Current state of the instance"),
+            "occi.network.state", description="Current state of the instance",
+            attr_type=attr.AttributeType.string_type),
         "occi.network.state.message": attr.InmutableAttribute(
             "occi.network.state.message",
             description=("Human-readable explanation of the current instance "
-                         "state")),
+                         "state"),
+            attr_type=attr.AttributeType.string_type),
     })
 
     actions = (up, down)
@@ -90,13 +94,15 @@ ip_network = mixin.Mixin(
     attributes=attr.AttributeCollection({
         "occi.network.address": attr.MutableAttribute(
             "occi.network.address",
-            description="Internet Protocol (IP) network address"),
+            description="Internet Protocol (IP) network address",
+            attr_type=attr.AttributeType.string_type),
         "occi.network.gateway": attr.MutableAttribute(
             "occi.network.gateway",
-            description="Internet Protocol (IP) network address"),
+            description="Internet Protocol (IP) network address",
+            attr_type=attr.AttributeType.string_type),
         "occi.network.allocation": attr.MutableAttribute(
             "occi.network.allocation",
             description="Address allocation mechanism: dynamic, static",
-        ),
+            attr_type=attr.AttributeType.string_type),
     }),
     applies=[NetworkResource.kind])

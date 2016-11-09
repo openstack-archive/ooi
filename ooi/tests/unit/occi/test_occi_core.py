@@ -51,9 +51,11 @@ class TestAttributes(base.TestCase):
         attr = attribute.MutableAttribute("occi.foo.bar", "bar")
         attr.value = "bazonk"
         self.assertEqual("bazonk", attr.value)
+        self.assertEqual(attribute.AttributeType.object_type, attr.attr_type)
 
     def test_inmutable(self):
         attr = attribute.InmutableAttribute("occi.foo.bar", "bar")
+        self.assertEqual(attribute.AttributeType.object_type, attr.attr_type)
 
         def set_val():
             attr.value = "bazonk"
@@ -61,32 +63,58 @@ class TestAttributes(base.TestCase):
         self.assertRaises(AttributeError, set_val)
 
     def test_attribute_type_list(self):
-        attr = attribute.MutableAttribute(
-            "occi.foo.bar", "bar", attr_type=attribute.AttributeType.list_type)
-        attr.value = ['2']
-
-        def set_object_val():
-            attr.value = "object"
-
-        def set_hash_val():
-            attr.value = {}
-
-        self.assertRaises(TypeError, set_object_val)
-        self.assertRaises(TypeError, set_hash_val)
+        l = attribute.AttributeType.list_type
+        l.check_type([1])
+        l.check_type(None)
+        self.assertRaises(TypeError, l.check_type, 1)
+        self.assertRaises(TypeError, l.check_type, {"a": "b"})
+        self.assertRaises(TypeError, l.check_type, "foo")
+        self.assertRaises(TypeError, l.check_type, True)
 
     def test_attribute_type_hash(self):
-        attr = attribute.MutableAttribute(
-            "occi.foo.bar", "bar", attr_type=attribute.AttributeType.hash_type)
-        attr.value = {'foo': 'bar'}
+        h = attribute.AttributeType.hash_type
+        h.check_type({})
+        h.check_type(None)
+        self.assertRaises(TypeError, h.check_type, 1)
+        self.assertRaises(TypeError, h.check_type, [])
+        self.assertRaises(TypeError, h.check_type, "foo")
+        self.assertRaises(TypeError, h.check_type, True)
 
-        def set_object_val():
-            attr.value = "object"
+    def test_attribute_type_string(self):
+        s = attribute.AttributeType.string_type
+        s.check_type("hey")
+        s.check_type(None)
+        self.assertRaises(TypeError, s.check_type, 1)
+        self.assertRaises(TypeError, s.check_type, [])
+        self.assertRaises(TypeError, s.check_type, {})
+        self.assertRaises(TypeError, s.check_type, True)
 
-        def set_list_val():
-            attr.value = []
+    def test_attribute_type_number(self):
+        n = attribute.AttributeType.number_type
+        n.check_type(1.0)
+        n.check_type(None)
+        self.assertRaises(TypeError, n.check_type, [])
+        self.assertRaises(TypeError, n.check_type, {})
+        self.assertRaises(TypeError, n.check_type, "foo")
+        self.assertRaises(TypeError, n.check_type, True)
 
-        self.assertRaises(TypeError, set_object_val)
-        self.assertRaises(TypeError, set_list_val)
+    def test_attribute_type_bool(self):
+        b = attribute.AttributeType.boolean_type
+        b.check_type(True)
+        b.check_type(None)
+        self.assertRaises(TypeError, b.check_type, 1)
+        self.assertRaises(TypeError, b.check_type, [])
+        self.assertRaises(TypeError, b.check_type, {})
+        self.assertRaises(TypeError, b.check_type, "foo")
+
+    def test_attribute_type_object(self):
+        o = attribute.AttributeType.object_type
+        o.check_type(None)
+        o.check_type(1)
+        o.check_type([])
+        o.check_type({})
+        o.check_type("foo")
+        o.check_type(True)
 
 
 class TestAttributeCollection(base.TestCase):
@@ -324,7 +352,7 @@ class TestCoreOCCIResource(base.TestCase):
 
     def test_mixins(self):
         m = mixin.Mixin(None, None, None)
-        r = resource.Resource(None, [m], [])
+        r = resource.Resource(None, [m])
         self.assertIsInstance(r.kind, kind.Kind)
         self.assertEqual([m], r.mixins)
 

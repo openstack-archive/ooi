@@ -34,7 +34,8 @@ class Resource(entity.Entity):
     attributes = attribute.AttributeCollection({
         "occi.core.summary": attribute.MutableAttribute(
             "occi.core.summary", description=("A summarizing description of "
-                                              "the resource instance."))
+                                              "the resource instance."),
+            attr_type=attribute.AttributeType.string_type),
     })
 
     kind = kind.Kind(helpers.build_scheme('core'), 'resource',

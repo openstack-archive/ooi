@@ -23,18 +23,22 @@ class StorageLink(link.Link):
         "occi.storagelink.deviceid": attr.MutableAttribute(
             "occi.storagelink.deviceid",
             description=("Device identifier as defined by the OCCI service "
-                         "provider")),
+                         "provider"),
+            attr_type=attr.AttributeType.string_type),
         "occi.storagelink.mountpoint": attr.MutableAttribute(
             "occi.storagelink.mountpoint",
             description=("Point to where the storage is mounted "
-                         "in the guest OS")),
+                         "in the guest OS"),
+            attr_type=attr.AttributeType.string_type),
         "occi.storagelink.state": attr.InmutableAttribute(
             "occi.storagelink.state",
-            description="Current state of the instance"),
+            description="Current state of the instance",
+            attr_type=attr.AttributeType.string_type),
         "occi.storagelink.state.message": attr.InmutableAttribute(
             "occi.storagelink.state.message",
             description=("Human-readable explanation of the current instance "
-                         "state")),
+                         "state"),
+            attr_type=attr.AttributeType.string_type),
     })
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'storagelink',
                      'storage link resource', attributes, 'storagelink/',

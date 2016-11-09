@@ -15,26 +15,67 @@
 import abc
 import collections
 import copy
+import numbers
 
 import enum
 import six
 
 
+@enum.unique
 class AttributeType(enum.Enum):
-    object_type = 1
-    list_type = 2
-    hash_type = 3
+    number_type = 1
+    string_type = 2
+    boolean_type = 3
+    object_type = 4
+    list_type = 5
+    hash_type = 6
 
     def __init__(self, attr_type):
         self.attr_type = attr_type
 
+    @classmethod
+    def check_number_type(cls, value):
+        if isinstance(value, bool) or not isinstance(value, numbers.Number):
+            raise TypeError("Expecting numeric value")
+
+    @classmethod
+    def check_string_type(cls, value):
+        if not isinstance(value, six.string_types):
+            raise TypeError("Expecting string type")
+
+    @classmethod
+    def check_boolean_type(cls, value):
+        if not isinstance(value, bool):
+            raise TypeError("Expecting boolean value")
+
+    @classmethod
+    def check_object_type(cls, value):
+        # object type can handle anything
+        return
+
+    @classmethod
+    def check_list_type(cls, value):
+        if not isinstance(value, list):
+            raise TypeError("Expecting list type")
+
+    @classmethod
+    def check_hash_type(cls, value):
+        if not isinstance(value, dict):
+            raise TypeError("Expecting hash type")
+
     def check_type(self, value):
-        if self.attr_type == AttributeType.list_type.value:
-            if not isinstance(value, list):
-                raise TypeError("Expecting list value")
-        elif self.attr_type == AttributeType.hash_type.value:
-            if not isinstance(value, dict):
-                raise TypeError("Expecting hash value")
+        py_types_map = {
+            AttributeType.number_type.value: AttributeType.check_number_type,
+            AttributeType.boolean_type.value: AttributeType.check_boolean_type,
+            AttributeType.string_type.value: AttributeType.check_string_type,
+            AttributeType.object_type.value: AttributeType.check_object_type,
+            AttributeType.list_type.value: AttributeType.check_list_type,
+            AttributeType.hash_type.value: AttributeType.check_hash_type,
+        }
+        # do not mess with uninitialized values
+        if value is None:
+            return
+        py_types_map[self.attr_type](value)
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -42,7 +83,6 @@ class Attribute(object):
     def __init__(self, name, value=None, required=False, default=None,
                  description=None, attr_type=None):
         self._name = name
-        self._value = value
         self.required = required
         self.default = default
         self.description = description
@@ -52,6 +92,8 @@ class Attribute(object):
             raise TypeError("Unexpected attribute type")
         else:
             self.attr_type = attr_type
+        self.attr_type.check_type(value)
+        self._value = value
 
     @property
     def name(self):

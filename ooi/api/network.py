@@ -56,17 +56,10 @@ def process_parameters(req, scheme=None,
     :param: required_attr: attributes required
     """
     parameters = parse_validate_schema(req, scheme, required_attr)
-    try:
-        attributes = {}
-        if 'X_PROJECT_ID' in req.headers:
-            attributes["X_PROJECT_ID"] = req.headers["X_PROJECT_ID"]
-        if "attributes" in parameters:
-            for k, v in parameters.get("attributes", None).items():
-                attributes[k.strip()] = v.strip()
-        if not attributes:
-            attributes = None
-    except Exception:
-        raise exception.Invalid
+    attributes = {}
+    if 'X_PROJECT_ID' in req.headers:
+        attributes["X_PROJECT_ID"] = req.headers["X_PROJECT_ID"]
+    attributes.update(parameters.get("attributes", {}))
     return attributes
 
 

@@ -32,14 +32,16 @@ class OSNetworkInterface(network_link.NetworkInterface):
     attributes = attr.AttributeCollection({
         "occi.networkinterface.address": attr.MutableAttribute(
             "occi.networkinterface.address",
-            description="Internet Protocol (IP) network address of the link"),
+            description="Internet Protocol (IP) network address of the link",
+            attr_type=attr.AttributeType.string_type),
         "occi.networkinterface.gateway": attr.MutableAttribute(
             "occi.networkinterface.gateway",
-            description="Internet Protocol (IP) network address"),
+            description="Internet Protocol (IP) network address",
+            attr_type=attr.AttributeType.string_type),
         "occi.networkinterface.allocation": attr.MutableAttribute(
             "occi.networkinterface.allocation",
             description="Address allocation mechanism: dynamic, static",
-        ),
+            attr_type=attr.AttributeType.string_type),
     })
 
     def __init__(self, source, target, mac, address, ip_id=None,
@@ -106,17 +108,20 @@ class OSNetworkResource(network.NetworkResource):
     attributes = attr.AttributeCollection({
         "occi.network.address": attr.MutableAttribute(
             "occi.network.address", required=True,
-            description="Internet Protocol (IP) network address"),
+            description="Internet Protocol (IP) network address",
+            attr_type=attr.AttributeType.string_type),
         "occi.network.gateway": attr.MutableAttribute(
             "occi.network.gateway",
-            description="Internet Protocol (IP) network address"),
+            description="Internet Protocol (IP) network address",
+            attr_type=attr.AttributeType.string_type),
         "occi.network.allocation": attr.MutableAttribute(
             "occi.network.allocation",
             description="Address allocation mechanism: dynamic, static",
-        ),
+            attr_type=attr.AttributeType.string_type),
         "org.openstack.network.ip_version": attr.MutableAttribute(
             "org.openstack.network.ip_version",
-            description="Internet Protocol (IP) version"),
+            description="Internet Protocol (IP) version",
+            attr_type=attr.AttributeType.number_type),
     })
 
     def __init__(self, title=None, summary=None,

@@ -13,6 +13,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import collections
 import uuid
 
 import mock
@@ -50,6 +51,7 @@ class TestNetworkControllerNeutron(base.TestController):
 
     @mock.patch.object(helpers_neutron.OpenStackNeutron, "get_network_details")
     def test_show(self, m_network):
+        m_network.return_value = collections.defaultdict(lambda: "foo")
         test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
         for net in test_networks:
             ret = self.controller.show(None, net["id"])
@@ -133,7 +135,7 @@ class TestNetworkControllerNeutron(base.TestController):
 
     def test_filter_attributes(self):
         parameters = {"occi.core.title": 'name',
-                      "org.openstack.network.ip_version": '4',
+                      "org.openstack.network.ip_version": 4,
                       "occi.network.address": '00001/24',
                       "occi.network.gateway": '00001',
                       }
@@ -146,7 +148,6 @@ class TestNetworkControllerNeutron(base.TestController):
             ]
         }
         ret = network_api.process_parameters(req, occi_scheme)
-        self.assertIsNotNone(ret)
         self.assertEqual(parameters, ret)
 
     def test_filter_attributes_empty(self):
@@ -159,7 +160,7 @@ class TestNetworkControllerNeutron(base.TestController):
             ]
         }
         attributes = network_api.process_parameters(req, occi_scheme)
-        self.assertIsNone(attributes)
+        self.assertEqual({}, attributes)
 
     def test_run_action_invalid(self):
         tenant = fakes.tenants["foo"]
@@ -206,6 +207,7 @@ class TestNetworkControllerNova(base.TestController):
 
     @mock.patch.object(helpers.OpenStackHelper, "get_network_details")
     def test_show(self, m_network):
+        m_network.return_value = collections.defaultdict(lambda: "foo")
         test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
         for net in test_networks:
             ret = self.controller.show(None, net["id"])

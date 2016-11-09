@@ -24,18 +24,22 @@ class NetworkInterface(link.Link):
         "occi.networkinterface.interface": attr.InmutableAttribute(
             "occi.networkinterface.interface",
             description=("Identifier that relates the link to the link's "
-                         "device interface.")),
+                         "device interface."),
+            attr_type=attr.AttributeType.string_type),
         "occi.networkinterface.mac": attr.MutableAttribute(
             "occi.networkinterface.mac",
             description=("MAC address associated with the link's device "
-                         "interface.")),
+                         "interface."),
+            attr_type=attr.AttributeType.string_type),
         "occi.networkinterface.state": attr.InmutableAttribute(
             "occi.networkinterface.state",
-            description="Current state of the instance"),
+            description="Current state of the instance",
+            attr_type=attr.AttributeType.string_type),
         "occi.networkinterface.state.message": attr.InmutableAttribute(
             "occi.networkinterface.state.message",
             description=("Human-readable explanation of the current instance "
-                         "state")),
+                         "state"),
+            attr_type=attr.AttributeType.string_type),
     })
 
     kind = kind.Kind(helpers.build_scheme('infrastructure'),
@@ -87,13 +91,15 @@ ip_network_interface = mixin.Mixin(
     attributes=attr.AttributeCollection({
         "occi.networkinterface.address": attr.MutableAttribute(
             "occi.networkinterface.address",
-            description="Internet Protocol (IP) network address of the link"),
+            description="Internet Protocol (IP) network address of the link",
+            attr_type=attr.AttributeType.string_type),
         "occi.networkinterface.gateway": attr.MutableAttribute(
             "occi.networkinterface.gateway",
-            description="Internet Protocol (IP) network address"),
+            description="Internet Protocol (IP) network address",
+            attr_type=attr.AttributeType.string_type),
         "occi.networkinterface.allocation": attr.MutableAttribute(
             "occi.networkinterface.allocation",
             description="Address allocation mechanism: dynamic, static",
-        ),
+            attr_type=attr.AttributeType.string_type),
     }),
     applies=[NetworkInterface.kind])

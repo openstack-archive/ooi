@@ -58,9 +58,11 @@ class Entity(object):
 
     attributes = attribute.AttributeCollection({
         "occi.core.id": attribute.InmutableAttribute(
-            "occi.core.id", description="A unique identifier"),
+            "occi.core.id", description="A unique identifier",
+            attr_type=attribute.AttributeType.string_type),
         "occi.core.title": attribute.MutableAttribute(
-            "occi.core.title", description="The display name of the instance"),
+            "occi.core.title", description="The display name of the instance",
+            attr_type=attribute.AttributeType.string_type),
     })
 
     kind = kind.Kind(helpers.build_scheme('core'), 'entity',
