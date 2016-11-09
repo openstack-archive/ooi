@@ -62,10 +62,20 @@ class TestAttributes(base.TestCase):
 
         self.assertRaises(AttributeError, set_val)
 
+    def test_default_attribute_type(self):
+        pass
+
+    def test_attribute_type_checks(self):
+        l = attribute.AttributeType.list_type
+        l.check_type([1])
+        self.assertRaises(TypeError, l.check_type, 1)
+        self.assertRaises(TypeError, l.check_type, {"a": "b"})
+        self.assertRaises(TypeError, l.check_type, "foo")
+        self.assertRaises(TypeError, l.check_type, True)
+
     def test_attribute_type_list(self):
         attr = attribute.MutableAttribute(
-            "occi.foo.bar", "bar", attr_type=attribute.AttributeType.list_type)
-        attr.value = ['2']
+            "occi.foo.bar", [2], attr_type=attribute.AttributeType.list_type)
 
         def set_object_val():
             attr.value = "object"
@@ -78,8 +88,8 @@ class TestAttributes(base.TestCase):
 
     def test_attribute_type_hash(self):
         attr = attribute.MutableAttribute(
-            "occi.foo.bar", "bar", attr_type=attribute.AttributeType.hash_type)
-        attr.value = {'foo': 'bar'}
+            "occi.foo.bar", {"foo": "bar"},
+            attr_type=attribute.AttributeType.hash_type)
 
         def set_object_val():
             attr.value = "object"
@@ -326,7 +336,7 @@ class TestCoreOCCIResource(base.TestCase):
 
     def test_mixins(self):
         m = mixin.Mixin(None, None, None)
-        r = resource.Resource(None, [m], [])
+        r = resource.Resource(None, [m])
         self.assertIsInstance(r.kind, kind.Kind)
         self.assertEqual([m], r.mixins)
 

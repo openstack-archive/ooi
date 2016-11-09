@@ -17,26 +17,38 @@
 import abc
 import collections
 import copy
+import numbers
 
 import enum
 import six
 
 
 class AttributeType(enum.Enum):
-    object_type = 1
-    list_type = 2
-    hash_type = 3
+    number_type = 1
+    string_type = 2
+    boolean_type = 3
+    object_type = 4
+    list_type = 5
+    hash_type = 6
 
     def __init__(self, attr_type):
         self.attr_type = attr_type
 
     def check_type(self, value):
-        if self.attr_type == AttributeType.list_type.value:
-            if not isinstance(value, list):
-                raise TypeError("Expecting list value")
-        elif self.attr_type == AttributeType.hash_type.value:
-            if not isinstance(value, dict):
-                raise TypeError("Expecting hash value")
+        py_types_map = {
+            AttributeType.number_type.value: numbers.Number,
+            AttributeType.boolean_type.value: bool,
+            AttributeType.string_type.value: six.string_types,
+            AttributeType.list_type.value: list,
+            AttributeType.hash_type.value: dict,
+        }
+        # do not mess with uninitialized values
+        if value is None:
+            return
+        # object type can handle anything
+        if self.attr_type in py_types_map:
+            if not isinstance(value, py_types_map[self.attr_type]):
+                raise TypeError("Unexpected value type")
 
 
 @six.add_metaclass(abc.ABCMeta)
@@ -44,7 +56,6 @@ class Attribute(object):
     def __init__(self, name, value=None, required=False, default=None,
                  description=None, attr_type=None):
         self._name = name
-        self._value = value
         self.required = required
         self.default = default
         self.description = description
@@ -54,6 +65,8 @@ class Attribute(object):
             raise TypeError("Unexpected attribute type")
         else:
             self.attr_type = attr_type
+        self.attr_type.check_type(value)
+        self._value = value
 
     @property
     def name(self):
