@@ -21,11 +21,12 @@ import ooi.api.helpers
 from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
+from ooi.occi.infrastructure import contextualization
 from ooi.occi.infrastructure import network
 from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
 from ooi.occi import validator as occi_validator
-from ooi.openstack import contextualization
+from ooi.openstack import contextualization as os_contextualization
 from ooi.openstack import helpers
 from ooi.openstack import network as os_network
 from ooi.openstack import templates
@@ -148,7 +149,9 @@ class Controller(ooi.api.base.Controller):
             ],
             "optional_mixins": [
                 contextualization.user_data,
-                contextualization.public_key,
+                contextualization.ssh_key,
+                os_contextualization.user_data,
+                os_contextualization.public_key,
             ],
             "optional_links": [
                 storage.StorageResource.kind,
@@ -166,26 +169,45 @@ class Controller(ooi.api.base.Controller):
         flavor = obj["schemes"][templates.OpenStackResourceTemplate.scheme][0]
         user_data, key_name, key_data = None, None, None
         create_key, create_key_tmp = False, False
-        if contextualization.user_data.scheme in obj["schemes"]:
+        # TODO(enolfc): deprecate OS Contextualization in the future
+        # meanwhile, raise 409 conflict if both contextualizations types appear
+        if (os_contextualization.user_data.scheme in obj["schemes"] and
+                contextualization.user_data.scheme in obj["schemes"]):
+            raise exception.OCCIMixinConflict()
+
+        if os_contextualization.user_data.scheme in obj["schemes"]:
             user_data = attrs.get("org.openstack.compute.user_data")
-        if contextualization.public_key.scheme in obj["schemes"]:
+        if contextualization.user_data.scheme in obj["schemes"]:
+            user_data = attrs.get("occi.compute.user_data")
+
+        if (os_contextualization.public_key.scheme in obj["schemes"] and
+                contextualization.ssh_key.scheme in obj["schemes"]):
+            raise exception.OCCIMixinConflict()
+
+        key_name = key_data = None
+        if os_contextualization.public_key.scheme in obj["schemes"]:
             key_name = attrs.get("org.openstack.credentials.publickey.name")
             key_data = attrs.get("org.openstack.credentials.publickey.data")
 
-            if key_name and key_data:
-                create_key = True
-            elif not key_name and key_data:
-                # NOTE(orviz) To be occi-os compliant, not
-                # raise exception.MissingKeypairName
-                key_name = uuid.uuid4().hex
-                create_key = True
-                create_key_tmp = True
+        if contextualization.ssh_key.scheme in obj["schemes"]:
+            if key_data or key_name:
+                raise exception.OCCIMixinConflict()
+            key_data = attrs.get("occi.credentials.ssh_key")
 
-            if create_key:
-                # add keypair: if key_name already exists, a 409 HTTP code
-                # will be returned by OpenStack
-                self.os_helper.keypair_create(req, key_name,
-                                              public_key=key_data)
+        if key_name and key_data:
+            create_key = True
+        elif not key_name and key_data:
+            # NOTE(orviz) To be occi-os compliant, not
+            # raise exception.MissingKeypairName
+            key_name = uuid.uuid4().hex
+            create_key = True
+            create_key_tmp = True
+
+        if create_key:
+            # add keypair: if key_name already exists, a 409 HTTP code
+            # will be returned by OpenStack
+            self.os_helper.keypair_create(req, key_name,
+                                          public_key=key_data)
 
         block_device_mapping_v2 = self._build_block_mapping(req, obj)
         networks = self._get_network_from_req(req, obj)
