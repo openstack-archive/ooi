@@ -409,6 +409,16 @@ def fake_query_results():
         'scheme="http://schemas.openstack.org/instance/credentials#"; '
         'class="mixin"; title="Contextualization extension - public_key"')
 
+    # OCCI contextualization
+    cats.append(
+        'user_data; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/compute#"; '
+        'class="mixin"; title="Contextualization mixin"')
+    cats.append(
+        'ssh_key; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/credentials#"; '
+        'class="mixin"; title="Credentials mixin"')
+
     result = []
     for c in cats:
         result.append(("Category", c))

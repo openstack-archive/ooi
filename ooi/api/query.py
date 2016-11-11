@@ -20,12 +20,13 @@ from ooi.occi.core import entity
 from ooi.occi.core import link
 from ooi.occi.core import resource
 from ooi.occi.infrastructure import compute
+from ooi.occi.infrastructure import contextualization
 from ooi.occi.infrastructure import network
 from ooi.occi.infrastructure import network_link
 from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
 from ooi.occi.infrastructure import templates as infra_templates
-from ooi.openstack import contextualization
+from ooi.openstack import contextualization as os_contextualization
 from ooi.openstack import network as os_network
 from ooi.openstack import templates
 
@@ -108,8 +109,12 @@ class Controller(base.Controller):
         mixins.extend(self._os_tpls(req))
 
         # OpenStack Contextualization
+        mixins.append(os_contextualization.user_data)
+        mixins.append(os_contextualization.public_key)
+
+        # OCCI Contextualization
         mixins.append(contextualization.user_data)
-        mixins.append(contextualization.public_key)
+        mixins.append(contextualization.ssh_key)
 
         # OpenStack Floating IP Pools
         mixins.extend(self._ip_pools(req))
