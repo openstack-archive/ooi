@@ -18,6 +18,7 @@ from ooi.occi.core import link
 from ooi.occi.core import mixin
 from ooi.occi.core import resource
 from ooi.occi.infrastructure import compute
+from ooi.occi.infrastructure import contextualization
 from ooi.occi.infrastructure import network
 from ooi.occi.infrastructure import network_link
 from ooi.occi.infrastructure import storage
@@ -340,3 +341,21 @@ class TestOCCINetworkInterface(base.TestCase):
         self.assertEqual("00:01:02:03:04:05", l.mac)
         self.assertEqual("foo", l.state)
         self.assertEqual("msg", l.message)
+
+
+class TestOCCIUserData(base.TestCase):
+    def test_occi_userdata(self):
+        user_data = "foobar"
+        mxn = contextualization.UserData(user_data)
+        self.assertEqual("user_data", mxn.term)
+        self.assertEqual(user_data, mxn.user_data)
+        self.assertEqual([compute.ComputeResource.kind], mxn.applies)
+
+
+class TestOCCISSHKey(base.TestCase):
+    def test_occi_ssh_key(self):
+        key_data = "1234"
+        mxn = contextualization.SSHKey(key_data)
+        self.assertEqual("ssh_key", mxn.term)
+        self.assertEqual(key_data, mxn.ssh_key)
+        self.assertEqual([compute.ComputeResource.kind], mxn.applies)

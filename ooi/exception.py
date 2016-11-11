@@ -147,3 +147,8 @@ class NetworkPoolFound(NotFound):
 class MissingKeypairName(Invalid):
     msg_fmt = "Missing Keypair Name"
     code = 400
+
+
+class OCCIMixinConflict(OCCIException):
+    msg_fmt = "Conflicting OCCI Mixins used in request"
+    code = 409
