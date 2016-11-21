@@ -79,8 +79,8 @@ It creates a VM using the default resources, including links to storage and priv
     curl -X POST http://127.0.0.23:8787/occi1.1/compute/ \
         -H 'X-Auth-Token: '$OS_TOKEN \
         -H 'Category: compute; scheme="http://schemas.ogf.org/occi/infrastructure#"; class="kind", \
-            5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="http://schemas.openstack.org/template/os#"; class="mixin", \
-            2; scheme="http://schemas.openstack.org/template/resource#"; class="mixin"' \
+        -H 'Category: 5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="http://schemas.openstack.org/template/os#"; class="mixin" \
+        -H 'Category: 42; scheme="http://schemas.openstack.org/template/resource#"; class="mixin"' \
         -H 'Content-Type: text/occi' -H 'X-OCCI-Attribute: occi.core.title="OOI_VM_1"'
 
 Also we can specify the network to be linked::
@@ -88,8 +88,8 @@ Also we can specify the network to be linked::
     curl -X POST http://127.0.0.23:8787/occi1.1/compute/ \
         -H 'X-Auth-Token: '$OS_TOKEN \
         -H 'Category: compute; scheme="http://schemas.ogf.org/occi/infrastructure#"; class="kind", \
-            5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="http://schemas.openstack.org/template/os#"; class="mixin", \
-            2; scheme="http://schemas.openstack.org/template/resource#"; class="mixin"' \
+        -H 'Category: 5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="http://schemas.openstack.org/template/os#"; class="mixin" \
+        -H 'Category: 42; scheme="http://schemas.openstack.org/template/resource#"; class="mixin"' \
         -H 'Link: </bar>; rel="http://schemas.ogf.org/occi/infrastructure#network"; \
             occi.core.target="http://127.0.0.23:8787/occi1.1/network/f8186fda-a389-468b-9c13-24b8eda65d77"' \
         -H 'Content-Type: text/occi' -H 'X-OCCI-Attribute: occi.core.title="OOI_VM_1"'
@@ -98,9 +98,9 @@ Links to storage can be also specified::
 
     curl -X POST http://127.0.0.23:8787/occi1.1/compute/ \
         -H 'X-Auth-Token: '$OS_TOKEN \
-        -H 'Category: compute; scheme="http://schemas.ogf.org/occi/infrastructure#"; class="kind", \
-            5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="http://schemas.openstack.org/template/os#"; class="mixin", \
-            2; scheme="http://schemas.openstack.org/template/resource#"; class="mixin"' \
+        -H 'Category: compute; scheme="http://schemas.ogf.org/occi/infrastructure#"; class="kind" \
+        -H 'Category: 5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="http://schemas.openstack.org/template/os#"; class="mixin" \
+        -H 'Category: 42; scheme="http://schemas.openstack.org/template/resource#"; class="mixin"' \
         -H 'Link: </bar>; rel="http://schemas.ogf.org/occi/infrastructure#storage"; \
             occi.core.target="http://127.0.0.23:8787/occi1.1/storage/567ed104-3ddf-11e6-ad65-00219702a0b8"' \
         -H 'Content-Type: text/occi' -H 'X-OCCI-Attribute: occi.core.title="OOI_VM_1"'
