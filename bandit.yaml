@@ -1,0 +1,4 @@
+# a list of strings, which if found in the path will cause files to be excluded
+# for example /tests/ - to remove all all files in tests directory
+exclude_dirs:
+    - '/tests/'
