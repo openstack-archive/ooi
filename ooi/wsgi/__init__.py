@@ -39,7 +39,7 @@ LOG = logging.getLogger(__name__)
 
 occi_opts = [
     config.cfg.StrOpt('ooi_listen',
-                      default="0.0.0.0",
+                      default="0.0.0.0",  # nosec
                       help='The IP address on which the OCCI (ooi) API '
                            'will listen.'),
     config.cfg.IntOpt('ooi_listen_port',
