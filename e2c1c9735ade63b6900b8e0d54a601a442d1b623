@@ -1,0 +1,8 @@
+Code-Review+2: Enol Fernández <enol.fernandez@egi.eu>
+Workflow+1: Alvaro Lopez Garcia <aloga@ifca.unican.es>
+Verified+2: Jenkins
+Submitted-by: Jenkins
+Submitted-at: Thu, 15 Dec 2016 08:25:25 +0000
+Reviewed-on: https://review.openstack.org/410194
+Project: openstack/ooi
+Branch: refs/heads/master
