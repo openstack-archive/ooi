@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright 2015 Spanish National Research Council
 # Copyright 2015 LIP - INDIGO-DataCloud
 #
