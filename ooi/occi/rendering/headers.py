@@ -172,6 +172,10 @@ class LinkRenderer(EntityRenderer):
              "self": url}
         l = '<%(location)s>; rel="%(scheme)s%(term)s"; self="%(self)s"' % d
         ret.append(l)
+        categories = [self.obj.kind.type_id]
+        for m in self.obj.mixins:
+            categories.append(m.type_id)
+        ret.append('category="%s"' % ' '.join(categories))
         for a in self.obj.attributes:
             if self.obj.attributes[a].value is None:
                 continue

@@ -89,6 +89,8 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
             },
             "title": obj.title,
         }
+        if obj.mixins:
+            link["mixins"] = [m.type_id for m in obj.mixins]
         self.assertEqual(link, json.loads(observed))
 
     def assertMixedCollection(self, kind, resource, observed):

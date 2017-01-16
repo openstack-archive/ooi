@@ -139,12 +139,18 @@ class TestOCCIHeaderRendering(base.BaseRendererTest):
                 self.assertEqual(rel, parsed[1])
                 self_ = 'self="%s"' % link.location
                 self.assertEqual(self_, parsed[2])
+                expected_cats = [link.kind.type_id]
+                expected_cats.extend([m.type_id for m in link.mixins])
+                category_field = parsed[3].split('=')
+                self.assertEqual('category', category_field[0])
+                link_cats = category_field[1][1:-1].split()
+                self.assertItemsEqual(expected_cats, link_cats)
                 source = 'occi.core.source="%s"' % obj1.location
-                self.assertIn(source, parsed[3:])
+                self.assertIn(source, parsed[4:])
                 target = 'occi.core.target="%s"' % obj2.location
-                self.assertIn(target, parsed[3:])
+                self.assertIn(target, parsed[4:])
                 id = 'occi.core.id="%s"' % link.id
-                self.assertIn(id, parsed[3:])
+                self.assertIn(id, parsed[4:])
                 break
         else:
             self.fail("One link was expected")
