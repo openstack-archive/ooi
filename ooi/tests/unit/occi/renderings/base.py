@@ -151,3 +151,12 @@ class BaseRendererTest(ooi.tests.base.TestCase):
         r = self.renderer.get_renderer(r1)
         observed = r.render()
         self.assertResourceLink(r1, r2, observed)
+
+    def test_resource_link_with_mixins(self):
+        r1 = resource.Resource(None, [])
+        r2 = resource.Resource(None, [])
+        r1.link(r2, [mixin.Mixin("s1", "term", "title"),
+                     mixin.Mixin("s2", "term", "title")])
+        r = self.renderer.get_renderer(r1)
+        observed = r.render()
+        self.assertResourceLink(r1, r2, observed)
