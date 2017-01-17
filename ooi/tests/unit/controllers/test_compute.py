@@ -174,6 +174,54 @@ class TestComputeController(base.TestController):
             self.assertEqual([], ret)
             m_run_action.assert_called_with(mock.ANY, action, server_uuid)
 
+    @mock.patch.object(helpers.OpenStackHelper, "get_server")
+    @mock.patch("ooi.occi.validator.Validator")
+    @mock.patch.object(compute.Controller, "_save_server")
+    def test_run_action_save(self, m_save, m_validator, m_get_server):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"], path="/foo?action=save")
+        req.get_parser = mock.MagicMock()
+        server_uuid = uuid.uuid4().hex
+        server = {"status": "ACTIVE"}
+        m_get_server.return_value = server
+        ret = self.controller.run_action(req, server_uuid, None)
+        self.assertEqual(m_save.return_value, ret)
+        m_save.assert_called_with(mock.ANY, server_uuid, server,
+                                  mock.ANY)
+
+    @mock.patch.object(helpers.OpenStackHelper, "run_action")
+    def test_save_server_no_name(self, m_run_action):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"], path="/foo?action=start")
+        server = {"name": "foo"}
+        server_uuid = uuid.uuid4().hex
+        m_run_action.return_value.headers = {"Location": "foobar"}
+        ret = self.controller._save_server(req, server_uuid, server, {})
+        m_run_action.assert_called_with(mock.ANY, "save", server_uuid,
+                                        {"name": "foo"})
+        self.assertIsInstance(ret, collection.Collection)
+        tpl = ret.mixins.pop()
+        self.assertIsInstance(tpl, templates.OpenStackOSTemplate)
+        self.assertEqual("foobar", tpl.term)
+        self.assertEqual("foo", tpl.title)
+
+    @mock.patch.object(helpers.OpenStackHelper, "run_action")
+    def test_save_server_with_name(self, m_run_action):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"], path="/foo?action=start")
+        server = {"name": "foo"}
+        server_uuid = uuid.uuid4().hex
+        obj = {"attributes": {"name": "bar"}}
+        m_run_action.return_value.headers = {"Location": "foobar"}
+        ret = self.controller._save_server(req, server_uuid, server, obj)
+        m_run_action.assert_called_with(mock.ANY, "save", server_uuid,
+                                        {"name": "bar"})
+        self.assertIsInstance(ret, collection.Collection)
+        tpl = ret.mixins.pop()
+        self.assertIsInstance(tpl, templates.OpenStackOSTemplate)
+        self.assertEqual("foobar", tpl.term)
+        self.assertEqual("bar", tpl.title)
+
     @mock.patch.object(helpers.OpenStackHelper, "get_server_volumes_link")
     @mock.patch.object(helpers.OpenStackHelper, "get_image")
     @mock.patch.object(helpers.OpenStackHelper, "get_flavor")

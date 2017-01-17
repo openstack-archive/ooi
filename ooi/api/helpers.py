@@ -288,7 +288,7 @@ class OpenStackHelper(BaseHelper):
         if response.status_int not in [204]:
             raise exception_from_response(response)
 
-    def _get_run_action_req(self, req, action, server_id):
+    def _get_run_action_req(self, req, action, server_id, action_args=None):
         tenant_id = self.tenant_from_req(req)
         path = "/%s/servers/%s/action" % (tenant_id, server_id)
 
@@ -299,23 +299,29 @@ class OpenStackHelper(BaseHelper):
             "resume": {"resume": None},
             "unpause": {"unpause": None},
             "restart": {"reboot": {"type": "SOFT"}},
+            "save": {"createImage": None}
         }
-        action = actions_map[action]
+
+        os_action, default_args = actions_map[action].popitem()
+        if action_args is None:
+            action_args = default_args
+        action = {os_action: action_args}
 
         body = json.dumps(action)
         return self._get_req(req, path=path, body=body, method="POST")
 
-    def run_action(self, req, action, server_id):
+    def run_action(self, req, action, server_id, action_args=None):
         """Run an action on a server.
 
         :param req: the incoming request
         :param action: the action to run
         :param server_id: server id to delete
         """
-        os_req = self._get_run_action_req(req, action, server_id)
+        os_req = self._get_run_action_req(req, action, server_id, action_args)
         response = os_req.get_response(self.app)
         if response.status_int != 202:
             raise exception_from_response(response)
+        return response
 
     def _get_server_req(self, req, server_id):
         tenant_id = self.tenant_from_req(req)
