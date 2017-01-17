@@ -455,8 +455,8 @@ class TestOpenStackHelper(TestBaseHelper):
         server_uuid = uuid.uuid4().hex
         action = "start"
         ret = self.helper.run_action(None, action, server_uuid)
-        self.assertIsNone(ret)
-        m.assert_called_with(None, action, server_uuid)
+        self.assertEqual(resp, ret)
+        m.assert_called_with(None, action, server_uuid, None)
 
     @mock.patch("ooi.api.helpers.exception_from_response")
     @mock.patch.object(helpers.OpenStackHelper, "_get_run_action_req")
@@ -474,7 +474,7 @@ class TestOpenStackHelper(TestBaseHelper):
                           None,
                           action,
                           server_uuid)
-        m.assert_called_with(None, action, server_uuid)
+        m.assert_called_with(None, action, server_uuid, None)
         m_exc.assert_called_with(resp)
 
     @mock.patch.object(helpers.OpenStackHelper, "_get_server_req")
@@ -890,6 +890,7 @@ class TestOpenStackHelperReqs(TestBaseHelper):
             "resume": {"resume": None},
             "unpause": {"unpause": None},
             "restart": {"reboot": {"type": "SOFT"}},
+            "save": {"createImage": None},
         }
 
         path = "/%s/servers/%s/action" % (tenant["id"], server_uuid)
@@ -897,6 +898,29 @@ class TestOpenStackHelperReqs(TestBaseHelper):
         for act, body in six.iteritems(actions_map):
             os_req = self.helper._get_run_action_req(req, act, server_uuid)
             self.assertExpectedReq("POST", path, body, os_req)
+
+    def test_os_action_req_with_args(self):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        server_uuid = uuid.uuid4().hex
+
+        actions_map = {
+            "stop": "os-stop",
+            "start": "os-start",
+            "suspend": "suspend",
+            "resume": "resume",
+            "unpause": "unpause",
+            "restart": "reboot",
+            "save": "createImage",
+        }
+
+        path = "/%s/servers/%s/action" % (tenant["id"], server_uuid)
+
+        action_args = {"foo": "bar"}
+        for act, os_act in six.iteritems(actions_map):
+            os_req = self.helper._get_run_action_req(req, act, server_uuid,
+                                                     action_args)
+            self.assertExpectedReq("POST", path, {os_act: action_args}, os_req)
 
     def test_get_os_server_req(self):
         tenant = fakes.tenants["foo"]

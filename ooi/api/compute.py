@@ -12,8 +12,10 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import os.path
 import uuid
 
+import six.moves.urllib.parse as urlparse
 import webob.exc
 
 import ooi.api.base
@@ -63,6 +65,21 @@ class Controller(ooi.api.base.Controller):
 
         return collection.Collection(resources=occi_compute_resources)
 
+    def _save_server(self, req, id, server, obj):
+        attrs = obj.get("attributes", {})
+        img_name = attrs.get("name", server.get("name", ""))
+        action_args = {"name": img_name}
+
+        res = self.os_helper.run_action(req, "save", id, action_args)
+
+        # save action requires that the new image is returned to the user
+        # this is available in Location header of the createImage reponse
+        # not documented at http://developer.openstack.org/api-ref/compute
+        img_url = urlparse.urlparse(res.headers["Location"])
+        tpl = templates.OpenStackOSTemplate(os.path.basename(img_url[2]),
+                                            img_name)
+        return collection.Collection(mixins=[tpl])
+
     def run_action(self, req, id, body):
         action = req.GET.get("action", None)
         occi_actions = [a.term for a in compute.ComputeResource.actions]
@@ -87,14 +104,19 @@ class Controller(ooi.api.base.Controller):
             scheme = {"category": compute.restart}
         elif action == "suspend":
             scheme = {"category": compute.suspend}
+        elif action == "save":
+            scheme = {"category": compute.save}
         else:
             raise exception.NotImplemented
 
         validator = occi_validator.Validator(obj)
         validator.validate(scheme)
 
-        self.os_helper.run_action(req, action, id)
-        return []
+        if action == "save":
+            return self._save_server(req, id, server, obj)
+        else:
+            self.os_helper.run_action(req, action, id)
+            return []
 
     def _build_block_mapping(self, req, obj):
         mappings = []

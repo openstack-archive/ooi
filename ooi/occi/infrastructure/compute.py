@@ -30,6 +30,9 @@ restart = action.Action(helpers.build_scheme('infrastructure/compute/action'),
 suspend = action.Action(helpers.build_scheme('infrastructure/compute/action'),
                         "suspend", "suspend compute instance")
 
+save = action.Action(helpers.build_scheme('infrastructure/compute/action'),
+                     "save", "save compute instance")
+
 
 class ComputeResource(resource.Resource):
     attributes = attr.AttributeCollection({
@@ -63,7 +66,7 @@ class ComputeResource(resource.Resource):
             attr_type=attr.AttributeType.string_type),
     })
 
-    actions = (start, stop, restart, suspend)
+    actions = (start, stop, restart, suspend, save)
     kind = kind.Kind(helpers.build_scheme('infrastructure'), 'compute',
                      'compute resource', attributes, 'compute/',
                      actions=actions,
