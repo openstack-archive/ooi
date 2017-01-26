@@ -22,6 +22,7 @@ from ooi.api import network_link as network_link_api
 from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
+from ooi.occi.infrastructure import ip_reservation
 from ooi.occi.infrastructure import network
 from ooi.occi.infrastructure import network_link
 from ooi.openstack import network as os_network
@@ -133,16 +134,14 @@ class TestNetworkLinkController(base.TestController):
                 os_link['network_id'], os_link['instance_id'], os_link['ip'],
                 mac=None, pool=os_link['pool'], state=os_link['status']
             )
-            link_id = '%s_%s_%s' % (
+            link_id = '%s_%s' % (
                 os_link['instance_id'],
-                os_link['network_id'],
                 os_link['ip'])
 
             ret = self.controller.show(None, link_id)
             self.assertIsInstance(ret, os_network.OSNetworkInterface)
             self.assertEqual(os_link["ip"], ret.address)
             mock_get.assert_called_with(None, str(os_link['instance_id']),
-                                        os_link['network_id'],
                                         os_link['ip'])
 
     @mock.patch.object(network_link_api.Controller, "_get_interface_from_id")
@@ -173,13 +172,13 @@ class TestNetworkLinkController(base.TestController):
         server_id = uuid.uuid4().hex
         net_id = uuid.uuid4().hex
         server_addr = "1.1.1.1"
-        link_id = "%s_%s_%s" % (server_id, net_id, server_addr)
+        link_id = "%s_%s" % (server_id, server_addr)
         mock_get_server.return_value = fake_nets.fake_build_link(
             net_id, server_id, server_addr
         )
         ret = self.controller.show(None, link_id)
         self.assertIsInstance(ret, os_network.OSNetworkInterface)
-        mock_get_server.assert_called_with(None, server_id, net_id,
+        mock_get_server.assert_called_with(None, server_id,
                                            server_addr)
 
     def test_get_network_link_resources_fixed(self):
@@ -228,7 +227,8 @@ class TestNetworkLinkController(base.TestController):
         ret = network_link_api._get_network_link_resources(None)
         self.assertEqual(ret.__len__(), 0)
 
-    @mock.patch.object(helpers.OpenStackHelper, "assign_floating_ip")
+    @mock.patch.object(helpers.OpenStackHelper,
+                       "assign_floating_ip_deprecated")
     @mock.patch("ooi.api.helpers.get_id_with_kind")
     def test_create_public(self, mock_get_id, mock_assign):
         server_id = uuid.uuid4().hex
@@ -243,7 +243,7 @@ class TestNetworkLinkController(base.TestController):
         mock_assign.return_value = fake_nets.fake_build_link(
             net_id, server_id, ip
         )
-        mock_get_id.side_effect = [('', net_id), ('', server_id)]
+        mock_get_id.side_effect = [('', server_id), ('', net_id)]
         ret = self.controller.create(req)
         self.assertIsNotNone(ret)
         link = ret.resources.pop()
@@ -254,12 +254,39 @@ class TestNetworkLinkController(base.TestController):
         self.assertEqual(server_id, link.source.id)
         mock_assign.assert_called_with(mock.ANY, net_id, server_id, None)
 
+    @mock.patch.object(helpers.OpenStackHelper, "assign_floating_ip")
+    @mock.patch("ooi.api.helpers.get_id_with_kind")
+    def test_create_ipreservation(self, mock_get_id, mock_assign):
+        server_id = uuid.uuid4().hex
+        net_id = "foo/ipreservation/%s" % uuid.uuid4().hex
+        ip = '8.0.0.0'
+        parameters = {
+            "occi.core.target": net_id,
+            "occi.core.source": server_id,
+        }
+        categories = {network_link.NetworkInterface.kind}
+        req = fake_nets.create_req_test_occi(parameters, categories)
+        mock_assign.return_value = fake_nets.fake_build_link(
+            net_id, server_id, ip, public_ip=True
+        )
+        mock_get_id.side_effect = [('', server_id), ('', net_id)]
+        ret = self.controller.create(req)
+        self.assertIsNotNone(ret)
+        link = ret.resources.pop()
+        self.assertIsInstance(link, os_network.OSNetworkInterface)
+        self.assertIsInstance(link.source, compute.ComputeResource)
+        self.assertIsInstance(link.target, network.NetworkResource)
+        self.assertIsInstance(link.target, ip_reservation.IPReservation)
+        self.assertEqual(net_id, link.target.id)
+        self.assertEqual(server_id, link.source.id)
+        mock_assign.assert_called_with(mock.ANY, net_id, server_id)
+
     @mock.patch.object(helpers.OpenStackHelper, "create_port")
     @mock.patch("ooi.api.helpers.get_id_with_kind")
     def test_create_fixed(self, mock_get_id, mock_cre_port):
         server_id = uuid.uuid4().hex
         net_id = uuid.uuid4().hex
-        mock_get_id.side_effect = [('', net_id), ('', server_id)]
+        mock_get_id.side_effect = [('', server_id), ('', net_id)]
         ip = '8.0.0.0'
         parameters = {
             "occi.core.target": net_id,
@@ -327,7 +354,7 @@ class TestNetworkLinkController(base.TestController):
             mock_validator.validate.return_value = True
             mock_allocate.return_value = ip
             mock_associate.return_value = None
-            mock_get_id.side_effect = [('', net_id), ('', server_id)]
+            mock_get_id.side_effect = [('', server_id), ('', net_id)]
 
             ret = self.controller.create(req, None)
             link = ret.resources.pop()
@@ -368,7 +395,7 @@ class TestNetworkLinkController(base.TestController):
             mock_validator.validate.return_value = True
             mock_allocate.return_value = ip
             mock_associate.return_value = None
-            mock_get_id.side_effect = [('', net_id), ('', server_id)]
+            mock_get_id.side_effect = [('', server_id), ('', net_id)]
 
             ret = self.controller.create(req, None)
             link = ret.resources.pop()

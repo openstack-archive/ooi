@@ -46,7 +46,7 @@ class OSNetworkInterface(network_link.NetworkInterface):
 
     def __init__(self, source, target, mac, address, ip_id=None,
                  pool=None, state='active'):
-        link_id = '_'.join([source.id, target.id, address])
+        link_id = '_'.join([source.id, address])
         mixins = [network_link.ip_network_interface]
         if pool:
             mixins.append(OSFloatingIPPool(pool))
