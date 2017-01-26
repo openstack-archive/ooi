@@ -21,6 +21,7 @@ from ooi.occi.core import link
 from ooi.occi.core import resource
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import contextualization
+from ooi.occi.infrastructure import ip_reservation
 from ooi.occi.infrastructure import network
 from ooi.occi.infrastructure import network_link
 from ooi.occi.infrastructure import storage
@@ -99,6 +100,7 @@ class Controller(base.Controller):
         mixins.append(network.ip_network)
         kinds.append(network_link.NetworkInterface.kind)
         mixins.append(network_link.ip_network_interface)
+        kinds.append(ip_reservation.IPReservation.kind)
 
         # OCCI infra compute mixins
         mixins.append(infra_templates.os_tpl)

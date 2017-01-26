@@ -22,6 +22,7 @@ from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import contextualization
+from ooi.occi.infrastructure import ip_reservation
 from ooi.occi.infrastructure import network
 from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
@@ -32,8 +33,13 @@ from ooi.openstack import network as os_network
 from ooi.openstack import templates
 
 
-def _create_network_link(addr, comp, net_id):
-    net = network.NetworkResource(title="network", id=net_id)
+def _create_network_link(addr, comp, net_id, type_ip):
+    if type_ip == "floating":
+        net = ip_reservation.IPReservation(title="network",
+                                           address=None,
+                                           id=net_id)
+    else:
+        net = network.NetworkResource(title="network", id=net_id)
     return os_network.OSNetworkInterface(comp, net,
                                          addr["OS-EXT-IPS-MAC:mac_addr"],
                                          addr["addr"])
@@ -278,7 +284,9 @@ class Controller(ooi.api.base.Controller):
                 for addr in addr_set:
                     # TODO(jorgesece): add pool information
                     if addr["OS-EXT-IPS:type"] == "floating":
-                        net_id = helpers.PUBLIC_NETWORK
+                        net_id = self.os_helper.get_floatingip_id(
+                            req, addr['addr']
+                        )
                     else:
                         try:
                             net_id = self.os_helper.get_network_id(
@@ -286,7 +294,9 @@ class Controller(ooi.api.base.Controller):
                             )
                         except webob.exc.HTTPNotFound:
                             net_id = "FIXED"
-                    comp.add_link(_create_network_link(addr, comp, net_id))
+                    comp.add_link(_create_network_link(
+                        addr, comp, net_id,
+                        addr["OS-EXT-IPS:type"]))
 
         return comp
 
@@ -310,7 +320,6 @@ class Controller(ooi.api.base.Controller):
                     if server_ip == ip["ip"]:
                         self.os_helper.remove_floating_ip(req, server_id,
                                                           ip["ip"])
-                        self.os_helper.release_floating_ip(req, ip["id"])
 
     def _delete(self, req, server_ids):
         for server_id in server_ids:

@@ -20,6 +20,7 @@ import routes.middleware
 import webob.dec
 
 import ooi.api.compute
+import ooi.api.ip_reservation
 import ooi.api.network
 import ooi.api.network_link
 from ooi.api import query
@@ -256,6 +257,11 @@ class OCCIMiddleware(object):
             ooi.api.network.Controller, self.neutron_ooi_endpoint)
         self._setup_resource_routes("network",
                                     self.resources["network"])
+
+        self.resources["ipreservation"] = self._create_resource(
+            ooi.api.ip_reservation.Controller)
+        self._setup_resource_routes("ipreservation",
+                                    self.resources["ipreservation"])
 
     @webob.dec.wsgify(RequestClass=Request)
     def __call__(self, req):
