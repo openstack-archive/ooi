@@ -1403,4 +1403,33 @@ class TestOpenStackHelperReqs(TestBaseHelper):
         self.assertEqual(net_id, ret['network_id'])
         self.assertEqual(device_id, ret['compute_id'])
         self.assertEqual(ip, ret['ip'])
+
+    @mock.patch.object(helpers.OpenStackHelper,
+                       "_get_req")
+    @mock.patch.object(helpers.OpenStackHelper, "tenant_from_req")
+    def test_associate_floating_ip_deprecated(self, m_ten, m_req):
+        m_ten.return_value = uuid.uuid4().hex
+        net_id = uuid.uuid4().hex
+        device_id = uuid.uuid4().hex
+        ip = uuid.uuid4().hex
+        ip_id = uuid.uuid4().hex
+        pool = uuid.uuid4().hex
+        resp = fakes.create_fake_json_resp(
+            {"floating_ip": {"ip": ip, "pool": pool, 'id': ip_id}},
+            202
+        )
+        req_all = mock.MagicMock()
+        req_all.get_response.return_value = resp
+        resp_ass = fakes.create_fake_json_resp({}, 202)
+        req_ass = mock.MagicMock()
+        req_ass.get_response.return_value = resp_ass
+        m_req.side_effect = [req_all,
+                             req_ass]
+        ret = self.helper.assign_floating_ip_deprecated(None,
+                                                        net_id,
+                                                        device_id)
+        self.assertIsNotNone(ret)
+        self.assertEqual(net_id, ret['network_id'])
+        self.assertEqual(device_id, ret['compute_id'])
+        self.assertEqual(ip, ret['ip'])
         self.assertEqual(pool, ret['pool'])

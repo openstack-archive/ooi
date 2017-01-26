@@ -18,6 +18,7 @@ from ooi.api import helpers
 from ooi import exception
 from ooi.occi.core import collection
 from ooi.occi.infrastructure import compute
+from ooi.occi.infrastructure import ip_reservation
 from ooi.occi.infrastructure import network
 from ooi.occi.infrastructure import network_link
 from ooi.occi import validator as occi_validator
@@ -40,8 +41,14 @@ def _get_network_link_resources(link_list):
             state = l.get('state', None)
             ip_id = l.get('ip_id', None)
             net_id = l['network_id']
-            n = network.NetworkResource(title="network",
-                                        id=net_id)
+            public_ip = l['public_ip']
+            if public_ip:
+                n = ip_reservation.IPReservation(title="network",
+                                                 address=ip,
+                                                 id=net_id)
+            else:
+                n = network.NetworkResource(title="network",
+                                            id=net_id)
             c = compute.ComputeResource(title="Compute",
                                         id=compute_id
                                         )
@@ -77,14 +84,13 @@ class Controller(base.Controller):
         :param id: network link identification
         """
         try:
-            server_id, network_id, server_addr = id.split('_', 2)
+            server_id, server_addr = id.split('_', 1)
         except ValueError:
             raise exception.LinkNotFound(link_id=id)
         try:
             link = self.os_helper.get_compute_net_link(
                 req,
                 server_id,
-                network_id,
                 server_addr)
             occi_instance = _get_network_link_resources([link])[0]
         except Exception:
@@ -122,28 +128,42 @@ class Controller(base.Controller):
         validator.validate(scheme)
 
         attrs = obj.get("attributes", {})
-        _, net_id = helpers.get_id_with_kind(
-            req,
-            attrs.get("occi.core.target"),
-            network.NetworkResource.kind)
         _, server_id = helpers.get_id_with_kind(
             req,
             attrs.get("occi.core.source"),
             compute.ComputeResource.kind)
-        pool = None
-        if os_network.OSFloatingIPPool.scheme in obj["schemes"]:
-                pool = (
-                    obj["schemes"][os_network.OSFloatingIPPool.scheme][0]
-                )
-        # Allocate public IP and associate it ot the server
-        if net_id == os_helpers.PUBLIC_NETWORK:
+
+        if (ip_reservation.IPReservation.kind.location in
+                attrs.get("occi.core.target")):
+            _, net_id = helpers.get_id_with_kind(
+                req,
+                attrs.get("occi.core.target"),
+                ip_reservation.IPReservation.kind)
             os_link = self.os_helper.assign_floating_ip(
-                req, net_id, server_id, pool
+                req, net_id, server_id
             )
         else:
-            # Allocate private network
-            os_link = self.os_helper.create_port(
-                req, net_id, server_id)
+            _, net_id = helpers.get_id_with_kind(
+                req,
+                attrs.get("occi.core.target"),
+                network.NetworkResource.kind)
+            # TODO(jorgesece): DEPRECATION
+            #  Delete this method for linking public network.
+            if net_id == os_helpers.PUBLIC_NETWORK:
+                pool = None
+                if os_network.OSFloatingIPPool.scheme in obj["schemes"]:
+                    pool = (
+                        obj["schemes"][os_network.OSFloatingIPPool.scheme][0]
+                    )
+                # Allocate public IP and associate it on the server
+                os_link = self.os_helper.assign_floating_ip_deprecated(
+                    req, net_id, server_id, pool
+                )
+            # END DEPRECATION
+            else:
+                # Allocate private network
+                os_link = self.os_helper.create_port(
+                    req, net_id, server_id)
         occi_link = _get_network_link_resources([os_link])
         return collection.Collection(resources=occi_link)
 
@@ -155,6 +175,7 @@ class Controller(base.Controller):
         """
         iface = self._get_interface_from_id(req, id)
         server = iface.source.id
+        # TODO(jorgesece): DEPRECATION
         if iface.target.id == os_helpers.PUBLIC_NETWORK:
             # remove floating IP
             self.os_helper.remove_floating_ip(req, server,
@@ -163,7 +184,13 @@ class Controller(base.Controller):
             # release IP
             self.os_helper.release_floating_ip(req,
                                                iface.ip_id)
+        # END DEPRECATION
         else:
-            self.os_helper.delete_port(
-                req, server, iface.ip_id)
+            if isinstance(iface.target,
+                          ip_reservation.IPReservation):
+                self.os_helper.remove_floating_ip(req, server,
+                                                  iface.address)
+            else:
+                self.os_helper.delete_port(
+                    req, server, iface.ip_id)
         return []

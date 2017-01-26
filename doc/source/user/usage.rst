@@ -291,6 +291,60 @@ It deletes a network::
 
 It returns a 204 empty response.
 
+IPReservation
+**************
+
+OOI allows to manage public IPs by using IPReservation resources. This resource is a special network to provide public access.
+It allocates and releases IPs from public network pools.
+
+List IPReservations
+-------------------
+It list IPReservation resources::
+
+    curl -H "X-Auth-token: "$OS_TOKEN http://127.0.0.1:8787/occi1.1/ipreservation
+
+It returns a HTTP 200 with output::
+
+    X-OCCI-Location: http://127.0.0.1:8787/occi1.1/ipreservation/3318c3af-ce57-41ef-a9c1-9a5ecfbe0526
+
+Show IPReservation
+------------------
+It shows the IPReservation details::
+
+    curl -H "X-Auth-token: "$OS_TOKEN http://127.0.0.1:8787/occi1.1/ipreservation/3318c3af-ce57-41ef-a9c1-9a5ecfbe0526
+
+It returns a HTTP 200 with output::
+
+    Category: ipreservation; scheme="http://schemas.ogf.org/occi/infrastructure#"; class="kind"; title="IPReservation"; rel="http://schemas.ogf.org/occi/infrastructure#network"; location="http://127.0.0.1:8787/occi1.1/ipreservation/"
+    X-OCCI-Attribute: occi.core.title="external-net"
+    X-OCCI-Attribute: occi.core.summary=[]
+    X-OCCI-Attribute: occi.core.id="3318c3af-ce57-41ef-a9c1-9a5ecfbe0526"
+    X-OCCI-Attribute: occi.ipreservation.address="193.136.75.90"
+    X-OCCI-Attribute: occi.ipreservation.used="true"
+    Link: <http://127.0.0.1:8787/occi1.1/ipreservation/3318c3af-ce57-41ef-a9c1-9a5ecfbe0526?action=up>; rel="http://schemas.ogf.org/occi/infrastructure/network/action#up"
+    Link: <http://127.0.0.1:8787/occi1.1/ipreservation/3318c3af-ce57-41ef-a9c1-9a5ecfbe0526?action=down>; rel="http://schemas.ogf.org/occi/infrastructure/network/action#down"
+
+Create IPReservation
+--------------------
+It creates a IPReservation resource::
+
+    curl -X POST http://127.0.0.1:8787/occi1.1/ipreservation -H 'X-Auth-token: '$OS_TOKEN \
+    -H 'Category: ipreshemas.ogf.org/occi/infrastructure#"; class="kind",' \
+    'external-net; scheme="http://schemas.openstack.org/network/floatingippool#"; class="mixin"' \
+    -H 'Content-Type: text/occi'
+
+It returns a HTTP 200 with output::
+
+    X-OCCI-Location: http://127.0.0.1:8787/occi1.1/ipreservation/3318c3af-ce57-41ef-a9c1-9a5ecfbe0526
+
+Delete IPReservation
+--------------------
+It deletes IPReservation resources::
+
+    curl -X DELETE -H "X-Auth-token: "$OS_TOKEN http://127.0.0.1:8787/occi1.1/ipreservation/3318c3af-ce57-41ef-a9c1-9a5ecfbe0526
+
+It returns a 204 empty response.
+
 Network Link
 ************
 
