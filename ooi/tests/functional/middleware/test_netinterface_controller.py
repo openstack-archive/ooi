@@ -52,42 +52,29 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
             resp = req.get_response(self.app)
 
             self.assertEqual(200, resp.status_code)
+            servers = fakes.servers[tenant["id"]]
             expected = []
-            float_list = {}
-            for floating_ip in fakes.floating_ips[tenant["id"]]:
-                if floating_ip["instance_id"]:
-                    float_list.update({floating_ip['fixed_ip']: floating_ip})
-            instance_vm = fakes.linked_vm_id
-            for p in fakes.ports[tenant["id"]]:
-                for ip in p["fixed_ips"]:
-                    link_id = '_'.join([instance_vm,
-                                        p["net_id"],
-                                        ip["ip_address"]])
-                    expected.append(
-                        ("X-OCCI-Location",
-                         utils.join_url(self.application_url + "/",
-                                        "networklink/%s" % link_id))
-                    )
-                    float_ip = float_list.get(ip['ip_address'], None)
-                    if float_ip:
+            for server in servers:
+                server_addrs = server.get("addresses", {})
+                instance_vm = server["id"]
+                for addr_set in server_addrs.values():
+                    for addr in addr_set:
+                        address = addr['addr']
                         link_id = '_'.join([instance_vm,
-                                            "PUBLIC",
-                                            float_ip["ip"]])
+                                            address])
                         expected.append(
                             ("X-OCCI-Location",
                              utils.join_url(self.application_url + "/",
-                                            "networklink/%s" % link_id))
-                        )
+                                            "networklink/%s" % link_id)))
 
             self.assertExpectedResult(expected, resp)
 
     def test_show_iface(self):
         tenant = fakes.tenants["baz"]
-        instance_vm = fakes.linked_vm_id
         for p in fakes.ports[tenant["id"]]:
             for ip in p["fixed_ips"]:
+                instance_vm = p["server_id"]
                 link_id = '_'.join([instance_vm,
-                                    p["net_id"],
                                     ip["ip_address"]]
                                    )
                 req = self._build_req("/networklink/%s" % link_id,
@@ -178,7 +165,6 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
         resp = req.get_response(self.app)
 
         link_id = '_'.join([link_info['server_id'],
-                            link_info['net_id'],
                             link_info['fixed_ips'][0]
                             ["ip_address"]])
         expected = [("X-OCCI-Location",
@@ -188,6 +174,28 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
         self.assertExpectedResult(expected, resp)
         self.assertDefaults(resp)
 
+    def test_create_link_ipreservation(self):
+        tenant = fakes.tenants["baz"]
+        net_id = fakes.floating_ips[tenant['id']][0]['id']
+        occi_compute_id = utils.join_url(
+            self.application_url + "/",
+            "compute/%s" % fakes.linked_vm_id)
+        occi_net_id = utils.join_url(self.application_url + "/",
+                                     "ipreservation/%s" % net_id)
+        headers = {
+            'Category': (
+                'networkinterface;'
+                'scheme="http://schemas.ogf.org/occi/infrastructure#";'
+                'class="kind"'),
+            'X-OCCI-Attribute': ('occi.core.source="%s", '
+                                 'occi.core.target="%s"'
+                                 ) % (occi_compute_id, occi_net_id)
+        }
+        req = self._build_req("/networklink", tenant["id"], method="POST",
+                              headers=headers)
+        resp = req.get_response(self.app)
+        self.assertEqual(200, resp.status_code)
+
     def test_delete_fixed(self):
         tenant = fakes.tenants["baz"]
 
@@ -195,7 +203,6 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
             if n["net_id"] != "PUBLIC":
                 if n["server_id"]:
                     link_id = '_'.join([n["server_id"],
-                                        n["net_id"],
                                         n["fixed_ips"]
                                         [0]["ip_address"]])
                     req = self._build_req(
@@ -210,7 +217,18 @@ class TestNetInterfaceController(test_middleware.TestMiddleware):
         for n in fakes.floating_ips[tenant["id"]]:
             if n["instance_id"]:
                 link_id = '_'.join([n["instance_id"],
-                                    "PUBLIC",
+                                    n["ip"]])
+                req = self._build_req("/networklink/%s" % link_id,
+                                      tenant["id"], method="DELETE")
+                resp = req.get_response(self.app)
+                self.assertContentType(resp)
+                self.assertEqual(204, resp.status_code)
+
+    def test_delete_ipreservation(self):
+        tenant = fakes.tenants["baz"]
+        for n in fakes.floating_ips[tenant["id"]]:
+            if n["instance_id"]:
+                link_id = '_'.join([n["instance_id"],
                                     n["ip"]])
                 req = self._build_req("/networklink/%s" % link_id,
                                       tenant["id"], method="DELETE")

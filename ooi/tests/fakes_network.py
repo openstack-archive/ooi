@@ -231,7 +231,7 @@ def create_header_occi(params, category, project=None):
 
 
 def fake_build_link(net_id, compute_id, ip, mac=None,
-                    pool=None, state='active'):
+                    pool=None, state='active', public_ip=False):
     link = {}
     link['mac'] = mac
     link['pool'] = pool
@@ -239,6 +239,7 @@ def fake_build_link(net_id, compute_id, ip, mac=None,
     link['compute_id'] = compute_id
     link['ip'] = ip
     link['state'] = state
+    link['public_ip'] = public_ip
     return link
 
 

@@ -119,8 +119,12 @@ pools = {
 }
 
 linked_vm_id = uuid.uuid4().hex
+linked_vm_id_2 = uuid.uuid4().hex
 
-allocated_ip = "192.168.253.23"
+allocated_ip = {"ip": "192.168.253.23",
+                "id": 1,
+                "pool": uuid.uuid4().hex,
+                "instance_id": None}
 
 floating_ips = {
     tenants["foo"]["id"]: [],
@@ -176,6 +180,16 @@ ports = {
             "net_id": uuid.uuid4().hex,
             "server_id": linked_vm_id
         },
+        {
+            "port_id": uuid.uuid4().hex,
+            "fixed_ips": [
+                {"ip_address": "192.168.253.2"}
+            ],
+            "mac_addr": uuid.uuid4().hex,
+            "port_state": "ACTIVE",
+            "net_id": uuid.uuid4().hex,
+            "server_id": linked_vm_id_2
+        },
 
     ],
 }
@@ -224,6 +238,32 @@ servers = {
                         "OS-EXT-IPS:type": "fixed",
                         "OS-EXT-IPS-MAC:mac_addr": (
                             ports[tenants["baz"]["id"]][0]["mac_addr"]
+                        )
+                    },
+                    {"addr": floating_ips[tenants["baz"]["id"]][0]["ip"],
+                     "OS-EXT-IPS:type": "floating",
+                     "OS-EXT-IPS-MAC:mac_addr": "1234"},
+                ]
+            }
+        },
+        {
+            "id": linked_vm_id_2,
+            "name": "withvolume",
+            "flavor": {"id": flavors[1]["id"]},
+            "image": {"id": images["bar"]["id"]},
+            "status": "ACTIVE",
+            "os-extended-volumes:volumes_attached": [
+                {"id": volumes[tenants["baz"]["id"]][0]["id"]}
+            ],
+            "addresses": {
+                "private": [
+                    {"addr": (
+                        (ports[tenants["baz"]["id"]]
+                         [1]["fixed_ips"][0]["ip_address"])
+                    ),
+                        "OS-EXT-IPS:type": "fixed",
+                        "OS-EXT-IPS-MAC:mac_addr": (
+                            ports[tenants["baz"]["id"]][1]["mac_addr"]
                         )
                     },
                     {"addr": floating_ips[tenants["baz"]["id"]][0]["ip"],
@@ -364,6 +404,12 @@ def fake_query_results():
         'scheme="http://schemas.ogf.org/occi/infrastructure/'
         'networkinterface#"; '
         'class="mixin"; title="IP Network interface Mixin"')
+    cats.append(
+        'ipreservation; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
+        'class="kind"; title="IPReservation"; '
+        'rel="http://schemas.ogf.org/occi/infrastructure#network"; '
+        'location="%s/ipreservation/"' % application_url)
 
     # OCCI Infrastructure Storage
     cats.append(
@@ -515,15 +561,18 @@ class FakeApp(object):
                     {"volumeAttachment": attach})
 
     def _populate_ports(self, path, servers_list, ports_list):
-        if servers_list:
+        for s in servers_list:
+            p_list = []
+            path_base = "%s/servers/%s/%s" % (
+                path,
+                s["id"],
+                "os-interface"
+            )
             for p in ports_list:
-                path_base = "%s/servers/%s/%s" % (
-                    path,
-                    servers_list[0]["id"],
-                    "os-interface"
-                )
-                self.routes[path_base] = create_fake_json_resp(
-                    {"interfaceAttachments": [p]})
+                if p["server_id"] == s["id"]:
+                    p_list.append(p)
+            self.routes[path_base] = create_fake_json_resp(
+                {"interfaceAttachments": p_list})
 
     @webob.dec.wsgify()
     def __call__(self, req):
@@ -570,7 +619,7 @@ class FakeApp(object):
             else:
                 exc = webob.exc.HTTPNotFound()
                 return FakeOpenStackFault(exc)
-        ip = {"floating_ip": {"ip": allocated_ip, "id": 1}}
+        ip = {"floating_ip": allocated_ip}
         return create_fake_json_resp(ip, 202)
 
     def _do_create_port(self, req):
@@ -583,10 +632,9 @@ class FakeApp(object):
         p = {"interfaceAttachment": {
             "port_id": uuid.uuid4().hex,
             "fixed_ips":
-                [{"ip_address":
-                    port[0]["fixed_ips"]
-                    [0]["ip_address"]
-                  }],
+                [{
+                    "ip_address": port[0]["fixed_ips"][0]["ip_address"]
+                }],
             "mac_addr": port[0]["mac_addr"],
             "port_state": "DOWN",
             "net_id": net,
