@@ -28,13 +28,14 @@ def parse_validate_schema(req, scheme=None,
     """Parse attributes and validate scheme
 
 
-    Returns attributes from request
-    If scheme is specified, it validates the OCCI scheme:
-     -Raises exception in case of being invalid
+    Returns attributes from request. If a scheme is specified, it validates the
+    OCCI scheme. Raises exception in case of being invalid.
 
     :param req: request
     :param: scheme: scheme to validate
     :param: required_attr: attributes required
+    :returns: attributes from request
+    :raises: exception in case of being invalid
     """
     parser = req.get_parser()(req.headers, req.body)
     if scheme:
