@@ -30,8 +30,8 @@ from :ref:`pipeline-examples` into your Paste configuration file
 (usually ``/etc/nova/api-paste.ini``).
 
 Detailed instructions
-
 ---------------------
+
 Once installed it is needed to add it to your OpenStack installation. Edit your
 ``/etc/nova/api-paste.ini``.
 
