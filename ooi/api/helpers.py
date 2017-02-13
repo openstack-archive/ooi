@@ -295,7 +295,8 @@ class OpenStackHelper(BaseHelper):
             "resume": {"resume": None},
             "unpause": {"unpause": None},
             "restart": {"reboot": {"type": "SOFT"}},
-            "save": {"createImage": None}
+            "save": {"createImage": None},
+            "resize": {"resize": None},
         }
 
         os_action, default_args = actions_map[action].popitem()
