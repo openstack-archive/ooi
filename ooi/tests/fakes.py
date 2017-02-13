@@ -711,6 +711,26 @@ class FakeApp(object):
                         "status": "on-line"}}
         return create_fake_json_resp(s)
 
+    def _do_resize_server(self, req):
+        body = req.json_body.copy()
+        new_flavor = body.popitem()[1]["flavorRef"]
+        r = self._get_from_routes(req)
+        # Make sure subsequent calls to the server are up to date
+        # Some request path knowledge used which should be in this form:
+        # /v2.1/tenant_id/servers/server_id/action
+        p = req.path.split("/")
+        tenant_id = p[2]
+        server_id = p[4]
+        for s in servers[tenant_id]:
+            if s["id"] == server_id:
+                # do a conversion to avoid current id schemas
+                s["flavor"]["id"] = int(new_flavor)
+                break
+        # And repopulate the objects so they are properly returned
+        self._populate("/%s" % tenant_id, "server", servers[tenant_id],
+                       actions=True)
+        return r
+
     def _do_create_attachment(self, req):
         v = {"volumeAttachment": {"serverId": "foo",
                                   "volumeId": "bar",
@@ -764,6 +784,8 @@ class FakeApp(object):
                              "removeSecurityGroup",
                              "addSecurityGroup"]:
                 return self._get_from_routes(req)
+            if action[0] == "resize":
+                return self._do_resize_server(req)
         elif req.path_info.endswith("os-volume_attachments"):
             return self._do_create_attachment(req)
         elif req.path_info.endswith("os-floating-ips"):
