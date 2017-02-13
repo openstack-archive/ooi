@@ -246,6 +246,28 @@ class Controller(ooi.api.base.Controller):
 
         return collection.Collection(resources=occi_compute_resources)
 
+    def update(self, req, id, body):
+        # get info from server
+        self.os_helper.get_server(req, id)
+
+        parser = req.get_parser()(req.headers, req.body)
+        scheme = {
+            "mixins": [
+                templates.OpenStackResourceTemplate,
+            ],
+        }
+        obj = parser.parse()
+        validator = occi_validator.Validator(obj)
+        validator.validate(scheme)
+
+        # Changes to the flavor (resize)
+        flavor = obj["schemes"][templates.OpenStackResourceTemplate.scheme][0]
+        action_args = {"flavorRef": flavor}
+        self.os_helper.run_action(req, "resize", id, action_args)
+
+        # re-use the show function
+        return self.show(req, id)
+
     def show(self, req, id):
         # get info from server
         s = self.os_helper.get_server(req, id)

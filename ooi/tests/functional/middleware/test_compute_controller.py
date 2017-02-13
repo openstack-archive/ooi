@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import copy
 import uuid
 
 from ooi.tests import fakes
@@ -235,6 +236,52 @@ class TestComputeController(test_middleware.TestMiddleware):
                                                              action),
                                   tenant["id"], method="POST",
                                   headers=headers)
+            resp = req.get_response(app)
+            self.assertDefaults(resp)
+            self.assertEqual(400, resp.status_code)
+
+    def test_modify_vm_flavor(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+        flavor_ids = [ids for ids in fakes.flavors]
+
+        for server in fakes.servers[tenant["id"]]:
+            old_flavor = server["flavor"]["id"]
+            # just pick a different one
+            new_flavor = flavor_ids[flavor_ids.index(old_flavor) - 1]
+            headers = {
+                'Category': (
+                    '%s ;'
+                    'scheme="http://schemas.openstack.org/template/resource#";'
+                    'class="mixin"'
+                ) % new_flavor
+            }
+            req = self._build_req("/compute/%s" % server["id"], tenant["id"],
+                                  method="PUT", headers=headers)
+
+            modified_server = copy.deepcopy(server)
+            modified_server["flavor"]["id"] = new_flavor
+            expected = build_occi_server(modified_server)
+            resp = req.get_response(app)
+            self.assertDefaults(resp)
+            self.assertExpectedResult(expected, resp)
+            self.assertEqual(200, resp.status_code)
+
+    def test_modify_vm_wrong_mixin(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        for server in fakes.servers[tenant["id"]]:
+            headers = {
+                'Category': (
+                    'foobar;'
+                    'scheme="http://schemas.openstack.org/template/os#";'
+                    'class="mixin"'
+                )
+            }
+            req = self._build_req("/compute/%s" % server["id"], tenant["id"],
+                                  method="PUT", headers=headers)
+
             resp = req.get_response(app)
             self.assertDefaults(resp)
             self.assertEqual(400, resp.status_code)
