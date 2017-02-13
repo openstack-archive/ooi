@@ -787,3 +787,30 @@ class TestComputeController(base.TestController):
                                     block_device_mapping=[],
                                     networks=net)
         m_net.assert_called_with(req, obj)
+
+    @mock.patch.object(compute.Controller, "show")
+    @mock.patch.object(helpers.OpenStackHelper, "run_action")
+    @mock.patch("ooi.occi.validator.Validator")
+    @mock.patch.object(helpers.OpenStackHelper, "get_server")
+    def test_update(self, m_server, m_validator, m_run_action, m_show):
+        tenant = fakes.tenants["foo"]
+        req = self._build_req(tenant["id"])
+        obj = {
+            "schemes": {
+                templates.OpenStackResourceTemplate.scheme: ["bar"],
+            },
+        }
+        # NOTE(aloga): the mocked call is
+        # "parser = req.get_parser()(req.headers, req.body)"
+        req.get_parser = mock.MagicMock()
+        req.get_parser.return_value.return_value.parse.return_value = obj
+        m_validator.validate.return_value = True
+
+        servers = fakes.servers[tenant["id"]]
+        for server in servers:
+            ret = self.controller.update(req, server["id"], None)
+            m_run_action.assert_called_with(mock.ANY, "resize", server["id"],
+                                            {'flavorRef': 'bar'})
+            m_server.assert_called_with(mock.ANY, server["id"])
+            m_show.assert_called_with(mock.ANY, server["id"])
+            self.assertEqual(m_show.return_value, ret)
