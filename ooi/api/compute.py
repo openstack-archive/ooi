@@ -246,6 +246,40 @@ class Controller(ooi.api.base.Controller):
 
         return collection.Collection(resources=occi_compute_resources)
 
+    def update(self, req, id):
+        # get info from server
+        s = self.os_helper.get_server(req, id)
+
+        parser = req.get_parser()(req.headers, req.body)
+        # Not considering the context mixins, cannot be updated
+        scheme = {
+            "category": compute.ComputeResource.kind,
+            "mixins": [
+                templates.OpenStackOSTemplate,
+                templates.OpenStackResourceTemplate,
+            ],
+        }
+        obj = parser.parse()
+        validator = occi_validator.Validator(obj)
+        validator.validate(scheme)
+
+        # No changes to the image are implemented
+        img_id = obj["schemes"][templates.OpenStackOSTemplate.scheme][0]
+        if s["image"]["id"] != img_id:
+            raise exception.NotImplemented
+
+        # Changes to the flavor (resize)
+        flavor = obj["schemes"][templates.OpenStackResourceTemplate.scheme][0]
+        if s["flavor"]["id"] == flavor:
+            # no changes!?
+            raise exception.NotImplemented
+
+        action_args = {"flavorRef": flavor}
+        self.os_helper.run_action(req, "resize", id, action_args)
+
+        occi_compute_resources = self._get_compute_resources([s])
+        return collection.Collection(resources=occi_compute_resources)
+
     def show(self, req, id):
         # get info from server
         s = self.os_helper.get_server(req, id)
