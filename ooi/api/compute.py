@@ -268,7 +268,8 @@ class Controller(ooi.api.base.Controller):
         for v in vols:
             st = storage.StorageResource(title="storage", id=v["volumeId"])
             comp.add_link(storage_link.StorageLink(comp, st,
-                                                   deviceid=v["device"]))
+                                                   deviceid=v.get("device",
+                                                                  None)))
 
         # network links
         addresses = s.get("addresses", {})

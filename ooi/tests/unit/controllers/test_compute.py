@@ -186,8 +186,11 @@ class TestComputeController(base.TestController):
                 flavor = fakes.flavors[server["flavor"]["id"]]
                 image = fakes.images[server["image"]["id"]]
                 volumes = fakes.volumes.get(tenant["id"], [])
-                if volumes:
-                    volumes = volumes[0]["attachments"]
+                attachments = []
+                for v in volumes:
+                    for att in v["attachments"]:
+                        if att["server_id"] == server["id"]:
+                            attachments.append(att)
                 net_id = fakes.networks.get(tenant["id"], [])
                 if net_id:
                     net_id = net_id[0]['id']
@@ -195,7 +198,7 @@ class TestComputeController(base.TestController):
                 m_server.return_value = server
                 m_flavor.return_value = flavor
                 m_image.return_value = image
-                m_vol.return_value = volumes
+                m_vol.return_value = attachments
 
                 ret = self.controller.show(None, server["id"])
                 # FIXME(aloga): Should we test the resource?

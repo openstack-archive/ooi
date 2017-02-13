@@ -95,6 +95,12 @@ volumes = {
             "size": 5,
             "status": "in-use",
         },
+        {
+            "id": uuid.uuid4().hex,
+            "displayName": "volume-nodev",
+            "size": 6,
+            "status": "in-use",
+        },
     ],
 }
 
@@ -213,7 +219,8 @@ servers = {
             "image": {"id": images["bar"]["id"]},
             "status": "ACTIVE",
             "os-extended-volumes:volumes_attached": [
-                {"id": volumes[tenants["baz"]["id"]][0]["id"]}
+                {"id": volumes[tenants["baz"]["id"]][0]["id"]},
+                {"id": volumes[tenants["baz"]["id"]][1]["id"]}
             ],
             "addresses": {
                 "private": [
@@ -246,6 +253,15 @@ volumes[tenants["baz"]["id"]][0]["attachments"] = [{
     "volumeId": volumes[tenants["baz"]["id"]][0]["id"],
     "volume_id": volumes[tenants["baz"]["id"]][0]["id"],
     "device": "/dev/vdb",
+    "id": volumes[tenants["baz"]["id"]][0]["id"],
+}]
+
+volumes[tenants["baz"]["id"]][1]["attachments"] = [{
+    "server_id": servers[tenants["baz"]["id"]][0]["id"],
+    "serverId": servers[tenants["baz"]["id"]][0]["id"],
+    "attachment_id": uuid.uuid4().hex,
+    "volumeId": volumes[tenants["baz"]["id"]][1]["id"],
+    "volume_id": volumes[tenants["baz"]["id"]][1]["id"],
     "id": volumes[tenants["baz"]["id"]][0]["id"],
 }]
 

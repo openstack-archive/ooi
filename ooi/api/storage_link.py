@@ -40,7 +40,8 @@ class Controller(base.Controller):
                                                 id=attach["serverId"])
                     s = storage.StorageResource(title="Storage", id=v["id"])
                     l = storage_link.StorageLink(c, s,
-                                                 deviceid=attach["device"])
+                                                 deviceid=attach.get("device",
+                                                                     None))
                     occi_link_resources.append(l)
 
         return collection.Collection(resources=occi_link_resources)
@@ -61,7 +62,7 @@ class Controller(base.Controller):
         v = self._get_attachment_from_id(req, id)
         c = compute.ComputeResource(title="Compute", id=v["serverId"])
         s = storage.StorageResource(title="Storage", id=v["volumeId"])
-        return storage_link.StorageLink(c, s, deviceid=v["device"])
+        return storage_link.StorageLink(c, s, deviceid=v.get("device", None))
 
     def create(self, req, body):
         parser = req.get_parser()(req.headers, req.body)
