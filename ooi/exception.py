@@ -78,6 +78,15 @@ class OCCIException(Exception):
         return self.args[0]
 
 
+class APIConfigNotFound(OCCIException):
+    msg_fmt = "Could not find config at %(path)s"
+
+
+class APIPasteAppNotFound(OCCIException):
+    msg_fmt = "Could not load paste app '%(name)s' from %(path)s"
+    code = 500
+
+
 class Invalid(OCCIException):
     msg_fmt = "Unacceptable parameters."
     code = 400

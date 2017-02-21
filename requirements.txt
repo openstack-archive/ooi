@@ -1,6 +1,10 @@
 pbr
 oslo.log
 oslo.config
+oslo.service
+oslo.utils
 routes
 WebOb
 enum34
+paste
+eventlet
