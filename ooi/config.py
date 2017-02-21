@@ -18,8 +18,17 @@ try:
 except ImportError:
     from oslo.config import cfg  # noqa
 
+from oslo_log import log
+
+from nova import config
+
+CONF = config.CONF
 
 def parse_args(argv, default_config_files=None):
-    cfg.CONF(argv[1:],
-             project='ooi',
-             default_config_files=default_config_files)
+    log.register_options(CONF)
+
+    config.parse_args(argv, default_config_files=default_config_files)
+
+    CONF(argv[1:],
+        project='ooi',
+        default_config_files=default_config_files)
