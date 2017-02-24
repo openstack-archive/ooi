@@ -17,8 +17,10 @@ import uuid
 
 import mock
 
+from ooi.api import helpers
 from ooi.api import helpers_neutron
 from ooi import exception
+from ooi.openstack import helpers as openstack_helper
 from ooi.tests import base
 from ooi.tests import fakes_network as fakes
 from ooi import utils
@@ -593,3 +595,80 @@ class TestNetOpenStackHelper(base.TestCase):
                           self.helper.delete_port,
                           None,
                           iface)
+
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "create_resource")
+    @mock.patch.object(helpers.BaseHelper, "tenant_from_req")
+    def test_create_security_groups(self, m_tenant, m_create):
+        tenant_id = fakes.tenants["baz"]["id"]
+        sec_group = fakes.security_groups[tenant_id][0]
+        expected = openstack_helper.build_security_group_from_neutron(
+            [sec_group])[0]
+        m_tenant.return_value = uuid.uuid4().hex
+        group_info = {"name": sec_group["name"], "id": sec_group["id"],
+                      "description": sec_group["description"]}
+        rules_out_1 = sec_group["security_group_rules"][0]
+        rules_out_2 = sec_group["security_group_rules"][1]
+        m_create.side_effect = [group_info, rules_out_1, rules_out_2]
+        ret = self.helper.create_security_group(None, expected["title"],
+                                                expected["summary"],
+                                                expected["rules"])
+        self.assertEqual(expected, ret)
+        self.assertEqual(3, m_create.call_count)
+
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
+    def test_list_security_group(self, m_list):
+        tenant_id = fakes.tenants["baz"]["id"]
+        sec_group = fakes.security_groups[tenant_id]
+        expected = openstack_helper.build_security_group_from_neutron(
+            sec_group)
+        m_list.return_value = sec_group
+        ret = self.helper.list_security_groups(None)
+        self.assertEqual(2, ret.__len__())
+        self.assertEqual(expected, ret)
+        m_list.assert_called_with(None, 'security-groups',
+                                  response_resource="security_groups")
+
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "list_resources")
+    def test_list_security_group_empty(self, m_list):
+        tenant_id = fakes.tenants["bar"]["id"]
+        m_list.return_value = fakes.security_groups[tenant_id]
+        ret = self.helper.list_security_groups(None)
+        self.assertEqual(0, ret.__len__())
+        m_list.assert_called_with(None, 'security-groups',
+                                  response_resource="security_groups")
+
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "get_resource")
+    def test_show_security_group(self, m_list):
+        tenant_id = fakes.tenants["baz"]["id"]
+        sec_group = fakes.security_groups[tenant_id][0]
+        expected = openstack_helper.build_security_group_from_neutron(
+            [sec_group])[0]
+        list_sec = sec_group
+        m_list.return_value = list_sec
+        ret = self.helper.get_security_group_details(None, None)
+        self.assertEqual(expected, ret)
+        m_list.assert_called_with(None, 'security-groups', None,
+                                  response_resource="security_group")
+
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "get_resource")
+    def test_show_security_group_not_found(self, m_list):
+        m_list.return_value = []
+        self.assertRaises(exception.NotFound,
+                          self.helper.get_security_group_details,
+                          None,
+                          None)
+
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "delete_resource")
+    def test_delete_security_group(self, m_list):
+        m_list.return_value = None
+        ret = self.helper.delete_security_group(None, None)
+        self.assertIsNone(ret)
+        m_list.assert_called_with(None, 'security-groups', None)
+
+    @mock.patch.object(helpers_neutron.OpenStackNeutron, "delete_resource")
+    def test_delete_security_group_not_found(self, m_list):
+        m_list.side_effect = exception.OCCIException()
+        self.assertRaises(exception.NotFound,
+                          self.helper.delete_security_group,
+                          None,
+                          None)

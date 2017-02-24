@@ -539,3 +539,91 @@ class OpenStackNeutron(helpers.BaseHelper):
         response = os_req.get_response()
         if response.status_int != 202:
             raise helpers.exception_from_response(response)
+
+    def get_security_group_details(self, req, sec_id):
+        """Get info about a security group.
+
+        :param req: the incoming request
+        :param sec_id: security group id to show
+        """
+        try:
+            secgroup = self.get_resource(req, 'security-groups', sec_id,
+                                         response_resource="security_group")
+            ooi_sec = os_helpers.build_security_group_from_neutron(
+                [secgroup]
+            )
+            return ooi_sec[0]
+        except Exception:
+            raise exception.NotFound()
+
+    def list_security_groups(self, req):
+        """List security groups
+
+        :param req: the incoming request
+        """
+        try:
+            secgroup = self.list_resources(req, 'security-groups',
+                                           response_resource="security_groups")
+            ooi_sec = os_helpers.build_security_group_from_neutron(
+                secgroup
+            )
+            return ooi_sec
+        except Exception:
+            raise exception.NotFound()
+
+    def create_security_group(self, req, name, description, rules):
+        """Create security group
+
+        :param req: the incoming request
+        :param name: security group name
+        :param description: security group description
+        :param rules: security group rules
+        """
+        try:
+            tenant_id = self.tenant_from_req(req)
+            param_group = {"tenant_id": tenant_id,
+                           "description": description,
+                           "name": name,
+                           }
+            secgroup = self.create_resource(
+                req, 'security-groups', param_group,
+                response_resource="security_group")
+            sec_id = secgroup["id"]
+            secgroup["security_group_rules"] = []
+            for rule in rules:
+                port_min, port_max = os_helpers.security_group_rule_port(
+                    rule["port"]
+                )
+                param_rule = {
+                    "ethertype": rule.get("ipversion", "IPv4"),
+                    "port_range_max": port_max,
+                    "port_range_min": port_min,
+                    "direction": os_helpers.security_group_rule_type(
+                        rule["type"]),
+                    "remote_ip_prefix": rule.get("range", "0.0.0.0/0"),
+                    "protocol": rule["protocol"],
+                    "security_group_id": sec_id,
+                }
+                secrule = self.create_resource(
+                    req,
+                    'security-group-rules', param_rule,
+                    response_resource="security_group_rule")
+                secgroup["security_group_rules"].append(secrule)
+            ooi_sec = os_helpers.build_security_group_from_neutron(
+                [secgroup]
+            )
+            return ooi_sec[0]
+        except Exception as ex:
+            raise ex
+
+    def delete_security_group(self, req, sec_id):
+        """Delete info about a security group.
+
+        :param req: the incoming request
+        :param sec_id: security group id to delete
+        """
+        try:
+            secgroup = self.delete_resource(req, 'security-groups', sec_id)
+            return secgroup
+        except Exception:
+            raise exception.NotFound()
