@@ -21,6 +21,8 @@ from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import contextualization
 from ooi.occi.infrastructure import network
 from ooi.occi.infrastructure import network_link
+from ooi.occi.infrastructure import securitygroup
+from ooi.occi.infrastructure import securitygroup_link
 from ooi.occi.infrastructure import storage
 from ooi.occi.infrastructure import storage_link
 from ooi.occi.infrastructure import templates
@@ -359,3 +361,81 @@ class TestOCCISSHKey(base.TestCase):
         self.assertEqual("ssh_key", mxn.term)
         self.assertEqual(key_data, mxn.ssh_key)
         self.assertEqual([compute.ComputeResource.kind], mxn.applies)
+
+
+class TestOCCISecurityGRoup(base.TestCase):
+    def test_storage_class(self):
+        s = securitygroup.SecurityGroupResource
+        self.assertIsNone(s.actions)
+        self.assertIn("occi.core.id", s.attributes)
+        self.assertIn("occi.core.summary", s.attributes)
+        self.assertIn("occi.core.title", s.attributes)
+        self.assertIn("occi.securitygroup.rules", s.attributes)
+        self.assertIn("occi.securitygroup.state", s.attributes)
+        self.assertEqual(resource.Resource.kind, s.kind.parent)
+        self.assertEqual(s.kind.location, "securitygroup/")
+
+    def test_securitygroup(self):
+        id = uuid.uuid4().hex
+        rules = [{"port": 1}]
+        s = securitygroup.SecurityGroupResource(
+            "foo",
+            summary="This is a summary",
+            id=id, rules=rules
+        )
+        self.assertEqual("foo", s.title)
+        self.assertEqual(id, s.id)
+        self.assertEqual("This is a summary", s.summary)
+        self.assertEqual(rules, s.rules)
+        self.assertIsNone(s.state)
+
+    def test_setters(self):
+        rules = [{"port": 1}]
+        s = securitygroup.SecurityGroupResource("foo")
+        s.rules = rules
+        self.assertEqual(rules, s.attributes["occi.securitygroup.rules"].value)
+
+    def test_getters(self):
+        rules = [{"port": 1}]
+        s = securitygroup.SecurityGroupResource(
+            "foobar",
+            state="foostate", rules=rules
+        )
+        self.assertEqual("foostate", s.state)
+        self.assertEqual(rules, s.rules)
+
+
+class TestOCCISecurityGroupLink(base.TestCase):
+    def test_securitygrouplink_class(self):
+        s = securitygroup_link.SecurityGroupLink
+        self.assertIn("occi.core.id", s.attributes)
+        self.assertIn("occi.core.title", s.attributes)
+        self.assertIn("occi.core.source", s.attributes)
+        self.assertIn("occi.core.target", s.attributes)
+        self.assertIn("occi.securitygrouplink.state", s.attributes)
+        self.assertEqual(link.Link.kind, s.kind.parent)
+        self.assertEqual(s.kind.location, "securitygrouplink/")
+
+    def test_securitygrouplink(self):
+        server_id = uuid.uuid4().hex
+        c = compute.ComputeResource("foo",
+                                    summary="This is a summary",
+                                    id=server_id)
+        vol_id = uuid.uuid4().hex
+        s = securitygroup.SecurityGroupResource("bar",
+                                                summary="This is a summary",
+                                                id=vol_id)
+        l = securitygroup_link.SecurityGroupLink(c, s)
+        link_id = '%s_%s' % (server_id, vol_id)
+        self.assertEqual(link_id, l.id)
+        self.assertIsNone(l.state)
+
+    def test_getters(self):
+        c = compute.ComputeResource("foo",
+                                    summary="This is a summary",
+                                    id=uuid.uuid4().hex)
+        s = securitygroup.SecurityGroupResource("bar",
+                                                summary="This is a summary",
+                                                id=uuid.uuid4().hex)
+        l = securitygroup_link.SecurityGroupLink(c, s, state="foobar")
+        self.assertEqual("foobar", l.state)
