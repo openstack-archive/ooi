@@ -48,6 +48,12 @@ occi_opts = [
                       help='Number of workers for OCCI (ooi) API service. '
                            'The default will be equal to the number of CPUs '
                            'available.'),
+    config.cfg.StrOpt('ooi_secure_proxy_ssl_header',
+                      default=None,
+                      help='The HTTP header used to determine the scheme '
+                           'for the original request, even if it was '
+                           'removed by an SSL terminating proxy. Typical '
+                           'value is "HTTP_X_FORWARDED_PROTO".'),
     # NEUTRON
     config.cfg.StrOpt('neutron_ooi_endpoint',
                       default=None,
@@ -60,6 +66,13 @@ CONF.register_opts(occi_opts)
 
 
 class Request(webob.Request):
+    def __init__(self, environ, *args, **kwargs):
+        if CONF.ooi_secure_proxy_ssl_header:
+            scheme = environ.get(CONF.ooi_secure_proxy_ssl_header)
+            if scheme:
+                environ['wsgi.url_scheme'] = scheme
+        super(Request, self).__init__(environ, *args, **kwargs)
+
     def should_have_body(self):
         return self.method in ("POST", "PUT")
 

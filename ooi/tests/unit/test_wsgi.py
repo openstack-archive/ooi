@@ -16,6 +16,7 @@ import webob
 import webob.dec
 import webob.exc
 
+from ooi import config
 from ooi.tests import base
 from ooi import wsgi
 
@@ -159,6 +160,12 @@ class TestMiddleware(base.TestCase):
                                   content_type="foo/bazonk")
         result = req.get_response(self.app)
         self.assertEqual(404, result.status_code)
+
+    def test_ssl_middleware(self):
+        config.cfg.CONF.set_override('ooi_secure_proxy_ssl_header', 'bar')
+        request = wsgi.Request.blank("/foos", method="GET",
+                                     environ={'bar': 'baz'})
+        self.assertEqual('baz', request.environ['wsgi.url_scheme'])
 
 
 class TestOCCIMiddleware(base.TestCase):
