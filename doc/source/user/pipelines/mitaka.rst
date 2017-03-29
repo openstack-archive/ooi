@@ -1,5 +1,5 @@
-Liberty (12)
-------------
+Mitaka (13)
+-----------
 
 .. code:: ini
 
@@ -13,5 +13,5 @@ Liberty (12)
 
     [composite:occi_api_11]
     use = call:nova.api.auth:pipeline_factory_v21
-    noauth2 = compute_req_id faultwrap sizelimit noauth2 occi osapi_compute_app_v21
-    keystone = compute_req_id faultwrap sizelimit authtoken keystonecontext occi osapi_compute_app_v21
+    noauth2 = cors compute_req_id faultwrap sizelimit noauth2 occi osapi_compute_app_v21
+    keystone = cors compute_req_id faultwrap sizelimit authtoken keystonecontext occi osapi_compute_app_v21
