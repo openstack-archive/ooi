@@ -18,6 +18,13 @@ Moreover, the following options are available:
  * ``neutron_ooi_endpoint``: Neutron endpoint, configures the network
    management by using neutron. If this is not set, the system will use
    nova-network.
+ * ``ooi_secure_proxy_ssl_header``: when ooi is served behind a SSL termination
+   proxy, this variable defines the HTTP header that contains the protocol
+   scheme for the original request. Possible values:
+
+   * None (default) - the request scheme is not influenced by any HTTP headers.
+   * Valid HTTP header, like ``HTTP_X_FORWARDED_PROTO`` - ooi will return
+     URLs of objects matching the URL scheme defined in the header.
 
 Paste Configuration
 *******************
