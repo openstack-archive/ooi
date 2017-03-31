@@ -29,6 +29,8 @@ application_url = "https://foo.example.org:8774/ooiv1"
 tenants = {
     "foo": {"id": uuid.uuid4().hex,
             "name": "foo"},
+    "baz": {"id": uuid.uuid4().hex,
+            "name": "foo"},
     "bar": {"id": uuid.uuid4().hex,
             "name": "bar"},
     "public": {"id": uuid.uuid4().hex,
@@ -153,6 +155,40 @@ network_links = {
     ],
 }
 
+security_groups = {
+    tenants["bar"]["id"]: [],
+    tenants["foo"]["id"]: [],
+    tenants["baz"]["id"]: [
+        {
+            "name": "group1",
+            "id": uuid.uuid4().hex,
+            "description": "group one",
+            "security_group_rules": [
+                {"ethertype": "IPv4", "port_range_min": 443,
+                 "port_range_max": 443, "remote_ip_prefix": "10.0.0.0/32",
+                 "protocol": "tcp", "direction": "ingress"},
+                {"ethertype": "IPv4", "port_range_min": "8000",
+                 "port_range_max": 9000, "remote_ip_prefix": "11.0.0.0/24",
+                 "protocol": "udp", "direction": "egress"}
+            ]
+        },
+        {
+            "name": "group2",
+            "id": uuid.uuid4().hex,
+            "description": "group two",
+            "security_group_rules": [
+                {"ethertype": "IPv4", "port_range_min": 80,
+                 "port_range_max": 80, "remote_ip_prefix": "10.0.0.0/32",
+                 "protocol": "tcp", "direction": "ingress"},
+                {"ethertype": "IPv4", "port_range_min": "5000",
+                 "port_range_max": 6000, "remote_ip_prefix": "11.0.0.0/24",
+                 "protocol": "udp", "direction": "egress"}
+            ]
+        }
+
+    ]
+}
+
 
 def create_fake_json_resp(data, status=200):
     r = webob.Response()
@@ -201,6 +237,22 @@ def create_header(params, schemes, project=None):
     return headers
 
 
+def create_req_json_occi(params, category, method="POST"):
+    headers = create_headers(category,
+                             content_type="application/occi+json")
+    body = {}
+    for c in category:
+        body["kind"] = "%s%s" % (
+            c.scheme, c.term)
+
+    body["attributes"] = params
+    req = webob.Request.blank(path="")
+    req.headers = headers
+    req.method = method
+    req.body = json.dumps(body).encode("utf8")
+    return wsgi.Request(req.environ)
+
+
 def create_req_test_occi(params, category):
     headers = create_header_occi(params, category)
     req = webob.Request.blank(path="")
@@ -209,7 +261,7 @@ def create_req_test_occi(params, category):
 
 
 def create_header_occi(params, category, project=None):
-    headers = {}
+    headers = create_headers(category, project)
     att = ""
     if params is not None:
         for k, v in params.items():
@@ -218,6 +270,13 @@ def create_header_occi(params, category, project=None):
             else:
                 att = "%s, %s=%s" % (att, k, v)
         headers["X_OCCI_Attribute"] = att
+
+    return headers
+
+
+def create_headers(category, content_type=None,
+                   project=None):
+    headers = {}
     if category is not None:
         cat = ""
         for c in category:
@@ -227,6 +286,8 @@ def create_header_occi(params, category, project=None):
         headers['Category'] = cat[:-1]
     if project is not None:
         headers['X_PROJECT_ID'] = project
+    if content_type is not None:
+        headers['Content-Type'] = content_type
     return headers
 
 
@@ -367,6 +428,38 @@ def build_occi_nova(network):
         'occi.network.state="%s"' % status,
         'occi.network.address="%s"' % cidr,
         'occi.network.gateway="%s"' % gateway,
+        ]
+    result = []
+    for c in cats:
+        result.append(("Category", c))
+    for a in attrs:
+        result.append(("X-OCCI-Attribute", a))
+    for l in links:
+        result.append(("Link", l))
+    return result
+
+
+def build_occi_securitygroup(secgroup):
+    name = secgroup["title"]
+    secgroup_id = secgroup["id"]
+    rules = secgroup["rules"]
+    summary = secgroup["summary"]
+    app_url = application_url
+    cats = []
+    cats.append('securitygroup; '
+                'scheme='
+                '"http://schemas.ogf.org/occi/infrastructure#";'
+                ' class="kind"; title="securitygroup resource";'
+                ' rel='
+                '"http://schemas.ogf.org/occi/core#resource";'
+                ' location="%s/securitygroup/"' % app_url)
+    links = []
+
+    attrs = [
+        'occi.core.id="%s"' % secgroup_id,
+        'occi.core.title="%s"' % name,
+        'occi.core.summary="%s"' % summary,
+        'occi.securitygroup.rules="%s"' % json.dumps(rules).replace('"', "'"),
         ]
     result = []
     for c in cats:

@@ -114,6 +114,13 @@ class BaseHelper(object):
         self.app = app
         self.openstack_version = openstack_version
 
+    @staticmethod
+    def tenant_from_req(req):
+        try:
+            return req.environ["HTTP_X_PROJECT_ID"]
+        except KeyError:
+            raise exception.Forbidden(reason="Cannot find project ID")
+
     def _get_req(self, req, method,
                  path=None,
                  content_type="application/json",
@@ -198,17 +205,21 @@ class BaseHelper(object):
         return self._get_req(req, path=path,
                              query_string=query_string, method="GET")
 
-    def _make_create_request(self, req, resource, parameters):
+    def _make_create_request(self, req, resource, parameters,
+                             resource_object_name=None):
         """Create CREATE request
 
         This method creates a CREATE Request instance
 
         :param req: the incoming request
         :param parameters: parameters with values
+        :param resource_object_name: in case resource name is different
+        to the response one.
         """
         path = "/%s" % resource
-        single_resource = resource[:-1]
-        body = utils.make_body(single_resource, parameters)
+        if not resource_object_name:
+            resource_object_name = resource[:-1]
+        body = utils.make_body(resource_object_name, parameters)
         return self._get_req(req, path=path,
                              content_type="application/json",
                              body=json.dumps(body), method="POST")
@@ -244,13 +255,6 @@ class OpenStackHelper(BaseHelper):
                              "occi.network.address": "cidr",
                              }
                 }
-
-    @staticmethod
-    def tenant_from_req(req):
-        try:
-            return req.environ["HTTP_X_PROJECT_ID"]
-        except KeyError:
-            raise exception.Forbidden(reason="Cannot find project ID")
 
     def _get_index_req(self, req):
         tenant_id = self.tenant_from_req(req)
@@ -1007,5 +1011,239 @@ class OpenStackHelper(BaseHelper):
         tenant_id = self.tenant_from_req(req)
         path = "/%s/%s/%s" % (tenant_id, path, id)
         os_req = self._get_req(req, path=path, method="DELETE")
+        os_req.get_response(self.app)
+        return []
+
+    def _get_security_group(self, req, sec_id):
+        """Retrieve info about a security group.
+
+        :param req: the incoming request
+        :param sec_id: security group id to show
+        """
+        path = "os-security-groups"
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/%s/%s" % (tenant_id, path, sec_id)
+        os_req = self._get_req(req, path=path,
+                               method="GET")
+        response = os_req.get_response(self.app)
+        return self.get_from_response(response, "security_group", [])
+
+    def get_security_group_details(self, req, sec_id):
+        """Get details about a security group.
+
+        :param req: the incoming request
+        :param sec_id: security group id to show
+        """
+        net = self._get_security_group(req, sec_id)
+        ooi_sec = os_helpers.build_security_group_from_nova([net])
+        return ooi_sec[0]
+
+    def list_security_groups(self, req):
+        """List security groups
+
+        :param req: the incoming request
+        """
+        path = "os-security-groups"
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/%s" % (tenant_id, path)
+        os_req = self._get_req(req, path=path,
+                               method="GET")
+        response = os_req.get_response(self.app)
+        sec = self.get_from_response(response, "security_groups", [])
+        ooi_sec = os_helpers.build_security_group_from_nova(sec)
+        return ooi_sec
+
+    def create_security_group(self, req, name, description, rules):
+        """Create security group
+
+        :param req: the incoming request
+        :param name: security group name
+        :param description: security group description
+        :param rules: security group rules
+        """
+        try:
+            tenant_id = self.tenant_from_req(req)
+            path = "os-security-groups"
+            path = "/%s/%s" % (tenant_id, path)
+            param_group = {
+                "description": description,
+                "name": name,
+            }
+            body = utils.make_body('security_group', param_group)
+            os_req = self._get_req(req,
+                                   path=path,
+                                   content_type="application/json",
+                                   body=json.dumps(body),
+                                   method="POST")
+            response_group = os_req.get_response(self.app)
+            secgroup = self.get_from_response(
+                response_group, "security_group", {})
+            sec_id = secgroup["id"]
+            secgroup["rules"] = []
+            for rule in rules:
+                port_min, port_max = os_helpers.security_group_rule_port(
+                    rule["port"]
+                )
+                param_rules = {
+                    "parent_group_id": sec_id,
+                    "ip_protocol": rule["protocol"],
+                    "from_port": port_min,
+                    "to_port": port_max,
+                    "cidr": rule.get("range", "0.0.0.0/0")
+                }
+                body_rules = utils.make_body('security_group_rule',
+                                             param_rules)
+                path = "/%s/os-security-group-rules" % (tenant_id)
+                os_req_rules = self._get_req(req,
+                                             path=path,
+                                             content_type="application/json",
+                                             body=json.dumps(body_rules),
+                                             method="POST")
+                response_rules = os_req_rules.get_response(self.app)
+                secrules = self.get_from_response(
+                    response_rules, "security_group_rule", {})
+                secgroup["rules"].append(secrules)
+            ooi_sec = os_helpers.build_security_group_from_nova(
+                [secgroup]
+            )
+            return ooi_sec[0]
+        except Exception as ex:
+            raise ex
+
+    def delete_security_group(self, req, sec_id):
+        """Delete info about a security group.
+
+        :param req: the incoming request
+        :param sec_id: security group id to delete
+        """
+        path = "os-security-groups"
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/%s/%s" % (tenant_id, path, sec_id)
+        os_req = self._get_req(req, path=path,
+                               method="DELETE")
+        os_req.get_response(self.app)
+        return []
+
+    def _get_server_security_group(self, req, server_id):
+        """Get security group from a server
+
+        :param req: incoming request
+        :param server_id: server id
+        :return: information about the security group
+        """
+        path = "os-security-groups"
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/servers/%s/%s" % (tenant_id,
+                                      server_id,
+                                      path
+                                      )
+        os_req = self._get_req(req, path=path,
+                               method="GET")
+        response = os_req.get_response(self.app)
+        sec = self.get_from_response(response,
+                                     "security_groups", [])
+        ooi_sec = os_helpers.build_security_group_from_nova(sec)
+        return ooi_sec
+
+    def list_server_security_groups(self, req,
+                                    server_id=None):
+        """List security groups associated to a server
+
+        :param req: incoming request
+        :param server_id: server id
+        :return: security groups associated to servers
+        """
+        return self._get_server_security_group(
+            req, server_id)
+
+    def list_server_security_links(self, req, server_id=None):
+        """List security groups associated to servers
+
+        :param req: incoming request
+        :param server_id: server id
+        :return: security groups associated to servers
+        """
+        link_list = []
+        if server_id:
+            compute_list = [self.get_server(req, server_id)]
+        else:
+            compute_list = self.index(req)
+        for c in compute_list:
+            server_id = c["id"]
+            server_secgroups = self._get_server_security_group(
+                req, server_id)
+            for sec in server_secgroups:
+                link = {
+                    "compute_id": server_id,
+                    "securitygroup": sec
+                }
+                link_list.append(link)
+        return link_list
+
+    def get_server_security_link(self, req, server_id,
+                                 securitygroup_id):
+        """Show security group link from a server
+
+        :param req: incoming request
+        :param server_id: server id
+        :param securitygroup_id: security group id
+        :return: information about the link of security group
+        """
+        ooi_sec = self._get_server_security_group(req, server_id)
+        for sg in ooi_sec:
+            if sg["id"] == securitygroup_id:
+                link = {"compute_id": server_id,
+                        "securitygroup": sg
+                        }
+                return [link]
+        return None
+
+    def delete_server_security_link(self, req, server_id,
+                                    securitygroup_id):
+        """Delete security group link from a server
+
+        :param req: incoming request
+        :param server_id: server id
+        :param securitygroup_id: segurity group id
+        :return: empty
+        """
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/servers/%s/action" % (tenant_id, server_id)
+        sg = self._get_security_group(req, securitygroup_id)
+        if "name" not in sg:
+            raise exception.NotFound("Security group %s not found."
+                                     % securitygroup_id)
+        param = {"name": sg["name"]}
+        body = utils.make_body('removeSecurityGroup', param)
+        os_req = self._get_req(req,
+                               path=path,
+                               content_type="application/json",
+                               body=json.dumps(body),
+                               method="POST")
+        os_req.get_response(self.app)
+        return []
+
+    def create_server_security_link(self, req, server_id,
+                                    securitygroup_id):
+        """Create security group link in a server
+
+        :param req: incoming request
+        :param server_id: server id
+        :param securitygroup_id: segurity group id
+        :return: empty
+        """
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/servers/%s/action" % (tenant_id, server_id)
+        sg = self._get_security_group(req, securitygroup_id)
+        if "name" not in sg:
+            raise exception.NotFound("Security group %s not found."
+                                     % securitygroup_id)
+        param = {"name": sg["name"]}
+        body = utils.make_body('addSecurityGroup', param)
+        os_req = self._get_req(req,
+                               path=path,
+                               content_type="application/json",
+                               body=json.dumps(body),
+                               method="POST")
         os_req.get_response(self.app)
         return []
