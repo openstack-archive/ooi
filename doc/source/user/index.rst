@@ -8,6 +8,7 @@ infrastructure.
    :maxdepth: 2
 
    installation
+   upgrade
    configuration
    usage
    pipelines/index

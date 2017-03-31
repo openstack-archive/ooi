@@ -28,6 +28,7 @@ Moreover, the following options are available:
 
 Paste Configuration
 *******************
+.. _paste-configuration:
 
 TL;DR.
 ------
@@ -65,12 +66,12 @@ by default it will take the ``/v2.1`` value.
 
 The next step is to create a ``composite`` section for the OCCI interface. It
 is needed to duplicate the :ref:`corresponding OpenStack API ``composite``<api-versions>` section,
-renaming it to ``occi_api_v11``. Once duplicated, the ``occi`` middleware needs
+renaming it to ``occi_api_v12``. Once duplicated, the ``occi`` middleware needs
 to be added just before the last component of the pipeline. So, in the example
 above where ``/v2`` has been configured, we need to duplicate the
 ``[composite:openstack_compute_api_v2]`` as follows::
 
-    [composite:occi_api_11]
+    [composite:occi_api_12]
     use = call:nova.api.auth:pipeline_factory
     noauth = compute_req_id faultwrap sizelimit noauth ratelimit occi osapi_compute_app_v2
     keystone = compute_req_id faultwrap sizelimit occi authtoken keystonecontext ratelimit occi osapi_compute_app_v2
@@ -81,7 +82,8 @@ The last step regarding the API configuration is to add it to create the
 
     [composite:ooi]
     use = call:nova.api.openstack.urlmap:urlmap_factory
-    /occi1.1: occi_api_11
+    /occi1.1: occi_api_12
+    /occi1.2: occi_api_12
 
 Finally, you need to enable it in the OpenStack nova configuration, so that it
 is loaded properly. Add ``ooi`` to the ``enabled_apis`` option in the
