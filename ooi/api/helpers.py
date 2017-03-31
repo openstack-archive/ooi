@@ -247,10 +247,10 @@ class OpenStackHelper(BaseHelper):
 
     @staticmethod
     def tenant_from_req(req):
-        try:
-            return req.environ["HTTP_X_PROJECT_ID"]
-        except KeyError:
-            raise exception.Forbidden(reason="Cannot find project ID")
+        project_id = req.environ.get("HTTP_X_PROJECT_ID", None)
+        if project_id is not None:
+            return project_id
+        raise exception.Forbidden(reason="Cannot find project ID in the token")
 
     def _get_index_req(self, req):
         tenant_id = self.tenant_from_req(req)
