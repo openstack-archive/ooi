@@ -541,6 +541,19 @@ class OpenStackHelper(BaseHelper):
         response = req.get_response(self.app)
         return self.get_from_response(response, "floating_ips", [])
 
+    def get_floating_ip(self, req, floating_id):
+        """Get information about a floating IP.
+
+        :param req: the incoming request
+        :param floating_id: floating ip id to get info from
+        """
+        tenant_id = self.tenant_from_req(req)
+        path = "/%s/os-floating-ips/%s" % (tenant_id,
+                                           floating_id)
+        req = self._make_get_request(req, path)
+        response = req.get_response(self.app)
+        return self.get_from_response(response, "floating_ip", [])
+
     def _get_floating_ip_pools_req(self, req):
         tenant_id = self.tenant_from_req(req)
         path = "/%s/os-floating-ip-pools" % tenant_id
@@ -715,7 +728,7 @@ class OpenStackHelper(BaseHelper):
 
     @staticmethod
     def _build_link(net_id, compute_id, ip, ip_id=None, mac=None, pool=None,
-                    state='ACTIVE'):
+                    state='ACTIVE', public_ip=False):
         link = {}
         link['mac'] = mac
         link['pool'] = pool
@@ -724,6 +737,7 @@ class OpenStackHelper(BaseHelper):
         link['ip'] = ip
         link['ip_id'] = ip_id
         link['state'] = os_helpers.vm_state(state)
+        link['public_ip'] = public_ip
         return link
 
     def _get_ports(self, req, compute_id):
@@ -739,48 +753,55 @@ class OpenStackHelper(BaseHelper):
             LOG.exception("Interfaces can not be shown: " + e.explanation)
         return result
 
-    def get_compute_net_link(self, req, compute_id, network_id,
-                             address):
+    def get_compute_net_link(self, req, compute_id, address):
         """Get a specific network/server link
 
         It shows a specific link (either private or public ip)
 
         :param req: the incoming request
         :param compute_id: server id
-        :param network_id: network id
         :param address: ip connected
         """
-
-        s = self.get_server(req, compute_id)
-        pool = None
-        ip_id = None
-        server_addrs = s.get("addresses", {})
+        compute = self.get_server(req, compute_id)
+        server_addrs = compute.get("addresses", {})
+        compute_id = compute["id"]
+        ports = self._get_ports(req, compute_id)
+        floating_ips = self.get_floating_ips(
+            req
+        )
         for addr_set in server_addrs.values():
             for addr in addr_set:
                 if addr["addr"] == address:
+                    public_ip = False
+                    pool = None
+                    ip_id = None
                     mac = addr["OS-EXT-IPS-MAC:mac_addr"]
-                    if network_id == os_helpers.PUBLIC_NETWORK:
-                        floating_ips = self.get_floating_ips(
-                            req
-                        )
-                        for ip in floating_ips:
-                            if address == ip['ip']:
-                                pool = ip['pool']
-                                ip_id = ip['id']
-                    else:
-                        ports = self._get_ports(req, compute_id)
+                    ip_type = addr["OS-EXT-IPS:type"]
+                    if ip_type == "fixed":
+                        network_id = "FIXED"
                         for p in ports:
-                            if p["net_id"] == network_id:
-                                for ip in p["fixed_ips"]:
-                                    if ip['ip_address'] == address:
-                                        ip_id = p['port_id']
-                    return self._build_link(network_id,
-                                            compute_id,
-                                            address,
-                                            mac=mac,
-                                            pool=pool,
-                                            ip_id=ip_id
-                                            )
+                            if p['mac_addr'] == mac:
+                                ip_id = str(p['port_id'])
+                                network_id = str(p['net_id'])
+                                break
+                    else:
+                        network_id = "PUBLIC"
+                        for fp in floating_ips:
+                            if compute_id == fp['instance_id']:
+                                pool = fp['pool']
+                                ip_id = str(fp['id'])
+                                network_id = str(fp['id'])
+                                public_ip = True
+                                break
+                    return self._build_link(
+                        network_id,
+                        compute_id,
+                        address,
+                        mac=mac,
+                        pool=pool,
+                        ip_id=ip_id,
+                        public_ip=public_ip
+                    )
         raise exception.NotFound()
 
     def list_compute_net_links(self, req):
@@ -788,45 +809,48 @@ class OpenStackHelper(BaseHelper):
 
         :param req: the incoming request
         """
-        floating_ips = self.get_floating_ips(req)
-        float_list = {}
-        for ip in floating_ips:
-            if ip["instance_id"]:
-                float_list.update({ip['fixed_ip']: ip})
-        servers = self.index(req)
         link_list = []
-        for s in servers:
-            ports = self._get_ports(req, s['id'])
-            for p in ports:
-                for ip in p["fixed_ips"]:
-                    mac = p['mac_addr']
-                    state = p["port_state"]
-                    link = self._build_link(p["net_id"],
-                                            s['id'],
-                                            ip['ip_address'],
-                                            ip_id=p["port_id"],
-                                            mac=mac,
-                                            state=state)
-                    link_list.append(link)
-                    float_ip = float_list.get(ip['ip_address'], None)
-                    if float_ip:
-                        link = self._build_link(p["net_id"],
-                                                float_ip['instance_id'],
-                                                float_ip['ip'],
-                                                ip_id=float_ip["id"],
-                                                mac=mac,
-                                                pool=float_ip["pool"]
-                                                )
-                        link_list.append(link)
-        if not link_list:
-            for ip in floating_ips:
-                if ip["instance_id"]:
-                    link = self._build_link(os_helpers.PUBLIC_NETWORK,
-                                            ip['instance_id'],
-                                            ip['ip'],
-                                            ip_id=ip["id"],
-                                            pool=ip["pool"]
-                                            )
+        compute_list = self.index(req)
+        floating_ips = self.get_floating_ips(
+            req
+        )
+        for c in compute_list:
+            compute_id = c["id"]
+            compute = self.get_server(req, compute_id)
+            ports = self._get_ports(req, compute_id)
+            server_addrs = compute.get("addresses", {})
+            for addr_set in server_addrs.values():
+                for addr in addr_set:
+                    public_ip = False
+                    pool = None
+                    network_id = "fixed"
+                    mac = addr["OS-EXT-IPS-MAC:mac_addr"]
+                    ip_type = addr["OS-EXT-IPS:type"]
+                    address = addr['addr']
+                    ip_id = None
+                    if ip_type == "fixed":
+                        for p in ports:
+                            if p['mac_addr'] == mac:
+                                ip_id = p['port_id']
+                                network_id = p["net_id"]
+                                break
+                    else:
+                        for fp in floating_ips:
+                            if address == fp['ip']:
+                                pool = fp['pool']
+                                ip_id = fp['id']
+                                network_id = fp['id']
+                                public_ip = True
+                                break
+                    link = self._build_link(
+                        network_id,
+                        compute_id,
+                        address,
+                        mac=mac,
+                        pool=pool,
+                        ip_id=ip_id,
+                        public_ip=public_ip
+                    )
                     link_list.append(link)
         return link_list
 
@@ -893,8 +917,43 @@ class OpenStackHelper(BaseHelper):
 
         raise webob.exc.HTTPNotFound
 
-    def assign_floating_ip(self, req, network_id, device_id,
-                           pool=None):
+    def get_floatingip_id(self, req, address):
+        """Get the floating IP ID
+
+        :param req: the incoming network
+        :param address: floating ip address
+        """
+        floating_ips = self.get_floating_ips(req)
+        for fp in floating_ips:
+            if address == fp['ip']:
+                return str(fp['id'])
+        raise webob.exc.HTTPNotFound
+
+    def assign_floating_ip(self, req, floatingip_id, device_id):
+        """assign floating ip to a server
+
+        :param req: the incoming request
+        :param floatingip_id: floating ip id
+        :param device_id: device id
+        """
+        ip = self.get_floating_ip(req, floatingip_id)
+
+        self.associate_floating_ip(req, device_id, ip['ip'])
+
+        try:
+            link_public = self._build_link(
+                floatingip_id,
+                device_id,
+                ip['ip'],
+                ip_id=floatingip_id,
+                public_ip=True
+            )
+        except Exception:
+            raise exception.OCCIInvalidSchema()
+        return link_public
+
+    def assign_floating_ip_deprecated(self, req, network_id, device_id,
+                                      pool=None):
         """assign floating ip to a server
 
         :param req: the incoming request

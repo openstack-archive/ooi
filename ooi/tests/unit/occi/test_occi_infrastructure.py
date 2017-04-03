@@ -19,6 +19,7 @@ from ooi.occi.core import mixin
 from ooi.occi.core import resource
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import contextualization
+from ooi.occi.infrastructure import ip_reservation
 from ooi.occi.infrastructure import network
 from ooi.occi.infrastructure import network_link
 from ooi.occi.infrastructure import securitygroup
@@ -439,3 +440,45 @@ class TestOCCISecurityGroupLink(base.TestCase):
                                                 id=uuid.uuid4().hex)
         l = securitygroup_link.SecurityGroupLink(c, s, state="foobar")
         self.assertEqual("foobar", l.state)
+
+
+class TestOCCIIPReservation(base.TestCase):
+    def test_ipreservation_class(self):
+        ir = ip_reservation.IPReservation
+        self.assertIn(network.up, ir.actions)
+        self.assertIn(network.down, ir.actions)
+        self.assertIn("occi.ipreservation.address", ir.attributes)
+        self.assertIn("occi.ipreservation.used", ir.attributes)
+        self.assertIn("occi.ipreservation.state", ir.attributes)
+        self.assertEqual(network.NetworkResource.kind, ir.kind.parent)
+        self.assertEqual(ir.kind.location, "ipreservation/")
+
+    def test_ip_reservation(self):
+        id = uuid.uuid4().hex
+        ir = ip_reservation.IPReservation("foo",
+                                          address="xx",
+                                          id=id)
+        self.assertEqual("foo", ir.title)
+        self.assertEqual(id, ir.id)
+        self.assertEqual("xx", ir.address)
+        self.assertEqual(False, ir.used)
+        self.assertIsNone(ir.state)
+
+    def test_setters(self):
+        ir = ip_reservation.IPReservation("foo", address="xx")
+        ir.address = "zzz"
+        self.assertEqual(
+            "zzz",
+            ir.attributes["occi.ipreservation.address"].value)
+
+    def test_getters(self):
+        id_ip = uuid.uuid4().hex
+        ir = ip_reservation.IPReservation("foo",
+                                          address="xx",
+                                          state="active",
+                                          used=True,
+                                          id=id_ip)
+        self.assertEqual("active", ir.state)
+        self.assertEqual("xx", ir.address)
+        self.assertEqual(True, ir.used)
+        self.assertEqual(id_ip, ir.id)

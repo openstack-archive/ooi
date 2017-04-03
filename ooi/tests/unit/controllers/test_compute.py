@@ -86,8 +86,7 @@ class TestComputeController(base.TestController):
     @mock.patch.object(compute.Controller, "_get_server_floating_ips")
     @mock.patch.object(helpers.OpenStackHelper, "get_floating_ips")
     @mock.patch.object(helpers.OpenStackHelper, "remove_floating_ip")
-    @mock.patch.object(helpers.OpenStackHelper, "release_floating_ip")
-    def test_release_floating_ips(self, mock_release, mock_remove,
+    def test_release_floating_ips(self, mock_remove,
                                   mock_get_floating,
                                   mock_server_floating):
         mock_server_floating.return_value = ["1.2.3.4", "5.6.7.8"]
@@ -100,8 +99,6 @@ class TestComputeController(base.TestController):
         mock_get_floating.assert_called_with(None)
         mock_remove.assert_has_calls([mock.call(None, "foo", "1.2.3.4"),
                                       mock.call(None, "foo", "5.6.7.8")])
-        mock_release.assert_has_calls([mock.call(None, "bar"),
-                                       mock.call(None, "baz")])
 
     @mock.patch.object(compute.Controller, "_delete")
     def test_delete(self, mock_delete):
@@ -179,7 +176,8 @@ class TestComputeController(base.TestController):
     @mock.patch.object(helpers.OpenStackHelper, "get_flavor")
     @mock.patch.object(helpers.OpenStackHelper, "get_server")
     @mock.patch.object(helpers.OpenStackHelper, "get_network_id")
-    def test_show(self, m_net_id, m_server, m_flavor, m_image, m_vol):
+    @mock.patch.object(helpers.OpenStackHelper, "get_floatingip_id")
+    def test_show(self, m_ipr, m_net_id, m_server, m_flavor, m_image, m_vol):
         for tenant in fakes.tenants.values():
             servers = fakes.servers[tenant["id"]]
             for server in servers:
@@ -194,6 +192,11 @@ class TestComputeController(base.TestController):
                 net_id = fakes.networks.get(tenant["id"], [])
                 if net_id:
                     net_id = net_id[0]['id']
+                floatip_ip = fakes.floating_ips.get(tenant["id"], [])
+                floatip_id = 0
+                if floatip_ip.__len__() > 0:
+                    floatip_id = floatip_ip[0]['id']
+                m_ipr.return_value = floatip_id
                 m_net_id.return_value = net_id
                 m_server.return_value = server
                 m_flavor.return_value = flavor
@@ -207,13 +210,17 @@ class TestComputeController(base.TestController):
                 m_flavor.assert_called_with(None, flavor["id"])
                 m_image.assert_called_with(None, image["id"])
                 m_vol.assert_called_with(None, server["id"])
+                if floatip_ip:
+                    m_ipr.assert_called_with(None, floatip_ip[0]["ip"])
 
     @mock.patch.object(helpers.OpenStackHelper, "get_server_volumes_link")
     @mock.patch.object(helpers.OpenStackHelper, "get_image")
     @mock.patch.object(helpers.OpenStackHelper, "get_flavor")
     @mock.patch.object(helpers.OpenStackHelper, "get_server")
     @mock.patch.object(helpers.OpenStackHelper, "get_network_id")
-    def test_show_no_image(self, m_net_id, m_server, m_flavor, m_image, m_vol):
+    @mock.patch.object(helpers.OpenStackHelper, "get_floatingip_id")
+    def test_show_no_image(self, m_ipr, m_net_id, m_server, m_flavor,
+                           m_image, m_vol):
         for tenant in fakes.tenants.values():
             servers = fakes.servers[tenant["id"]]
             for server in servers:
@@ -225,6 +232,11 @@ class TestComputeController(base.TestController):
                 net_id = fakes.networks.get(tenant["id"], [])
                 if net_id:
                     net_id = net_id[0]['id']
+                floatip_ip = fakes.floating_ips.get(tenant["id"], [])
+                floatip_id = 0
+                if floatip_ip:
+                    floatip_id = floatip_ip[0]['id']
+                m_ipr.return_value = floatip_id
                 m_net_id.return_value = net_id
                 m_server.return_value = server
                 m_flavor.return_value = flavor
@@ -238,6 +250,8 @@ class TestComputeController(base.TestController):
                 m_flavor.assert_called_with(None, flavor["id"])
                 m_image.assert_called_with(None, image["id"])
                 m_vol.assert_called_with(None, server["id"])
+                if floatip_ip:
+                    m_ipr.assert_called_with(None, floatip_ip[0]["ip"])
 
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
     @mock.patch.object(compute.Controller, "_get_network_from_req")

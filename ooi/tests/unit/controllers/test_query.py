@@ -21,6 +21,7 @@ from ooi.occi.core import link
 from ooi.occi.core import resource
 from ooi.occi.infrastructure import compute
 from ooi.occi.infrastructure import contextualization
+from ooi.occi.infrastructure import ip_reservation
 from ooi.occi.infrastructure import network
 from ooi.occi.infrastructure import network_link
 from ooi.occi.infrastructure import storage
@@ -65,6 +66,7 @@ class TestQueryController(base.TestController):
             storage_link.StorageLink.kind,
             network.NetworkResource.kind,
             network_link.NetworkInterface.kind,
+            ip_reservation.IPReservation.kind,
         ]
 
         expected_mixins = [
@@ -133,6 +135,7 @@ class TestQueryController(base.TestController):
             storage_link.StorageLink.kind,
             network.NetworkResource.kind,
             network_link.NetworkInterface.kind,
+            ip_reservation.IPReservation.kind,
         ]
 
         expected_mixins = [
