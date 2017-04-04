@@ -284,7 +284,7 @@ class TestComputeController(base.TestController):
         m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
                                     key_name=None,
-                                    block_device_mapping_v2=[],
+                                    block_device_mapping=[],
                                     networks=net)
 
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
@@ -320,7 +320,7 @@ class TestComputeController(base.TestController):
         m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data="bazonk",
                                     key_name=None,
-                                    block_device_mapping_v2=[],
+                                    block_device_mapping=[],
                                     networks=net)
 
     @mock.patch.object(helpers.OpenStackHelper, "create_server")
@@ -356,7 +356,7 @@ class TestComputeController(base.TestController):
         m_create.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data="bazonk",
                                     key_name=None,
-                                    block_device_mapping_v2=[],
+                                    block_device_mapping=[],
                                     networks=net)
 
     @mock.patch("ooi.occi.validator.Validator")
@@ -415,7 +415,7 @@ class TestComputeController(base.TestController):
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
                                     key_name="wtfoo",
-                                    block_device_mapping_v2=[],
+                                    block_device_mapping=[],
                                     networks=net)
 
     @mock.patch.object(helpers.OpenStackHelper, "keypair_delete")
@@ -454,7 +454,7 @@ class TestComputeController(base.TestController):
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
                                     key_name=mock.ANY,
-                                    block_device_mapping_v2=[],
+                                    block_device_mapping=[],
                                     networks=net)
         m_keypair_delete.assert_called_with(mock.ANY, mock.ANY)
 
@@ -494,7 +494,7 @@ class TestComputeController(base.TestController):
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
                                     key_name=mock.ANY,
-                                    block_device_mapping_v2=[],
+                                    block_device_mapping=[],
                                     networks=net)
         m_keypair_delete.assert_called_with(mock.ANY, mock.ANY)
 
@@ -530,45 +530,24 @@ class TestComputeController(base.TestController):
 
     @mock.patch("ooi.api.helpers.get_id_with_kind")
     def test_build_block_mapping(self, m_get_id):
-        vol_id = uuid.uuid4().hex
-        image_id = uuid.uuid4().hex
+        vol_ids = [uuid.uuid4().hex, uuid.uuid4().hex]
         obj = {
             "links": {
-                "http://schemas.ogf.org/occi/infrastructure#storage": [
-                    {
-                        "id": "l1",
-                        "target": vol_id,
-                    }
-                ]
-            },
-            "schemes": {
-                templates.OpenStackOSTemplate.scheme: [image_id],
+                "http://schemas.ogf.org/occi/infrastructure#storage":
+                    [{"id": i, "target": v} for i, v in enumerate(vol_ids)]
             }
         }
-        m_get_id.return_value = (None, vol_id)
+        m_get_id.side_effect = [(None, v) for v in vol_ids]
         ret = self.controller._build_block_mapping(None, obj)
-        expected = [
-            {
-                "source_type": "image",
-                "destination_type": "local",
-                "boot_index": 0,
-                "delete_on_termination": True,
-                "uuid": image_id,
-            },
-            {
-                "source_type": "volume",
-                "uuid": vol_id,
-                "delete_on_termination": False,
-            }
-        ]
+        expected = [{"volume_id": v} for v in vol_ids]
         self.assertEqual(expected, ret)
-        m_get_id.assert_called_with(None, vol_id,
-                                    occi_storage.StorageResource.kind)
+        m_get_id.assert_has_calls(
+            [mock.call(None, v, occi_storage.StorageResource.kind)
+                for v in vol_ids])
 
     @mock.patch("ooi.api.helpers.get_id_with_kind")
     def test_build_block_mapping_device_id(self, m_get_id):
         vol_id = uuid.uuid4().hex
-        image_id = uuid.uuid4().hex
         obj = {
             "links": {
                 "http://schemas.ogf.org/occi/infrastructure#storage": [
@@ -580,25 +559,13 @@ class TestComputeController(base.TestController):
                         }
                     }
                 ]
-            },
-            "schemes": {
-                templates.OpenStackOSTemplate.scheme: [image_id],
             }
         }
         m_get_id.return_value = (None, vol_id)
         ret = self.controller._build_block_mapping(None, obj)
         expected = [
             {
-                "source_type": "image",
-                "destination_type": "local",
-                "boot_index": 0,
-                "delete_on_termination": True,
-                "uuid": image_id,
-            },
-            {
-                "source_type": "volume",
-                "uuid": vol_id,
-                "delete_on_termination": False,
+                "volume_id": vol_id,
                 "device_name": "baz",
             }
         ]
@@ -636,7 +603,7 @@ class TestComputeController(base.TestController):
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
                                     key_name=mock.ANY,
-                                    block_device_mapping_v2="mapping",
+                                    block_device_mapping="mapping",
                                     networks=net)
         m_block.assert_called_with(req, obj)
 
@@ -738,7 +705,7 @@ class TestComputeController(base.TestController):
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
                                     key_name=mock.ANY,
-                                    block_device_mapping_v2=[],
+                                    block_device_mapping=[],
                                     networks=net)
         m_net.assert_called_with(req, obj)
 
@@ -770,6 +737,6 @@ class TestComputeController(base.TestController):
         m_server.assert_called_with(mock.ANY, "foo instance", "foo", "bar",
                                     user_data=None,
                                     key_name=mock.ANY,
-                                    block_device_mapping_v2=[],
+                                    block_device_mapping=[],
                                     networks=net)
         m_net.assert_called_with(req, obj)

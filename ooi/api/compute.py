@@ -111,9 +111,7 @@ class Controller(ooi.api.base.Controller):
                 l.get("target"),
                 storage.StorageResource.kind)
             mapping = {
-                "source_type": "volume",
-                "uuid": vol_id,
-                "delete_on_termination": False,
+                "volume_id": vol_id,
             }
             try:
                 device_name = l['attributes']['occi.storagelink.deviceid']
@@ -121,16 +119,6 @@ class Controller(ooi.api.base.Controller):
             except KeyError:
                 pass
             mappings.append(mapping)
-        # this needs to be there if we have a mapping
-        if mappings:
-            image = obj["schemes"][templates.OpenStackOSTemplate.scheme][0]
-            mappings.insert(0, {
-                "source_type": "image",
-                "destination_type": "local",
-                "boot_index": 0,
-                "delete_on_termination": True,
-                "uuid": image,
-            })
         return mappings
 
     def _get_network_from_req(self, req, obj):
@@ -215,7 +203,7 @@ class Controller(ooi.api.base.Controller):
             self.os_helper.keypair_create(req, key_name,
                                           public_key=key_data)
 
-        block_device_mapping_v2 = self._build_block_mapping(req, obj)
+        block_device_mapping = self._build_block_mapping(req, obj)
         networks = self._get_network_from_req(req, obj)
         server = self.os_helper.create_server(
             req,
@@ -224,7 +212,7 @@ class Controller(ooi.api.base.Controller):
             flavor,
             user_data=user_data,
             key_name=key_name,
-            block_device_mapping_v2=block_device_mapping_v2,
+            block_device_mapping=block_device_mapping,
             networks=networks
         )
         # The returned JSON does not contain the server name

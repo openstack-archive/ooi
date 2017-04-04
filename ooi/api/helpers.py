@@ -342,7 +342,7 @@ class OpenStackHelper(BaseHelper):
     def _get_create_server_req(self, req, name, image, flavor,
                                user_data=None,
                                key_name=None,
-                               block_device_mapping_v2=None,
+                               block_device_mapping=None,
                                networks=None):
         tenant_id = self.tenant_from_req(req)
         path = "/%s/servers" % tenant_id
@@ -358,8 +358,8 @@ class OpenStackHelper(BaseHelper):
             body["server"]["user_data"] = user_data
         if key_name is not None:
             body["server"]["key_name"] = key_name
-        if block_device_mapping_v2:
-            body["server"]["block_device_mapping_v2"] = block_device_mapping_v2
+        if block_device_mapping:
+            body["server"]["block_device_mapping"] = block_device_mapping
         if networks:
             body["server"]["networks"] = networks
 
@@ -371,7 +371,7 @@ class OpenStackHelper(BaseHelper):
 
     def create_server(self, req, name, image, flavor,
                       user_data=None, key_name=None,
-                      block_device_mapping_v2=None,
+                      block_device_mapping=None,
                       networks=None):
         """Create a server.
 
@@ -389,7 +389,7 @@ class OpenStackHelper(BaseHelper):
             flavor,
             user_data=user_data,
             key_name=key_name,
-            block_device_mapping_v2=block_device_mapping_v2,
+            block_device_mapping=block_device_mapping,
             networks=networks)
         response = req.get_response(self.app)
         # We only get one server
