@@ -557,6 +557,7 @@ class TestComputeController(base.TestController):
             },
             {
                 "source_type": "volume",
+                "destination_type": "volume",
                 "uuid": vol_id,
                 "delete_on_termination": False,
             }
@@ -597,6 +598,7 @@ class TestComputeController(base.TestController):
             },
             {
                 "source_type": "volume",
+                "destination_type": "volume",
                 "uuid": vol_id,
                 "delete_on_termination": False,
                 "device_name": "baz",

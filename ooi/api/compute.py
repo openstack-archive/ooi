@@ -112,6 +112,7 @@ class Controller(ooi.api.base.Controller):
                 storage.StorageResource.kind)
             mapping = {
                 "source_type": "volume",
+                "destination_type": "volume",
                 "uuid": vol_id,
                 "delete_on_termination": False,
             }
