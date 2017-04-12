@@ -88,6 +88,7 @@ class TestQueryController(base.TestController):
             compute.stop,
             compute.restart,
             compute.suspend,
+            compute.save,
 
             storage.online,
             storage.offline,
@@ -158,6 +159,7 @@ class TestQueryController(base.TestController):
             compute.stop,
             compute.restart,
             compute.suspend,
+            compute.save,
 
             storage.online,
             storage.offline,

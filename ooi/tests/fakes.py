@@ -132,6 +132,8 @@ allocated_ip = {"ip": "192.168.253.23",
                 "pool": uuid.uuid4().hex,
                 "instance_id": None}
 
+action_loc_id = uuid.uuid4().hex
+
 floating_ips = {
     tenants["foo"]["id"]: [],
     tenants["bar"]["id"]: [],
@@ -410,6 +412,10 @@ def fake_query_results():
         'suspend; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
         'class="action"; title="suspend compute instance"')
+    cats.append(
+        'save; '
+        'scheme="http://schemas.ogf.org/occi/infrastructure/compute/action#"; '
+        'class="action"; title="save compute instance"')
 
     # OCCI Templates
     cats.append(
@@ -627,7 +633,9 @@ class FakeApp(object):
 
             if actions:
                 action_path = "%s/action" % obj_path
-                self.routes[action_path] = webob.Response(status=202)
+                r = webob.Response(status=202)
+                r.headers["Location"] = action_loc_id
+                self.routes[action_path] = r
 
     def _populate_attached_volumes(self, path, server_list, vol_list):
         for s in server_list:
@@ -751,7 +759,7 @@ class FakeApp(object):
         elif req.path_info.endswith("action"):
             body = req.json_body.copy()
             action = body.popitem()
-            if action[0] in ["os-start", "os-stop", "reboot",
+            if action[0] in ["os-start", "os-stop", "reboot", "createImage",
                              "addFloatingIp", "removeFloatingIp",
                              "removeSecurityGroup",
                              "addSecurityGroup"]:

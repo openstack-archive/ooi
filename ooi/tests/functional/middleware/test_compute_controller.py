@@ -82,6 +82,10 @@ def build_occi_server(server):
                  'rel="http://schemas.ogf.org/occi/'
                  'infrastructure/compute/action#suspend"' %
                  (fakes.application_url, server_id))
+    links.append('<%s/compute/%s?action=save>; '
+                 'rel="http://schemas.ogf.org/occi/'
+                 'infrastructure/compute/action#save"' %
+                 (fakes.application_url, server_id))
 
     result = []
     for c in cats:
@@ -174,6 +178,32 @@ class TestComputeController(test_middleware.TestMiddleware):
                 resp = req.get_response(app)
                 self.assertDefaults(resp)
                 self.assertEqual(204, resp.status_code)
+
+    def test_save_action_vm(self):
+        tenant = fakes.tenants["foo"]
+        app = self.get_app()
+
+        headers = {
+            'Category': (
+                'save ;'
+                'scheme="http://schemas.ogf.org/occi/infrastructure/'
+                'compute/action#";'
+                'class="action"'),
+            # There is no easy way to test that this was taken into account,
+            # but at least it should not fail if the attribute is there
+            'X-OCCI-Attribute': 'name="foobarimg"',
+        }
+        for server in fakes.servers[tenant["id"]]:
+            req = self._build_req("/compute/%s?action=save" % server["id"],
+                                  tenant["id"], method="POST",
+                                  headers=headers)
+            resp = req.get_response(app)
+            self.assertDefaults(resp)
+            expected = [("X-OCCI-Location",
+                         utils.join_url(self.application_url + "/",
+                                        "os_tpl/%s" % fakes.action_loc_id))]
+            self.assertEqual(200, resp.status_code)
+            self.assertExpectedResult(expected, resp)
 
     def test_invalid_action(self):
         tenant = fakes.tenants["foo"]
