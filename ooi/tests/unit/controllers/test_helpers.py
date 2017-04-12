@@ -632,11 +632,11 @@ class TestOpenStackHelper(TestBaseHelper):
         ret = self.helper.create_server(None, name, image, flavor,
                                         user_data=user_data,
                                         key_name=key_name,
-                                        block_device_mapping_v2=bdm,
+                                        block_device_mapping=bdm,
                                         networks=None)
         self.assertEqual("FOO", ret)
         m.assert_called_with(None, name, image, flavor, user_data=user_data,
-                             key_name=key_name, block_device_mapping_v2=bdm,
+                             key_name=key_name, block_device_mapping=bdm,
                              networks=None)
 
     @mock.patch("ooi.api.helpers.exception_from_response")
@@ -662,9 +662,9 @@ class TestOpenStackHelper(TestBaseHelper):
                           flavor,
                           user_data=user_data,
                           key_name=key_name,
-                          block_device_mapping_v2=bdm)
+                          block_device_mapping=bdm)
         m.assert_called_with(None, name, image, flavor, user_data=user_data,
-                             key_name=key_name, block_device_mapping_v2=bdm,
+                             key_name=key_name, block_device_mapping=bdm,
                              networks=None)
         m_exc.assert_called_with(resp)
 
