@@ -110,7 +110,7 @@ class Request(webob.Request):
 
 class OCCIMiddleware(object):
 
-    occi_version = "1.1"
+    occi_version = "1.2"
     occi_string = "OCCI/%s" % occi_version
 
     @classmethod
