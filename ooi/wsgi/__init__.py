@@ -111,7 +111,20 @@ class Request(webob.Request):
 class OCCIMiddleware(object):
 
     occi_version = "1.2"
-    occi_string = "OCCI/%s" % occi_version
+    supported_occi_versions = ["1.1", occi_version]
+
+    _occi_string = "OCCI/%(occi_version)s"
+
+    @property
+    def occi_string(self):
+        """Return the default OCCI supported version string."""
+        return self._occi_string % {"occi_version": self.occi_version}
+
+    @property
+    def supported_occi_strings(self):
+        """Return all the OCCI supported version strings."""
+        return [self._occi_string % {"occi_version": occi_version}
+                for occi_version in self.supported_occi_versions]
 
     @classmethod
     def factory(cls, global_conf, **local_conf):
@@ -276,7 +289,8 @@ class OCCIMiddleware(object):
             # FIXME(aloga): review the regexp, since it will only match the
             # first string
             match = re.search(r"\bOCCI/\d\.\d\b", req.user_agent)
-            if match and self.occi_string != match.group():
+            if match and not any([i == match.group()
+                                 for i in self.supported_occi_strings]):
                 return Fault(webob.exc.HTTPNotImplemented(
                     explanation="%s not supported" % match.group()))
 
@@ -289,7 +303,7 @@ class OCCIMiddleware(object):
     def process_response(self, response):
         """Process a response by adding our headers."""
         server_string = "ooi/%s %s" % (version.version_string,
-                                       self.occi_string)
+                                       " ".join(self.supported_occi_strings))
 
         headers = (("server", server_string),)
         if isinstance(response, Fault):
