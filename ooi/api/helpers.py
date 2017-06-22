@@ -146,13 +146,8 @@ class BaseHelper(object):
         if hasattr(self, 'neutron_endpoint'):
             server = self.neutron_endpoint
             environ = copy.copy(req.environ)
-            try:
-                if "HTTP_X-Auth-Token" not in environ:
-                    env_token = req.environ["keystone.token_auth"]
-                    token = env_token.get_auth_ref(None)['auth_token']
-                    environ = {"HTTP_X-Auth-Token": token}
-            except Exception:
-                raise webob.exc.HTTPUnauthorized
+            for k in ("PATH_INFO", "SCRIPT_NAME", "SERVER_NAME", "HTTP_HOST"):
+                environ.pop(k, None)
 
             new_req = webob.Request.blank(path=path,
                                           environ=environ, base_url=server)
