@@ -16,10 +16,6 @@ import abc
 
 import six
 
-from ooi.log import log as logging
-
-LOG = logging.getLogger(__name__)
-
 
 @six.add_metaclass(abc.ABCMeta)
 class Controller(object):
