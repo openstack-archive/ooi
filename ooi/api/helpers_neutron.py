@@ -14,11 +14,7 @@
 
 from ooi.api import helpers
 from ooi import exception
-from ooi.log import log as logging
 from ooi.openstack import helpers as os_helpers
-
-LOG = logging.getLogger(__name__)
-
 
 class OpenStackNeutron(helpers.BaseHelper):
     """Class to interact with the neutron API."""
