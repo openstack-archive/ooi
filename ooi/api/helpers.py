@@ -20,13 +20,11 @@ import os
 import six.moves.urllib.parse as urlparse
 
 from ooi import exception
-from ooi.log import log as logging
 from ooi.openstack import helpers as os_helpers
 from ooi import utils
 
 import webob.exc
 
-LOG = logging.getLogger(__name__)
 
 
 def _resolve_id(base_url, resource_url):

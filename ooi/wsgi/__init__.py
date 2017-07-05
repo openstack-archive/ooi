@@ -28,13 +28,11 @@ import ooi.api.storage
 import ooi.api.storage_link
 from ooi import config
 from ooi import exception
-from ooi.log import log as logging
 from ooi import utils
 from ooi import version
 from ooi.wsgi import parsers
 from ooi.wsgi import serializers
 
-LOG = logging.getLogger(__name__)
 
 occi_opts = [
     config.cfg.StrOpt('ooi_listen',

@@ -16,10 +16,6 @@ import webob.exc
 
 import warnings
 
-from ooi.log import log as logging
-
-LOG = logging.getLogger(__name__)
-
 warnings.simplefilter("default", DeprecationWarning)
 
 
