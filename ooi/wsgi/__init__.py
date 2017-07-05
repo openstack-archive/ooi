@@ -34,6 +34,7 @@ from ooi import version
 from ooi.wsgi import parsers
 from ooi.wsgi import serializers
 
+
 LOG = logging.getLogger(__name__)
 
 occi_opts = [

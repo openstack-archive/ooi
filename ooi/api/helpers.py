@@ -28,7 +28,6 @@ import webob.exc
 
 LOG = logging.getLogger(__name__)
 
-
 def _resolve_id(base_url, resource_url):
     """Gets the resource id from a base URL.
 
