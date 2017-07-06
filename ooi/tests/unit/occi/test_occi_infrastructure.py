@@ -48,7 +48,7 @@ class TestOCCICompute(base.TestCase):
         self.assertIn("occi.compute.state", c.attributes)
         self.assertIn("occi.compute.state.message", c.attributes)
         self.assertEqual(resource.Resource.kind, c.kind.parent)
-        self.assertEqual(c.kind.location, "compute/")
+        self.assertEqual("compute/", c.kind.location)
         # TODO(aloga): We need to check that the attributes are actually set
         # after we get an object (we have to check this for this but also for
         # the other resources)
@@ -113,7 +113,7 @@ class TestOCCIStorage(base.TestCase):
         self.assertIn("occi.storage.state", s.attributes)
         self.assertIn("occi.storage.state.message", s.attributes)
         self.assertEqual(resource.Resource.kind, s.kind.parent)
-        self.assertEqual(s.kind.location, "storage/")
+        self.assertEqual("storage/", s.kind.location)
         # TODO(aloga): We need to check that the attributes are actually set
         # after we get an object (we have to check this for this but also for
         # the other resources)
@@ -155,7 +155,7 @@ class TestOCCIStorageLink(base.TestCase):
         self.assertIn("occi.storagelink.state", s.attributes)
         self.assertIn("occi.storagelink.state.message", s.attributes)
         self.assertEqual(link.Link.kind, s.kind.parent)
-        self.assertEqual(s.kind.location, "storagelink/")
+        self.assertEqual("storagelink/", s.kind.location)
 
     def test_storagelink(self):
         server_id = uuid.uuid4().hex
@@ -232,7 +232,7 @@ class TestOCCINetwork(base.TestCase):
         self.assertIn("occi.network.state", n.attributes)
         self.assertIn("occi.network.state.message", n.attributes)
         self.assertEqual(resource.Resource.kind, n.kind.parent)
-        self.assertEqual(n.kind.location, "network/")
+        self.assertEqual("network/", n.kind.location)
         # TODO(aloga): We need to check that the attributes are actually set
         # after we get an object (we have to check this for this but also for
         # the other resources)
@@ -301,7 +301,7 @@ class TestOCCINetworkInterface(base.TestCase):
         self.assertIn("occi.networkinterface.state", l.attributes)
         self.assertIn("occi.networkinterface.state.message", l.attributes)
         self.assertEqual(link.Link.kind, l.kind.parent)
-        self.assertEqual(l.kind.location, "networklink/")
+        self.assertEqual("networklink/", l.kind.location)
 
     def test_networkinterface(self):
         c = compute.ComputeResource("foo",
@@ -374,7 +374,7 @@ class TestOCCISecurityGRoup(base.TestCase):
         self.assertIn("occi.securitygroup.rules", s.attributes)
         self.assertIn("occi.securitygroup.state", s.attributes)
         self.assertEqual(resource.Resource.kind, s.kind.parent)
-        self.assertEqual(s.kind.location, "securitygroup/")
+        self.assertEqual("securitygroup/", s.kind.location)
 
     def test_securitygroup(self):
         id = uuid.uuid4().hex
@@ -415,7 +415,7 @@ class TestOCCISecurityGroupLink(base.TestCase):
         self.assertIn("occi.core.target", s.attributes)
         self.assertIn("occi.securitygrouplink.state", s.attributes)
         self.assertEqual(link.Link.kind, s.kind.parent)
-        self.assertEqual(s.kind.location, "securitygrouplink/")
+        self.assertEqual("securitygrouplink/", s.kind.location)
 
     def test_securitygrouplink(self):
         server_id = uuid.uuid4().hex
@@ -451,7 +451,7 @@ class TestOCCIIPReservation(base.TestCase):
         self.assertIn("occi.ipreservation.used", ir.attributes)
         self.assertIn("occi.ipreservation.state", ir.attributes)
         self.assertEqual(network.NetworkResource.kind, ir.kind.parent)
-        self.assertEqual(ir.kind.location, "ipreservation/")
+        self.assertEqual("ipreservation/", ir.kind.location)
 
     def test_ip_reservation(self):
         id = uuid.uuid4().hex

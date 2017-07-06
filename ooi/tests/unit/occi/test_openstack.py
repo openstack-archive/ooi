@@ -119,10 +119,10 @@ class TestOSNetworkInterface(base.TestCase):
         i = os_network.OSNetworkInterface(c, n, "00:01:02:03:04:05",
                                           "127.0.0.1", pool="foo")
         self.assertEqual('_'.join([c.id, "127.0.0.1"]), i.id)
-        self.assertEqual(i.address, "127.0.0.1")
-        self.assertEqual(i.interface, "eth0")
-        self.assertEqual(i.mac, "00:01:02:03:04:05")
-        self.assertEqual(i.state, "active")
+        self.assertEqual("127.0.0.1", i.address)
+        self.assertEqual("eth0", i.interface)
+        self.assertEqual("00:01:02:03:04:05", i.mac)
+        self.assertEqual("active", i.state)
         self.assertIsNone(i.gateway)
         self.assertEqual(network_link.NetworkInterface.kind, i.kind)
         self.assertEqual(2, len(i.mixins))
@@ -132,7 +132,7 @@ class TestOSNetworkInterface(base.TestCase):
         has_pool = False
         for m in i.mixins:
             if isinstance(m, os_network.OSFloatingIPPool):
-                self.assertEqual(m.term, "foo")
+                self.assertEqual("foo", m.term)
                 has_pool = True
                 break
         self.assertTrue(has_pool)

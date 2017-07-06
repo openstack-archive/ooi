@@ -41,8 +41,8 @@ class TestSecurityGroupControllerNeutron(base.TestController):
         m_list.return_value = sec_group
         result = self.controller.index(req)
         expected = self.controller._get_security_group_resources(sec_group)
-        self.assertEqual(result.resources.__len__(),
-                         expected.__len__())
+        self.assertEqual(expected.__len__(),
+                         result.resources.__len__())
         for r in result.resources:
             self.assertIsInstance(r, occi_security_group.SecurityGroupResource)
         m_list.assert_called_with(req)
@@ -57,7 +57,7 @@ class TestSecurityGroupControllerNeutron(base.TestController):
         req = fakes.create_req_test(None, None)
         m_list.return_value = sec_group
         result = self.controller.index(req)
-        self.assertEqual(result.resources.__len__(), 0)
+        self.assertEqual(0, result.resources.__len__())
 
     @mock.patch.object(helpers_neutron.OpenStackNeutron,
                        "get_security_group_details")
@@ -73,7 +73,7 @@ class TestSecurityGroupControllerNeutron(base.TestController):
         self.assertIsInstance(
             result,
             occi_security_group.SecurityGroupResource)
-        self.assertEqual(result, expected)
+        self.assertEqual(expected, result)
         m_list.assert_called_with(req, None)
 
     @mock.patch.object(helpers_neutron.OpenStackNeutron, "get_resource")
