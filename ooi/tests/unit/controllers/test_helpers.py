@@ -17,7 +17,6 @@ import json
 import uuid
 
 import mock
-import six
 import webob
 
 from ooi.api import helpers
@@ -114,7 +113,7 @@ class TestExceptionHelper(base.TestCase):
             503: webob.exc.HTTPServiceUnavailable,
         }
 
-        for code, exception in six.iteritems(code_and_exception):
+        for code, exception in code_and_exception.items():
             fault = self.get_fault(code)
             resp = fakes.create_fake_json_resp(fault, code)
             ret = helpers.exception_from_response(resp)
@@ -131,7 +130,7 @@ class TestExceptionHelper(base.TestCase):
                    "http://bugs.launchpad.net/ooi/ and attach the "
                    "ooi API log if possible.")
 
-        for code, exception in six.iteritems(code_and_exception):
+        for code, exception in code_and_exception.items():
             fault = self.get_fault(code)
             resp = fakes.create_fake_json_resp(fault, code)
             ret = helpers.exception_from_response(resp)
@@ -895,7 +894,7 @@ class TestOpenStackHelperReqs(TestBaseHelper):
 
         path = "/%s/servers/%s/action" % (tenant["id"], server_uuid)
 
-        for act, body in six.iteritems(actions_map):
+        for act, body in actions_map.items():
             os_req = self.helper._get_run_action_req(req, act, server_uuid)
             self.assertExpectedReq("POST", path, body, os_req)
 
@@ -917,7 +916,7 @@ class TestOpenStackHelperReqs(TestBaseHelper):
         path = "/%s/servers/%s/action" % (tenant["id"], server_uuid)
 
         action_args = {"foo": "bar"}
-        for act, os_act in six.iteritems(actions_map):
+        for act, os_act in actions_map.items():
             os_req = self.helper._get_run_action_req(req, act, server_uuid,
                                                      action_args)
             self.assertExpectedReq("POST", path, {os_act: action_args}, os_req)

@@ -15,7 +15,6 @@
 import uuid
 
 import mock
-import six
 import webob
 import webob.exc
 
@@ -161,7 +160,7 @@ class TestComputeController(base.TestController):
         }
 
         req = self._build_req(tenant["id"], path="/foo?action=start")
-        for state, action in six.iteritems(state_action_map):
+        for state, action in state_action_map.items():
             req.get_parser = mock.MagicMock()
             server_uuid = uuid.uuid4().hex
             server = {"status": state}
