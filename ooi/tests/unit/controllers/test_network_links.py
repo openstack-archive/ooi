@@ -67,7 +67,7 @@ class TestNetworkLinkController(base.TestController):
         mock_list.return_value = links
         ret = self.controller.index(req)
         self.assertIsInstance(ret, collection.Collection)
-        self.assertEqual(ret.resources.__len__(), 0)
+        self.assertEqual(0, ret.resources.__len__())
 
     @mock.patch.object(helpers.OpenStackHelper,
                        "delete_port")
@@ -225,7 +225,7 @@ class TestNetworkLinkController(base.TestController):
 
     def test_get_network_link_resources_empty(self):
         ret = network_link_api._get_network_link_resources(None)
-        self.assertEqual(ret.__len__(), 0)
+        self.assertEqual(0, ret.__len__())
 
     @mock.patch.object(helpers.OpenStackHelper,
                        "assign_floating_ip_deprecated")

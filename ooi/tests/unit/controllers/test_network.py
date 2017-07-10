@@ -45,8 +45,8 @@ class TestNetworkControllerNeutron(base.TestController):
             m_index.return_value = ooi_net
             result = self.controller.index(req)
             expected = self.controller._get_network_resources(ooi_net)
-            self.assertEqual(result.resources.__len__(),
-                             expected.__len__())
+            self.assertEqual(expected.__len__(),
+                             result.resources.__len__())
             m_index.assert_called_with(req, 'networks')
 
     @mock.patch.object(helpers_neutron.OpenStackNeutron, "get_network_details")
@@ -116,8 +116,8 @@ class TestNetworkControllerNeutron(base.TestController):
         test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
         for net in test_networks:
             ret = self.controller.delete(None, net["id"])
-            self.assertEqual(ret, [])
-            self.assertEqual(ret.__len__(), 0)
+            self.assertEqual([], ret)
+            self.assertEqual(0, ret.__len__())
 
     def test_get_network_resources(self):
         test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
@@ -201,8 +201,8 @@ class TestNetworkControllerNova(base.TestController):
             m_index.return_value = ooi_net
             result = self.controller.index(req)
             expected = self.controller._get_network_resources(ooi_net)
-            self.assertEqual(result.resources.__len__(),
-                             expected.__len__())
+            self.assertEqual(expected.__len__(),
+                             result.resources.__len__())
             m_index.assert_called_with(req)
 
     @mock.patch.object(helpers.OpenStackHelper, "get_network_details")
@@ -272,8 +272,8 @@ class TestNetworkControllerNova(base.TestController):
         test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
         for net in test_networks:
             ret = self.controller.delete(None, net["id"])
-            self.assertEqual(ret, [])
-            self.assertEqual(ret.__len__(), 0)
+            self.assertEqual([], ret)
+            self.assertEqual(0, ret.__len__())
 
     def test_get_network_resources(self):
         test_networks = fakes.networks[fakes.tenants["foo"]["id"]]
