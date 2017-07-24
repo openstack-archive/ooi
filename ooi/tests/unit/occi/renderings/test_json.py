@@ -67,7 +67,7 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
             "required": attr.required,
             "type": "string",
         }
-        if attr.default:
+        if attr.default is not None:
             expected["default"] = attr.default
         if attr.description:
             expected["description"] = attr.description
@@ -206,6 +206,20 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
         }
         self.assertEqual(expected, json.loads(observed))
 
+    def test_number_attr_default_0(self):
+        attr = attribute.MutableAttribute(
+            "org.example", default=0,
+            attr_type=attribute.AttributeType.number_type)
+        r = self.renderer.get_renderer(attr)
+        observed = r.render()
+        expected = {
+            "org.example": {
+                "type": "number", "required": False, "mutable": True,
+                "default": 0,
+            }
+        }
+        self.assertEqual(expected, json.loads(observed))
+
     def test_boolean_attr(self):
         attr = attribute.MutableAttribute(
             "org.example", attr_type=attribute.AttributeType.boolean_type)
@@ -214,6 +228,20 @@ class TestOCCIJsonRendering(base.BaseRendererTest):
         expected = {
             "org.example": {
                 "type": "boolean", "required": False, "mutable": True,
+            }
+        }
+        self.assertEqual(expected, json.loads(observed))
+
+    def test_boolean_attr_default_false(self):
+        attr = attribute.MutableAttribute(
+            "org.example", default=False,
+            attr_type=attribute.AttributeType.boolean_type)
+        r = self.renderer.get_renderer(attr)
+        observed = r.render()
+        expected = {
+            "org.example": {
+                "type": "boolean", "required": False, "mutable": True,
+                "default": False,
             }
         }
         self.assertEqual(expected, json.loads(observed))

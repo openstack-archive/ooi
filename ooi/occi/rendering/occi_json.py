@@ -70,7 +70,7 @@ class AttributeRenderer(JsonRenderer):
         }
         if self.obj.description:
             r["description"] = self.obj.description
-        if self.obj.default:
+        if self.obj.default is not None:
             r["default"] = self.obj.default
         # TODO(enolfc): missing pattern
         return {self.obj.name: r}
