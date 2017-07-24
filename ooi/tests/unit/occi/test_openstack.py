@@ -38,6 +38,8 @@ class TestOpenStackOSTemplate(base.TestCase):
         self.assertTrue(tpl.scheme.startswith(helpers._PREFIX))
         self.assertIn(occi_templates.os_tpl, tpl.depends)
         self.assertEqual(location, tpl.location)
+        self.assertEqual([compute.ComputeResource.kind],
+                         tpl.applies)
 
 
 class TestOpenStackResourceTemplate(base.TestCase):
@@ -70,6 +72,8 @@ class TestOpenStackResourceTemplate(base.TestCase):
         self.assertEqual(ephemeral, tpl.ephemeral)
         self.assertEqual(name, tpl.name)
         self.assertEqual(location, tpl.location)
+        self.assertEqual([compute.ComputeResource.kind],
+                         tpl.applies)
 
 
 class TestHelpers(base.TestCase):

@@ -211,12 +211,16 @@ class TestTemplates(base.TestCase):
                               mixin.Mixin)
         self.assertEqual("os_tpl",
                          templates.os_tpl.term)
+        self.assertEqual([compute.ComputeResource.kind],
+                         templates.os_tpl.applies)
 
     def test_resource_tpl(self):
         self.assertIsInstance(templates.resource_tpl,
                               mixin.Mixin)
         self.assertEqual("resource_tpl",
                          templates.resource_tpl.term)
+        self.assertEqual([compute.ComputeResource.kind],
+                         templates.os_tpl.applies)
 
 
 class TestOCCINetwork(base.TestCase):
