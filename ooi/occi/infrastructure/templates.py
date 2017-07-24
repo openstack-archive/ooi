@@ -14,6 +14,7 @@
 
 from ooi.occi.core import mixin
 from ooi.occi import helpers
+from ooi.occi.infrastructure import compute
 
 
 class OCCIOSTemplate(mixin.Mixin):
@@ -22,6 +23,7 @@ class OCCIOSTemplate(mixin.Mixin):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("location", self._location + "/")
+        kwargs.setdefault("applies", [compute.ComputeResource.kind])
         super(OCCIOSTemplate, self).__init__(self.scheme, *args, **kwargs)
 
 
@@ -35,6 +37,7 @@ class OCCIResourceTemplate(mixin.Mixin):
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault("location", self._location + "/")
+        kwargs.setdefault("applies", [compute.ComputeResource.kind])
         super(OCCIResourceTemplate, self).__init__(self.scheme,
                                                    *args,
                                                    **kwargs)
