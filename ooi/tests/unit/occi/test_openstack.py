@@ -70,6 +70,12 @@ class TestOpenStackResourceTemplate(base.TestCase):
         self.assertEqual(disk, tpl.disk)
         self.assertEqual(swap, tpl.swap)
         self.assertEqual(ephemeral, tpl.ephemeral)
+        for attr in [("occi.compute.cores", cores),
+                     ("occi.compute.memory", memory),
+                     ("org.openstack.flavor.swap", swap),
+                     ("org.openstack.flavor.ephemeral", ephemeral),
+                     ("org.openstack.flavor.disk", disk)]:
+            self.assertEqual(tpl.attributes[attr[0]].default, attr[1])
         self.assertEqual(name, tpl.name)
         self.assertEqual(location, tpl.location)
         self.assertEqual([compute.ComputeResource.kind],

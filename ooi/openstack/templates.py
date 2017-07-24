@@ -35,19 +35,19 @@ class OpenStackResourceTemplate(templates.OCCIResourceTemplate):
     def __init__(self, id, name, cores, memory, disk, ephemeral=0, swap=0):
         attrs = [
             attribute.InmutableAttribute(
-                "occi.compute.cores", cores,
+                "occi.compute.cores", cores, default=cores,
                 attr_type=attribute.AttributeType.number_type),
             attribute.InmutableAttribute(
-                "occi.compute.memory", memory,
+                "occi.compute.memory", memory, default=memory,
                 attr_type=attribute.AttributeType.number_type),
             attribute.InmutableAttribute(
-                "org.openstack.flavor.disk", disk,
+                "org.openstack.flavor.disk", disk, default=disk,
                 attr_type=attribute.AttributeType.number_type),
             attribute.InmutableAttribute(
-                "org.openstack.flavor.ephemeral", ephemeral,
+                "org.openstack.flavor.ephemeral", ephemeral, default=ephemeral,
                 attr_type=attribute.AttributeType.number_type),
             attribute.InmutableAttribute(
-                "org.openstack.flavor.swap", swap,
+                "org.openstack.flavor.swap", swap, default=swap,
                 attr_type=attribute.AttributeType.number_type),
             attribute.InmutableAttribute(
                 "org.openstack.flavor.name", name,
