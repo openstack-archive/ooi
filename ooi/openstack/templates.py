@@ -56,6 +56,10 @@ class OpenStackResourceTemplate(templates.OCCIResourceTemplate):
 
         attrs = attribute.AttributeCollection({a.name: a for a in attrs})
 
+        # occi attribute is an alias for the OpenStack one
+        attrs["occi.compute.ephemeral_storage.size"] = (
+            attrs["org.openstack.flavor.ephemeral"])
+
         location = "%s/%s" % (self._location, id)
         super(OpenStackResourceTemplate, self).__init__(
             id,
