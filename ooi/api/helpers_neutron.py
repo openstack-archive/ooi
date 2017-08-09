@@ -283,11 +283,14 @@ class OpenStackNeutron(helpers.BaseHelper):
         net = self.get_from_response(response, "network", {})
         # subnet
         if "subnets" in net:
-            path = "/subnets/%s" % net["subnets"][0]
-            req_subnet = self._make_get_request(req, path)
-            response_subnet = req_subnet.get_response()
-            net["subnet_info"] = self.get_from_response(
-                response_subnet, "subnet", {})
+            try:
+                path = "/subnets/%s" % net["subnets"][0]
+                req_subnet = self._make_get_request(req, path)
+                response_subnet = req_subnet.get_response()
+                net["subnet_info"] = self.get_from_response(
+                    response_subnet, "subnet", {})
+            except Exception:
+                raise exception.ResourceNotFound()
 
         ooi_networks = self._build_networks([net])
 
