@@ -72,6 +72,7 @@ class Controller(base.Controller):
         if pools:
             for p in pools:
                 occi_ip_pools.append(os_network.OSFloatingIPPool(p["name"]))
+            occi_ip_pools.append(os_network.os_floatingip_pool)
         return occi_ip_pools
 
     def index(self, req):

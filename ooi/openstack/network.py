@@ -20,13 +20,26 @@ from ooi.occi.infrastructure import network_link
 from ooi.openstack import helpers
 
 
-class OSFloatingIPPool(mixin.Mixin):
+class OSFloatingIPPoolBase(mixin.Mixin):
+    def __init__(self, pool=None, depends=[]):
+        location = "floatingippool/%s" % pool if pool else "floatingippool/"
+        sch = "network/floatingippool" if pool else "network"
+        scheme = helpers.build_scheme(sch)
+        term = pool if pool else "floatingippool"
+        title = pool if pool else "Floating IP pool base mixin"
+        super(OSFloatingIPPoolBase, self).__init__(
+            scheme, term, title, location=location, depends=depends,
+            applies=[network_link.NetworkInterface.kind])
+
+
+os_floatingip_pool = OSFloatingIPPoolBase()
+
+
+class OSFloatingIPPool(OSFloatingIPPoolBase):
     scheme = helpers.build_scheme("network/floatingippool")
 
     def __init__(self, pool=None):
-        location = "floatingippool/%s" % pool
-        super(OSFloatingIPPool, self).__init__(self.scheme, pool, pool,
-                                               location=location)
+        super(OSFloatingIPPool, self).__init__(pool, [os_floatingip_pool])
 
 
 class OSNetworkInterface(network_link.NetworkInterface):

@@ -147,6 +147,10 @@ class TestOSNetworkInterface(base.TestCase):
             if isinstance(m, os_network.OSFloatingIPPool):
                 self.assertEqual("foo", m.term)
                 self.assertEqual("floatingippool/foo", m.location)
+                self.assertEqual([network_link.NetworkInterface.kind],
+                                 m.applies)
+                self.assertEqual([os_network.os_floatingip_pool],
+                                 m.depends)
                 has_pool = True
                 break
         self.assertTrue(has_pool)
