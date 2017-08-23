@@ -467,7 +467,8 @@ def fake_query_results():
     cats.append(
         'ipnetwork; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/network#"; '
-        'class="mixin"; title="IP Networking Mixin"')
+        'class="mixin"; title="IP Networking Mixin"; '
+        'location="%s/ipnetwork/"' % application_url)
     cats.append(
         'up; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/network/action#"; '
@@ -486,7 +487,8 @@ def fake_query_results():
         'ipnetworkinterface; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/'
         'networkinterface#"; '
-        'class="mixin"; title="IP Network interface Mixin"')
+        'class="mixin"; title="IP Network interface Mixin"; '
+        'location="%s/ipnetworkinterface/"' % application_url)
     cats.append(
         'ipreservation; '
         'scheme="http://schemas.ogf.org/occi/infrastructure#"; '
@@ -532,21 +534,25 @@ def fake_query_results():
     cats.append(
         'user_data; '
         'scheme="http://schemas.openstack.org/compute/instance#"; '
-        'class="mixin"; title="Contextualization extension - user_data"')
+        'class="mixin"; title="Contextualization extension - user_data"; '
+        'location="%s/openstack_user_data/"' % application_url)
     cats.append(
         'public_key; '
         'scheme="http://schemas.openstack.org/instance/credentials#"; '
-        'class="mixin"; title="Contextualization extension - public_key"')
+        'class="mixin"; title="Contextualization extension - public_key"; '
+        'location="%s/openstack_public_key/"' % application_url)
 
     # OCCI contextualization
     cats.append(
         'user_data; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/compute#"; '
-        'class="mixin"; title="Contextualization mixin"')
+        'class="mixin"; title="Contextualization mixin"; '
+        'location="%s/user_data/"' % application_url)
     cats.append(
         'ssh_key; '
         'scheme="http://schemas.ogf.org/occi/infrastructure/credentials#"; '
-        'class="mixin"; title="Credentials mixin"')
+        'class="mixin"; title="Credentials mixin"; '
+        'location="%s/ssh_key/"' % application_url)
 
     result = []
     for c in cats:

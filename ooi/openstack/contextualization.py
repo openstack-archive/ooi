@@ -33,6 +33,7 @@ class OpenStackUserData(mixin.Mixin):
         super(OpenStackUserData, self).__init__(
             OpenStackUserData.scheme, OpenStackUserData.term,
             "Contextualization extension - user_data",
+            location="openstack_user_data/",
             attributes=attrs)
 
     @property
@@ -59,6 +60,7 @@ class OpenStackPublicKey(mixin.Mixin):
         super(OpenStackPublicKey, self).__init__(
             OpenStackPublicKey.scheme, OpenStackPublicKey.term,
             "Contextualization extension - public_key",
+            location="openstack_public_key/",
             attributes=attrs)
 
     @property

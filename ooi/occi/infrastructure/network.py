@@ -91,6 +91,7 @@ class NetworkResource(resource.Resource):
 ip_network = mixin.Mixin(
     helpers.build_scheme("infrastructure/network"),
     "ipnetwork", "IP Networking Mixin",
+    location="ipnetwork/",
     attributes=attr.AttributeCollection({
         "occi.network.address": attr.MutableAttribute(
             "occi.network.address",

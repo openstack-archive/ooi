@@ -357,6 +357,7 @@ class TestOCCIUserData(base.TestCase):
         self.assertEqual("user_data", mxn.term)
         self.assertEqual(user_data, mxn.user_data)
         self.assertEqual([compute.ComputeResource.kind], mxn.applies)
+        self.assertEqual("user_data/", mxn.location)
 
 
 class TestOCCISSHKey(base.TestCase):
@@ -366,6 +367,7 @@ class TestOCCISSHKey(base.TestCase):
         self.assertEqual("ssh_key", mxn.term)
         self.assertEqual(key_data, mxn.ssh_key)
         self.assertEqual([compute.ComputeResource.kind], mxn.applies)
+        self.assertEqual("ssh_key/", mxn.location)
 
 
 class TestOCCISecurityGRoup(base.TestCase):

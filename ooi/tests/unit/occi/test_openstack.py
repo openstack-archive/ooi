@@ -104,6 +104,7 @@ class TestOpenStackUserData(base.TestCase):
         self.assertEqual("user_data", mxn.term)
         self.assertTrue(mxn.scheme.startswith(helpers._PREFIX))
         self.assertEqual(user_data, mxn.user_data)
+        self.assertEqual("openstack_user_data/", mxn.location)
 
 
 class TestOpenStackPublicKey(base.TestCase):
@@ -117,6 +118,7 @@ class TestOpenStackPublicKey(base.TestCase):
         self.assertTrue(mxn.scheme.startswith(helpers._PREFIX))
         self.assertEqual(key_name, mxn.name)
         self.assertEqual(key_data, mxn.data)
+        self.assertEqual("openstack_public_key/", mxn.location)
 
 
 class TestOSNetworkInterface(base.TestCase):
@@ -144,6 +146,7 @@ class TestOSNetworkInterface(base.TestCase):
         for m in i.mixins:
             if isinstance(m, os_network.OSFloatingIPPool):
                 self.assertEqual("foo", m.term)
+                self.assertEqual("floatingippool/foo", m.location)
                 has_pool = True
                 break
         self.assertTrue(has_pool)

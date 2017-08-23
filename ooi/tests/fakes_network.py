@@ -354,11 +354,13 @@ def build_occi_network(network):
     cats.append('ipnetwork; '
                 'scheme='
                 '"http://schemas.ogf.org/occi/infrastructure/network#";'
-                ' class="mixin"; title="IP Networking Mixin"')
+                ' class="mixin"; title="IP Networking Mixin";'
+                ' location="%s/ipnetwork/"' % app_url)
     cats.append('osnetwork; '
                 'scheme='
                 '"http://schemas.openstack.org/infrastructure/network#";'
-                ' class="mixin"; title="openstack network"')
+                ' class="mixin"; title="openstack network";'
+                ' location="%s/osnetwork/"' % app_url)
 
     links = []
     links.append('<%s/network/%s?action=up>; '
@@ -407,11 +409,13 @@ def build_occi_nova(network):
     cats.append('ipnetwork; '
                 'scheme='
                 '"http://schemas.ogf.org/occi/infrastructure/network#";'
-                ' class="mixin"; title="IP Networking Mixin"')
+                ' class="mixin"; title="IP Networking Mixin";'
+                ' location="%s/ipnetwork/"' % app_url)
     cats.append('osnetwork; '
                 'scheme='
                 '"http://schemas.openstack.org/infrastructure/network#";'
-                ' class="mixin"; title="openstack network"')
+                ' class="mixin"; title="openstack network";'
+                ' location="%s/osnetwork/"' % app_url)
 
     links = []
     links.append('<%s/network/%s?action=up>; '

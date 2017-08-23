@@ -36,6 +36,7 @@ class SSHKey(mixin.Mixin):
         super(SSHKey, self).__init__(SSHKey.scheme, SSHKey.term,
                                      "Credentials mixin",
                                      attributes=attrs,
+                                     location="ssh_key/",
                                      applies=[compute.ComputeResource.kind])
 
     @property
@@ -69,6 +70,7 @@ class UserData(mixin.Mixin):
                                        UserData.term,
                                        "Contextualization mixin",
                                        attributes=attrs,
+                                       location="user_data/",
                                        applies=[compute.ComputeResource.kind])
 
     @property

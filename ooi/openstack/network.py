@@ -24,7 +24,9 @@ class OSFloatingIPPool(mixin.Mixin):
     scheme = helpers.build_scheme("network/floatingippool")
 
     def __init__(self, pool=None):
-        super(OSFloatingIPPool, self).__init__(self.scheme, pool, pool)
+        location = "floatingippool/%s" % pool
+        super(OSFloatingIPPool, self).__init__(self.scheme, pool, pool,
+                                               location=location)
 
 
 class OSNetworkInterface(network_link.NetworkInterface):
@@ -94,6 +96,7 @@ class OSNetwork(mixin.Mixin):
             scheme=self.scheme,
             term=term,
             title=title,
+            location="osnetwork/",
             attributes=attr.AttributeCollection([
                 "org.openstack.network.ip_version"
             ])
@@ -174,4 +177,4 @@ class OSNetworkResource(network.NetworkResource):
 
 neutron_network = mixin.Mixin(helpers.build_scheme("infrastructure/network"),
                               "neutron", "Network component",
-                              )
+                              location="neutron/")

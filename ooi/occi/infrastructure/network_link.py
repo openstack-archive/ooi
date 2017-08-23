@@ -88,6 +88,7 @@ class NetworkInterface(link.Link):
 ip_network_interface = mixin.Mixin(
     helpers.build_scheme("infrastructure/networkinterface"),
     "ipnetworkinterface", "IP Network interface Mixin",
+    location="ipnetworkinterface/",
     attributes=attr.AttributeCollection({
         "occi.networkinterface.address": attr.MutableAttribute(
             "occi.networkinterface.address",
