@@ -14,7 +14,10 @@
 
 from ooi.api import helpers
 from ooi import exception
+from ooi.log import log as logging
 from ooi.openstack import helpers as os_helpers
+
+LOG = logging.getLogger(__name__)
 
 
 class OpenStackNeutron(helpers.BaseHelper):
@@ -275,6 +278,7 @@ class OpenStackNeutron(helpers.BaseHelper):
         :param req: the incoming network
         :param id: net identification
         """
+
         if id == os_helpers.PUBLIC_NETWORK:
             id = self._get_public_network(req)
         path = "/networks/%s" % id
@@ -283,11 +287,16 @@ class OpenStackNeutron(helpers.BaseHelper):
         net = self.get_from_response(response, "network", {})
         # subnet
         if "subnets" in net:
-            path = "/subnets/%s" % net["subnets"][0]
-            req_subnet = self._make_get_request(req, path)
-            response_subnet = req_subnet.get_response()
-            net["subnet_info"] = self.get_from_response(
-                response_subnet, "subnet", {})
+            try:
+                path = "/subnets/%s" % net["subnets"][0]
+                req_subnet = self._make_get_request(req, path)
+                response_subnet = req_subnet.get_response()
+                net["subnet_info"] = self.get_from_response(
+                    response_subnet, "subnet", {})
+            except Exception:
+                    LOG.warn(
+                        "No details from the requested subnet can be fetched"
+                    )
 
         ooi_networks = self._build_networks([net])
 
