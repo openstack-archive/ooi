@@ -85,6 +85,9 @@ class OpenStackNeutron(helpers.BaseHelper):
         :param tenant: include tenant in the query parameters
         """
         path = "/%s" % resource
+        if req:
+            req.accept = "application/json"
+            req.content_type = "application/json"
         os_req = self._make_get_request(req, path, parameters)
         response = os_req.get_response()
         return self.get_from_response(response, resource, [])
