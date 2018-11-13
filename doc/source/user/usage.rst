@@ -39,8 +39,8 @@ It shows details of a VM::
 It returns a HTTP 200 with output::
 
     Category: compute; scheme="http://schemas.ogf.org/occi/infrastructure#"; class="kind"; title="compute resource"; rel="http://schemas.ogf.org/occi/core#resource"; location="http://127.0.0.23:8787/occi1.2/compute/"
-    Category: 5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="http://schemas.openstack.org/template/os#"; class="mixin"; title="cirros-0.3.4-x86_64-uec"; rel="http://schemas.ogf.org/occi/infrastructure#os_tpl"; location="http://127.0.0.23:8787/occi1.2/os_tpl/5f4311da-2ee2-47a6-913b-5d8496486c62"
-    Category: 42; scheme="http://schemas.openstack.org/template/resource#"; class="mixin"; title="Flavor: m1.nano"; rel="http://schemas.ogf.org/occi/infrastructure#resource_tpl"; location="http://127.0.0.23:8787/occi1.2/resource_tpl/42"
+    Category: 5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="https://schemas.openstack.org/template/os#"; class="mixin"; title="cirros-0.3.4-x86_64-uec"; rel="https://schemas.ogf.org/occi/infrastructure#os_tpl"; location="https://127.0.0.23:8787/occi1.2/os_tpl/5f4311da-2ee2-47a6-913b-5d8496486c62"
+    Category: 42; scheme="https://schemas.openstack.org/template/resource#"; class="mixin"; title="Flavor: m1.nano"; rel="https://schemas.ogf.org/occi/infrastructure#resource_tpl"; location="https://127.0.0.23:8787/occi1.2/resource_tpl/42"
     X-OCCI-Attribute: occi.core.title="vm_assig_2"
     X-OCCI-Attribute: occi.compute.state="inactive"
     X-OCCI-Attribute: occi.compute.memory=64
@@ -79,8 +79,8 @@ It creates a VM using the default resources, including links to storage and priv
     curl -X POST http://127.0.0.23:8787/occi1.2/compute/ \
         -H 'X-Auth-Token: '$OS_TOKEN \
         -H 'Category: compute; scheme="http://schemas.ogf.org/occi/infrastructure#"; class="kind", \
-        -H 'Category: 5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="http://schemas.openstack.org/template/os#"; class="mixin" \
-        -H 'Category: 42; scheme="http://schemas.openstack.org/template/resource#"; class="mixin"' \
+        -H 'Category: 5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="https://schemas.openstack.org/template/os#"; class="mixin" \
+        -H 'Category: 42; scheme="https://schemas.openstack.org/template/resource#"; class="mixin"' \
         -H 'Content-Type: text/occi' -H 'X-OCCI-Attribute: occi.core.title="OOI_VM_1"'
 
 Also we can specify the network to be linked::
@@ -88,8 +88,8 @@ Also we can specify the network to be linked::
     curl -X POST http://127.0.0.23:8787/occi1.2/compute/ \
         -H 'X-Auth-Token: '$OS_TOKEN \
         -H 'Category: compute; scheme="http://schemas.ogf.org/occi/infrastructure#"; class="kind", \
-        -H 'Category: 5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="http://schemas.openstack.org/template/os#"; class="mixin" \
-        -H 'Category: 42; scheme="http://schemas.openstack.org/template/resource#"; class="mixin"' \
+        -H 'Category: 5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="https://schemas.openstack.org/template/os#"; class="mixin" \
+        -H 'Category: 42; scheme="https://schemas.openstack.org/template/resource#"; class="mixin"' \
         -H 'Link: </bar>; rel="http://schemas.ogf.org/occi/infrastructure#network"; \
             occi.core.target="http://127.0.0.23:8787/occi1.2/network/f8186fda-a389-468b-9c13-24b8eda65d77"' \
         -H 'Content-Type: text/occi' -H 'X-OCCI-Attribute: occi.core.title="OOI_VM_1"'
@@ -99,8 +99,8 @@ Links to storage can be also specified::
     curl -X POST http://127.0.0.23:8787/occi1.2/compute/ \
         -H 'X-Auth-Token: '$OS_TOKEN \
         -H 'Category: compute; scheme="http://schemas.ogf.org/occi/infrastructure#"; class="kind" \
-        -H 'Category: 5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="http://schemas.openstack.org/template/os#"; class="mixin" \
-        -H 'Category: 42; scheme="http://schemas.openstack.org/template/resource#"; class="mixin"' \
+        -H 'Category: 5f4311da-2ee2-47a6-913b-5d8496486c62; scheme="https://schemas.openstack.org/template/os#"; class="mixin" \
+        -H 'Category: 42; scheme="https://schemas.openstack.org/template/resource#"; class="mixin"' \
         -H 'Link: </bar>; rel="http://schemas.ogf.org/occi/infrastructure#storage"; \
             occi.core.target="http://127.0.0.23:8787/occi1.2/storage/567ed104-3ddf-11e6-ad65-00219702a0b8"' \
         -H 'Content-Type: text/occi' -H 'X-OCCI-Attribute: occi.core.title="OOI_VM_1"'
@@ -254,7 +254,7 @@ It returns a HTTP 200 with output::
      rel="http://schemas.ogf.org/occi/core#resource"; location="http://127.0.0.23:8787/occi1.2/network/"
     Category: ipnetwork; scheme="http://schemas.ogf.org/occi/infrastructure/network#"; class="mixin";
      title="IP Networking Mixin"
-    Category: osnetwork; scheme="http://schemas.openstack.org/infrastructure/network#"; class="mixin";
+    Category: osnetwork; scheme="https://schemas.openstack.org/infrastructure/network#"; class="mixin";
      title="openstack network"
     X-OCCI-Attribute: occi.network.address="20.0.0.0/24"
     X-OCCI-Attribute: occi.network.state="active"
@@ -330,7 +330,7 @@ It creates a IPReservation resource::
 
     curl -X POST http://127.0.0.1:8787/occi1.1/ipreservation -H 'X-Auth-token: '$OS_TOKEN \
     -H 'Category: ipreshemas.ogf.org/occi/infrastructure#"; class="kind",' \
-    'external-net; scheme="http://schemas.openstack.org/network/floatingippool#"; class="mixin"' \
+    'external-net; scheme="https://schemas.openstack.org/network/floatingippool#"; class="mixin"' \
     -H 'Content-Type: text/occi'
 
 It returns a HTTP 200 with output::
