@@ -1,7 +1,7 @@
 ooi hacking guidelines
 ======================
 
-Read the OpenStack Style Commandments http://docs.openstack.org/developer/hacking/
+Read the OpenStack Style Commandments https://docs.openstack.org/hacking/latest/
 
 Code style is enforced and unit and functional testing
 are required. To run all of them , just execute:
