@@ -1,6 +1,0 @@
-pbr
-oslo.log
-oslo.config
-routes
-WebOb
-enum34
